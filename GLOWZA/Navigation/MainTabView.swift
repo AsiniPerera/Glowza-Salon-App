@@ -1,0 +1,113 @@
+import SwiftUI
+
+struct MainTabView: View {
+
+    @State private var selectedTab = 0
+
+    var body: some View {
+        TabView(selection: $selectedTab) {
+
+            // 1 — Home
+            HomeView()
+                .tabItem {
+                    Label("Home", systemImage: selectedTab == 0 ? "house.fill" : "house")
+                }
+                .tag(0)
+
+            // 2 — Bookings
+            BookingsView()
+                .tabItem {
+                    Label("Bookings", systemImage: selectedTab == 1 ? "calendar.badge.clock" : "calendar")
+                }
+                .tag(1)
+
+            // 3 — AI Beauty
+            AIBeautyView()
+                .tabItem {
+                    Label("AI Beauty", systemImage: "wand.and.stars")
+                }
+                .tag(2)
+
+            // 4 — Compare
+            CompareView()
+                .tabItem {
+                    Label("Compare", systemImage: selectedTab == 3 ? "arrow.left.arrow.right.circle.fill" : "arrow.left.arrow.right.circle")
+                }
+                .tag(3)
+
+            // 5 — Profile
+            ProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: selectedTab == 4 ? "person.fill" : "person")
+                }
+                .tag(4)
+        }
+        .tint(Color(hex: "C8860A"))                     // active tab gold
+        .onAppear { styleTabBar() }
+    }
+
+    private func styleTabBar() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Color(hex: "F5F0E8"))
+
+        // Item color
+        let normalAttr: [NSAttributedString.Key: Any] = [
+            .foregroundColor: UIColor(Color(hex: "ABABAB"))
+        ]
+        let selectedAttr: [NSAttributedString.Key: Any] = [
+            .foregroundColor: UIColor(Color(hex: "C8860A"))
+        ]
+        appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttr
+        appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttr
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+}
+
+// MARK: - Placeholders (replace when screens are built)
+struct BookingsPlaceholderView: View {
+    var body: some View {
+        PlaceholderScreen(icon: "calendar", title: "Bookings", subtitle: "Share Figma design to build")
+    }
+}
+
+struct AIPlaceholderView: View {
+    var body: some View {
+        PlaceholderScreen(icon: "wand.and.stars", title: "AI Beauty", subtitle: "Share Figma design to build")
+    }
+}
+
+struct ProfilePlaceholderView: View {
+    var body: some View {
+        PlaceholderScreen(icon: "person.circle", title: "Profile", subtitle: "Share Figma design to build")
+    }
+}
+
+struct PlaceholderScreen: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        ZStack {
+            Color(hex: "F5F0E8").ignoresSafeArea()
+            VStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 52))
+                    .foregroundColor(Color(hex: "C8860A").opacity(0.5))
+                Text(title)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                Text(subtitle)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "8A8A8A"))
+            }
+        }
+    }
+}
+
+#Preview {
+    MainTabView()
+}
