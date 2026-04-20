@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Catalog Entry (flat list of all salon treatments)
+
 
 private struct CatalogEntry: Identifiable {
     let id: UUID  // same as service.id — stable for app lifetime
@@ -8,7 +8,7 @@ private struct CatalogEntry: Identifiable {
     let salonName: String
 }
 
-// MARK: - Compare View
+
 
 struct CompareView: View {
 
