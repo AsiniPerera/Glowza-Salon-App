@@ -108,7 +108,7 @@ struct SalonDetailView: View {
                 .foregroundColor(Color.glowzaGoldDark)
             Text(text)
                 .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
         }
@@ -154,11 +154,11 @@ struct SalonDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("About Us")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
 
             Text(salon.about)
                 .font(.system(size: 14))
-                .foregroundColor(Color.glowzaDark.opacity(0.8))
+                .foregroundColor(Color.glowzaTextPrimary.opacity(0.8))
                 .lineSpacing(5)
 
             // Rating summary
@@ -231,7 +231,7 @@ struct SalonDetailView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(service.name)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color.glowzaDark)
+                    .foregroundColor(Color.glowzaTextPrimary)
                 HStack(spacing: 10) {
                     Label(service.duration, systemImage: "clock")
                     Text(service.category)
@@ -312,7 +312,7 @@ struct SalonDetailView: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(review.reviewerName)
-                        .font(.system(size: 14, weight: .semibold)).foregroundColor(Color.glowzaDark)
+                        .font(.system(size: 14, weight: .semibold)).foregroundColor(Color.glowzaTextPrimary)
                     Text(review.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.system(size: 11)).foregroundColor(Color.glowzaSubtext)
                 }
@@ -326,7 +326,7 @@ struct SalonDetailView: View {
                 }
             }
             Text(review.comment)
-                .font(.system(size: 13)).foregroundColor(Color.glowzaDark.opacity(0.8)).lineSpacing(4)
+                .font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.8)).lineSpacing(4)
         }
         .padding(14)
         .glowzaCard()

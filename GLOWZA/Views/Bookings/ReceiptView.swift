@@ -48,7 +48,7 @@ struct ReceiptView: View {
                     .foregroundColor(Color.glowzaGoldDark)
             }
             Text("Booking Confirmed!")
-                .font(.system(size: 24, weight: .bold)).foregroundColor(Color.glowzaDark)
+                .font(.system(size: 24, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
             Text("Your appointment has been successfully booked.\nWe'll see you soon!")
                 .font(.system(size: 14)).foregroundColor(Color.glowzaSubtext)
                 .multilineTextAlignment(.center).lineSpacing(4)
@@ -93,7 +93,7 @@ struct ReceiptView: View {
             // Total
             HStack {
                 Text("Total Paid")
-                    .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaDark)
+                    .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                 Spacer()
                 Text("LKR \(Int(booking.amountPaid))")
                     .font(.system(size: 20, weight: .bold)).foregroundColor(Color.glowzaGoldDark)
@@ -127,7 +127,7 @@ struct ReceiptView: View {
             Image(systemName: icon).font(.system(size: 13)).foregroundColor(Color.glowzaGoldDark).frame(width: 18)
             Text(label).font(.system(size: 13)).foregroundColor(Color.glowzaSubtext)
             Spacer()
-            Text(value).font(.system(size: 13, weight: .medium)).foregroundColor(Color.glowzaDark)
+            Text(value).font(.system(size: 13, weight: .medium)).foregroundColor(Color.glowzaTextPrimary)
                 .multilineTextAlignment(.trailing)
         }
     }

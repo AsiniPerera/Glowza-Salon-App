@@ -48,7 +48,7 @@ struct AIBeautyView: View {
 
             Text("AI Beauty Advisor")
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
 
             Text("Describe your skin concern and get\npersonalised treatment recommendations.")
                 .font(.system(size: 13))
@@ -129,7 +129,7 @@ struct AIBeautyView: View {
 
                     TextEditor(text: $inputText)
                         .font(.system(size: 14))
-                        .foregroundColor(Color.glowzaDark)
+                        .foregroundColor(Color.glowzaTextPrimary)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .frame(minHeight: 90)
@@ -225,7 +225,7 @@ struct AIBeautyView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Detected Concerns")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
                 .padding(.horizontal, 24)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -251,7 +251,7 @@ struct AIBeautyView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recommended Treatments")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
                 .padding(.horizontal, 24)
 
             ForEach(Array(treatments.enumerated()), id: \.element.id) { index, treatment in
@@ -291,7 +291,7 @@ struct AIBeautyView: View {
                         HStack(spacing: 6) {
                             Text(treatment.name)
                                 .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Color.glowzaDark)
+                                .foregroundColor(Color.glowzaTextPrimary)
                             if rank == 1 {
                                 Text("Best Match")
                                     .font(.system(size: 10, weight: .semibold))
@@ -323,7 +323,7 @@ struct AIBeautyView: View {
 
                     Text(treatment.description)
                         .font(.system(size: 13))
-                        .foregroundColor(Color.glowzaDark.opacity(0.8))
+                        .foregroundColor(Color.glowzaTextPrimary.opacity(0.8))
                         .lineSpacing(4)
                         .padding(.horizontal, 16)
 
@@ -342,7 +342,7 @@ struct AIBeautyView: View {
                             .foregroundColor(Color.glowzaGoldDark)
                         Text(treatment.priceRange)
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.glowzaDark)
+                            .foregroundColor(Color.glowzaTextPrimary)
                     }
                     .padding(.horizontal, 16)
 
@@ -385,7 +385,7 @@ struct AIBeautyView: View {
             }
             Text(value)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -395,7 +395,7 @@ struct AIBeautyView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Recommended Products")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
                 .padding(.horizontal, 24)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -422,7 +422,7 @@ struct AIBeautyView: View {
             }
             Text(p.name)
                 .font(.system(size: 13, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             Text(p.brand)
@@ -454,7 +454,7 @@ struct AIBeautyView: View {
                 .foregroundColor(Color.glowzaSubtext.opacity(0.5))
             Text("Couldn't detect a specific concern.")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
             Text("Try using keywords like \"acne\", \"dark circles\",\n\"wrinkles\" or \"unwanted hair\".")
                 .font(.system(size: 13))
                 .foregroundColor(Color.glowzaSubtext)

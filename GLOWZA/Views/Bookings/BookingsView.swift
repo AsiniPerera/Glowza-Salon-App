@@ -29,7 +29,7 @@ struct AddReviewView: View {
                                     .foregroundColor(Color.glowzaGoldDark)
                             }
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(salonName).font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaDark)
+                                Text(salonName).font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                                 Text(serviceName).font(.system(size: 12)).foregroundColor(Color.glowzaSubtext)
                             }
                         }
@@ -37,7 +37,7 @@ struct AddReviewView: View {
                         // Star rating
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Your Rating")
-                                .font(.system(size: 15, weight: .semibold)).foregroundColor(Color.glowzaDark)
+                                .font(.system(size: 15, weight: .semibold)).foregroundColor(Color.glowzaTextPrimary)
                             HStack(spacing: 12) {
                                 ForEach(1...5, id: \.self) { star in
                                     Image(systemName: star <= rating ? "star.fill" : "star")
@@ -60,7 +60,7 @@ struct AddReviewView: View {
                         // Comment
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Your Review")
-                                .font(.system(size: 15, weight: .semibold)).foregroundColor(Color.glowzaDark)
+                                .font(.system(size: 15, weight: .semibold)).foregroundColor(Color.glowzaTextPrimary)
 
                             ZStack(alignment: .topLeading) {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white)
@@ -73,7 +73,7 @@ struct AddReviewView: View {
                                         .padding(14).allowsHitTesting(false)
                                 }
                                 TextEditor(text: $comment)
-                                    .font(.system(size: 14)).foregroundColor(Color.glowzaDark)
+                                    .font(.system(size: 14)).foregroundColor(Color.glowzaTextPrimary)
                                     .padding(10).frame(minHeight: 120)
                                     .scrollContentBackground(.hidden).background(Color.clear)
                             }
@@ -186,7 +186,7 @@ struct BookingsView: View {
     private var bookingsHeader: some View {
         HStack {
             Text("Bookings")
-                .font(.system(size: 22, weight: .bold)).foregroundColor(Color.glowzaDark)
+                .font(.system(size: 22, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
             Spacer()
         }
         .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 10)
@@ -258,7 +258,7 @@ struct BookingsView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(booking.salon.name)
-                        .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaDark)
+                        .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                     Text(booking.salon.location)
                         .font(.system(size: 12)).foregroundColor(Color.glowzaSubtext)
                     Text("Services: \(booking.service.name)")
@@ -328,7 +328,7 @@ struct BookingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(booking.salon.name)
-                        .font(.system(size: 14, weight: .bold)).foregroundColor(Color.glowzaDark)
+                        .font(.system(size: 14, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                     Text(booking.service.name)
                         .font(.system(size: 12)).foregroundColor(Color.glowzaSubtext)
                 }
@@ -342,7 +342,7 @@ struct BookingsView: View {
                 }
             }
             Text(review.comment)
-                .font(.system(size: 13)).foregroundColor(Color.glowzaDark.opacity(0.8)).lineSpacing(4)
+                .font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.8)).lineSpacing(4)
             Text(review.date.formatted(date: .abbreviated, time: .omitted))
                 .font(.system(size: 11)).foregroundColor(Color.glowzaSubtext)
         }

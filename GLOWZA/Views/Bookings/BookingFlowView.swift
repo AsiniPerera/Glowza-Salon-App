@@ -90,7 +90,7 @@ struct ServiceSelectionView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(service.name)
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Color.glowzaDark)
+                        .foregroundColor(Color.glowzaTextPrimary)
                     HStack(spacing: 8) {
                         Label(service.duration, systemImage: "clock")
                         Text(service.category)
@@ -137,7 +137,7 @@ struct DateTimeSelectionView: View {
                     // Date picker
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Select Date")
-                            .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaDark)
+                            .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                             .padding(.horizontal, 20)
                         DatePicker("", selection: $draft.date, in: Date()..., displayedComponents: .date)
                             .datePickerStyle(.graphical)
@@ -152,7 +152,7 @@ struct DateTimeSelectionView: View {
                     // Time slots
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Select Time")
-                            .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaDark)
+                            .font(.system(size: 15, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                             .padding(.horizontal, 20)
 
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 10) {
@@ -205,7 +205,7 @@ func flowHeader(title: String, subtitle: String, onBack: @escaping () -> Void) -
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color.glowzaDark)
+                    .foregroundColor(Color.glowzaTextPrimary)
                     .padding(10)
                     .background(Color.white)
                     .clipShape(Circle())
@@ -216,7 +216,7 @@ func flowHeader(title: String, subtitle: String, onBack: @escaping () -> Void) -
         .padding(.horizontal, 20)
 
         VStack(spacing: 4) {
-            Text(title).font(.system(size: 22, weight: .bold)).foregroundColor(Color.glowzaDark)
+            Text(title).font(.system(size: 22, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
             if !subtitle.isEmpty {
                 Text(subtitle).font(.system(size: 13)).foregroundColor(Color.glowzaSubtext)
             }

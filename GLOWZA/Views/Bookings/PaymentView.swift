@@ -112,7 +112,7 @@ struct PaymentView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(service.name)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(Color.glowzaDark)
+                    .foregroundColor(Color.glowzaTextPrimary)
                 Text(draft.salon.name)
                     .font(.system(size: 12))
                     .foregroundColor(Color.glowzaSubtext)
@@ -159,7 +159,7 @@ struct PaymentView: View {
                         .foregroundColor(topChoice == .card ? Color(hex: "C8860A") : Color.glowzaSubtext)
                     Text("Credit / Debit Card")
                         .font(.system(size: 15, weight: topChoice == .card ? .semibold : .regular))
-                        .foregroundColor(Color.glowzaDark)
+                        .foregroundColor(Color.glowzaTextPrimary)
                     Spacer()
                 }
                 .padding(.horizontal, 16).padding(.vertical, 14)
@@ -216,7 +216,7 @@ struct PaymentView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("•••• •••• •••• \(card.last4)")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color.glowzaDark)
+                        .foregroundColor(Color.glowzaTextPrimary)
                     Text("\(card.holder)  ·  \(card.expiry)")
                         .font(.system(size: 11))
                         .foregroundColor(Color.glowzaSubtext)
@@ -259,7 +259,7 @@ struct PaymentView: View {
                 radioCircle(selected: topChoice == .applePay)
                 Text("Apple Pay")
                     .font(.system(size: 15, weight: topChoice == .applePay ? .semibold : .regular))
-                    .foregroundColor(Color.glowzaDark)
+                    .foregroundColor(Color.glowzaTextPrimary)
                 Spacer()
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -290,7 +290,7 @@ struct PaymentView: View {
                 radioCircle(selected: topChoice == .googlePay)
                 Text("Google Pay")
                     .font(.system(size: 15, weight: topChoice == .googlePay ? .semibold : .regular))
-                    .foregroundColor(Color.glowzaDark)
+                    .foregroundColor(Color.glowzaTextPrimary)
                 Spacer()
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -334,7 +334,7 @@ struct PaymentView: View {
             Divider().padding(.horizontal, 16)
             HStack {
                 Text("Total")
-                    .font(.system(size: 16, weight: .bold)).foregroundColor(Color.glowzaDark)
+                    .font(.system(size: 16, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                 Spacer()
                 Text("LKR \(Int(total))")
                     .font(.system(size: 20, weight: .bold)).foregroundColor(Color(hex: "C8860A"))
@@ -357,7 +357,7 @@ struct PaymentView: View {
             Spacer()
             Text(value)
                 .font(.system(size: 13, weight: highlight ? .bold : .medium))
-                .foregroundColor(highlight ? Color(hex: "C8860A") : Color.glowzaDark)
+                .foregroundColor(highlight ? Color(hex: "C8860A") : Color.glowzaTextPrimary)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
     }

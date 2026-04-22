@@ -44,7 +44,7 @@ struct ConsentFormView: View {
                 Button(action: onBack) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color.glowzaDark)
+                        .foregroundColor(Color.glowzaTextPrimary)
                 }
                 Spacer()
             }
@@ -59,7 +59,7 @@ struct ConsentFormView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Treatment Consent Form")
                             .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Color.glowzaDark)
+                            .foregroundColor(Color.glowzaTextPrimary)
                         Text("Please review the clinical details of your upcoming aesthetic procedure to ensure informed consent.")
                             .font(.system(size: 13))
                             .foregroundColor(Color.glowzaSubtext)
@@ -138,7 +138,7 @@ struct ConsentFormView: View {
                         Text("Clear Canvas")
                             .font(.system(size: 14, weight: .semibold))
                     }
-                    .foregroundColor(Color.glowzaDark.opacity(0.75))
+                    .foregroundColor(Color.glowzaTextPrimary.opacity(0.75))
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
                     .background(Color(hex: "EEEBE4"))
@@ -181,7 +181,7 @@ struct ConsentFormView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.seal.fill").foregroundColor(Color.glowzaGoldDark)
                     Text("Consent form signed successfully!")
-                        .font(.system(size: 14, weight: .semibold)).foregroundColor(Color.glowzaDark)
+                        .font(.system(size: 14, weight: .semibold)).foregroundColor(Color.glowzaTextPrimary)
                     Spacer()
                 }
                 .padding(.horizontal, 20).padding(.vertical, 14)
@@ -208,7 +208,7 @@ struct ConsentFormView: View {
 
             Text("The proposed aesthetic treatment involves the administration of dermal enhancers and neuromodulators designed to refine facial contours and diminish the appearance of fine lines. While generally safe, this clinical procedure requires an understanding of localised physiological responses.")
                 .font(.system(size: 13))
-                .foregroundColor(Color.glowzaDark.opacity(0.8))
+                .foregroundColor(Color.glowzaTextPrimary.opacity(0.8))
                 .lineSpacing(5)
 
             disclosureList(
@@ -243,7 +243,7 @@ struct ConsentFormView: View {
             ForEach(items, id: \.self) { item in
                 HStack(alignment: .top, spacing: 8) {
                     Circle().fill(Color.glowzaGoldDark).frame(width: 5, height: 5).padding(.top, 5)
-                    Text(item).font(.system(size: 13)).foregroundColor(Color.glowzaDark.opacity(0.85)).lineSpacing(3)
+                    Text(item).font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.85)).lineSpacing(3)
                 }
             }
         }
@@ -254,7 +254,7 @@ struct ConsentFormView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Client Acknowledgement")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
 
             ackRow(checked: $ack1,
                    text: "I understand that clinical results vary and that additional touch-up appointments may be necessary for optimal aesthetic outcomes.")
@@ -278,7 +278,7 @@ struct ConsentFormView: View {
                 }
             }
             Text(text)
-                .font(.system(size: 13)).foregroundColor(Color.glowzaDark.opacity(0.85)).lineSpacing(4)
+                .font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.85)).lineSpacing(4)
         }
     }
 
@@ -287,7 +287,7 @@ struct ConsentFormView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Digital Signature")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color.glowzaDark)
+                .foregroundColor(Color.glowzaTextPrimary)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
