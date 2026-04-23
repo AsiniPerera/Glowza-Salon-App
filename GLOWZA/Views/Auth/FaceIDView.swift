@@ -7,7 +7,7 @@ struct FaceIDAuthView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(hex: "#F5F2EA"), Color.white],
+                colors: [Color.glowzaBackground, Color.white],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -25,7 +25,7 @@ struct FaceIDAuthView: View {
 
                         Image(systemName: viewModel.biometricIconName)
                             .font(.system(size: 52, weight: .light))
-                            .foregroundColor(Color(hex: "#8C733E"))
+                            .foregroundColor(Color.glowzaGoldDark)
                     }
 
                     Text("Secure Sign In")
@@ -56,7 +56,7 @@ struct FaceIDAuthView: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
-                        .background(Color(hex: "#DBB668"))
+                        .background(Color.glowzaGold)
                         .cornerRadius(14)
                     }
                     .disabled(viewModel.isAuthenticating)
@@ -71,7 +71,7 @@ struct FaceIDAuthView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color(hex: "#DBB668").opacity(0.22), lineWidth: 1)
+                        .stroke(Color.glowzaGold.opacity(0.22), lineWidth: 1)
                 )
 
                 if viewModel.isAuthenticated {

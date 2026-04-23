@@ -178,7 +178,7 @@ struct HomeView: View {
             }
             
             VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("Hello")
+                Text("Welcome")
                     .font(.system(size: 12, weight: .regular))
                     .foregroundColor(.glowzaSubtext)
                 
@@ -243,40 +243,45 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - Services Section (Left Aligned)
+    // MARK: - Services Section
     private var servicesSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Services")
+            Text("Premium Services")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundColor(.glowzaTextPrimary)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Spacing.lg) {
+                HStack(spacing: 14) {
                     ForEach(services) { service in
-                        NavigationLink(value: service) {
-                            VStack(spacing: Spacing.sm) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white)
-                                        .stroke(Color.glowzaGold.opacity(0.2), lineWidth: 1)
-                                    
-                                    Image(systemName: service.icon)
-                                        .font(.system(size: 20, weight: .semibold))
-                                        .foregroundColor(.glowzaBrown)
-                                }
-                                .frame(height: 60)
-                                
-                                Text(service.name)
-                                    .font(.system(size: 12, weight: .regular))
-                                    .foregroundColor(.glowzaTextPrimary)
-                                    .lineLimit(1)
-                                    .multilineTextAlignment(.center)
+                        let isSelected = selectedServiceID == service.id
+                        Button {
+                            withAnimation(.spring(response: 0.3)) {
+                                selectedServiceID = isSelected ? nil : service.id
                             }
-                            .frame(minWidth: 80)
+                        } label: {
+                            VStack(spacing: 8) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                        .fill(isSelected ? Color.glowzaGoldDark.opacity(0.15) : Color.white)
+                                        .frame(width: 64, height: 64)
+                                        .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
+                                    Image(systemName: service.icon)
+                                        .font(.system(size: 22, weight: .medium))
+                                        .foregroundColor(Color.glowzaGoldDark)
+                                }
+                                Text(service.name)
+                                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                                    .foregroundColor(isSelected ? Color.glowzaGoldDark : .glowzaTextPrimary)
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(2)
+                                    .frame(width: 64)
+                            }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, Spacing.base)
+                .padding(.vertical, 4)
             }
         }
     }
@@ -391,7 +396,7 @@ struct HomeView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.glowzaSubtext)
                 
-                TextField("Search", text: $searchText)
+                TextField("Search salons or city ...", text: $searchText)
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(.glowzaTextPrimary)
             }
@@ -461,95 +466,83 @@ struct HomeView: View {
     }
     
 
-    // MARK: - Top Salons Section
+    // MARK: - Nearby Salons Section
     private var topSalonsSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("All Salons")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.glowzaTextPrimary)
-            
-            VStack(spacing: Spacing.md) {
-                ForEach(filteredSalons) { salon in
-                    NavigationLink(value: salon.name) {
-                        VStack(alignment: .leading, spacing: Spacing.sm) {
-                            // Salon Image
-                            Image(salon.imageName)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 140)
-                                .clipped()
-                                .cornerRadius(CornerRadius.lg)
-                            
-                            HStack(spacing: Spacing.md) {
-                                // Salon Avatar
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.glowzaGold.opacity(0.2))
-                                    
-                                    Image(systemName: "building.2.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.glowzaBrown)
-                                }
-                                .frame(width: 50, height: 50)
-                                
-                                // Salon Details
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(salon.name)
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.glowzaTextPrimary)
-                                    
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "mappin.circle.fill")
-                                            .font(.system(size: 11, weight: .semibold))
-                                            .foregroundColor(.glowzaSubtext)
-                                        Text(salon.location)
-                                            .font(.system(size: 12, weight: .regular))
-                                            .foregroundColor(.glowzaSubtext)
-                                    }
-                                    
-                                    HStack(spacing: 12) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "star.fill")
-                                                .font(.system(size: 10, weight: .semibold))
-                                                .foregroundColor(.glowzaGold)
-                                            Text("\(String(format: "%.1f", salon.rating))")
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(.glowzaTextPrimary)
-                                            Text("(\(salon.reviews))")
-                                                .font(.system(size: 11, weight: .regular))
-                                                .foregroundColor(.glowzaSubtext)
-                                        }
-                                        
-                                        Divider()
-                                            .frame(height: 12)
-                                        
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "location.fill")
-                                                .font(.system(size: 10, weight: .semibold))
-                                                .foregroundColor(.glowzaBrown)
-                                            Text(salon.distance)
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(.glowzaBrown)
-                                        }
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                // Chevron
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.glowzaSubtext)
-                            }
-                        }
-                        .padding(Spacing.md)
-                        .background(Color.white)
-                        .cornerRadius(CornerRadius.lg)
-                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+            HStack {
+                Text("Nearby Salons")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.glowzaTextPrimary)
+                Spacer()
+                Button(action: { showMapSheet = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 13, weight: .medium))
+                        Text("Map View")
+                            .font(.system(size: 13, weight: .medium))
                     }
+                    .foregroundColor(Color.glowzaGoldDark)
+                }
+            }
+
+            VStack(spacing: 12) {
+                ForEach(filteredSalons) { salon in
+                    Button(action: { selectedSalonName = salon.name }) {
+                        nearbySalonCard(salon)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
+    }
+
+    // MARK: - Nearby Salon Card
+    private func nearbySalonCard(_ salon: SalonPreview) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            // Left: real salon photo
+            Image(salon.imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 90, height: 90)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            // Right: details
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(salon.name)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.glowzaTextPrimary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(salon.distance)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.glowzaSubtext)
+                }
+
+                Label(salon.location, systemImage: "mappin")
+                    .font(.system(size: 12))
+                    .foregroundColor(.glowzaSubtext)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color.glowzaGoldDark)
+                    Text(String(format: "%.1f", salon.rating))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.glowzaTextPrimary)
+                    Text("(\(salon.reviews))")
+                        .font(.system(size: 12))
+                        .foregroundColor(.glowzaSubtext)
+                    Spacer()
+                    ReputationRing(score: salon.score)
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
 }
 
@@ -672,7 +665,7 @@ struct MapSalonCard: View {
     var body: some View {
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(hex: "E5D5BB"))
+                .fill(Color.glowzaCardBg)
                 .frame(width: 60, height: 60)
                 .overlay(
                     Image(systemName: "building.2.fill")
@@ -739,7 +732,7 @@ struct ServiceCategoryCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
         .padding(.horizontal, 4)
-        .background(isSelected ? Color(hex: "FFF8EE") : Color.white)
+        .background(isSelected ? Color.glowzaCardBg : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -758,7 +751,7 @@ struct SalonPreviewCard: View {
     var body: some View {
         HStack(spacing: 14) {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(hex: "E5D5BB"))
+                .fill(Color.glowzaCardBg)
                 .frame(width: 70, height: 70)
                 .overlay(
                     Image(systemName: "building.2.fill")

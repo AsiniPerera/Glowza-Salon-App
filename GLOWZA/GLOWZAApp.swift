@@ -85,11 +85,11 @@ struct RootView: View {
 struct PlaceholderDashboardView: View {
     var body: some View {
         ZStack {
-            Color(hex: "FDF8F2").ignoresSafeArea()
+            Color.glowzaBackground.ignoresSafeArea()
             VStack(spacing: 16) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 56))
-                    .foregroundColor(Color(hex: "E5A820"))
+                    .foregroundColor(Color.glowzaGold)
                 Text("You're In! 🎉")
                     .font(.system(size: 28, weight: .bold))
                 Text("Dashboard — share Figma design to build")

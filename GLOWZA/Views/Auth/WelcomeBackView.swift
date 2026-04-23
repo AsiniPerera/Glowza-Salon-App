@@ -17,7 +17,7 @@ struct WelcomeBackView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "F5F0E8").ignoresSafeArea()
+            Color.glowzaBackground.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()
@@ -28,19 +28,19 @@ struct WelcomeBackView: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: [Color(hex: "E5A820").opacity(0.25), Color(hex: "E5A820").opacity(0.05)],
+                                    colors: [Color.glowzaGold.opacity(0.25), Color.glowzaGold.opacity(0.05)],
                                     startPoint: .topLeading, endPoint: .bottomTrailing
                                 )
                             )
                             .frame(width: 112, height: 112)
 
                         Circle()
-                            .stroke(Color(hex: "E5A820").opacity(0.5), lineWidth: 2)
+                            .stroke(Color.glowzaGold.opacity(0.5), lineWidth: 2)
                             .frame(width: 112, height: 112)
 
                         Image(systemName: "person.fill")
                             .font(.system(size: 48))
-                            .foregroundColor(Color(hex: "C8860A"))
+                            .foregroundColor(Color.glowzaGoldDark)
                     }
                     .scaleEffect(avatarScale)
                     .opacity(avatarOpacity)
@@ -48,15 +48,15 @@ struct WelcomeBackView: View {
                     VStack(spacing: 6) {
                         Text("Hello, Welcome Back 👋")
                             .font(.system(size: 22, weight: .semibold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .foregroundColor(Color.glowzaTextPrimary)
 
                         Text(userName)
                             .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(Color(hex: "C8860A"))
+                            .foregroundColor(Color.glowzaGoldDark)
 
                         Text("We're glad to have you back.")
                             .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(Color(hex: "8A8A8A"))
+                            .foregroundColor(Color.glowzaSubtext)
                     }
                     .opacity(textOpacity)
                     .offset(y: textOffset)
@@ -69,41 +69,41 @@ struct WelcomeBackView: View {
                     HStack {
                         Label("Upcoming Appointment", systemImage: "calendar.badge.clock")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(hex: "C8860A"))
+                            .foregroundColor(Color.glowzaGoldDark)
                         Spacer()
                     }
                     .padding(.bottom, 12)
 
-                    Divider().background(Color(hex: "E5A820").opacity(0.3))
+                    Divider().background(Color.glowzaGold.opacity(0.3))
                         .padding(.bottom, 14)
 
                     HStack(spacing: 14) {
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(hex: "E5A820").opacity(0.15))
+                            .fill(Color.glowzaGold.opacity(0.15))
                             .frame(width: 50, height: 50)
                             .overlay(
                                 Image(systemName: "sparkles")
                                     .font(.system(size: 22))
-                                    .foregroundColor(Color(hex: "C8860A"))
+                                    .foregroundColor(Color.glowzaGoldDark)
                             )
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Laser Treatment")
                                 .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color(hex: "1A1A1A"))
+                                .foregroundColor(Color.glowzaTextPrimary)
                             Text("Tomorrow · 10:00 AM")
                                 .font(.system(size: 13))
-                                .foregroundColor(Color(hex: "8A8A8A"))
+                                .foregroundColor(Color.glowzaSubtext)
                             Text("Haley Avenue, Colombo")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "C8860A"))
+                                .foregroundColor(Color.glowzaGoldDark)
                         }
 
                         Spacer()
 
                         Image(systemName: "chevron.right")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color(hex: "C8860A").opacity(0.6))
+                            .foregroundColor(Color.glowzaGoldDark.opacity(0.6))
                     }
                 }
                 .padding(20)
@@ -131,12 +131,12 @@ struct WelcomeBackView: View {
                     .frame(height: 56)
                     .background(
                         LinearGradient(
-                            colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                            colors: [Color.glowzaGold, Color.glowzaGoldDark],
                             startPoint: .leading, endPoint: .trailing
                         )
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: Color(hex: "E5A820").opacity(0.4), radius: 12, x: 0, y: 6)
+                    .shadow(color: Color.glowzaGold.opacity(0.4), radius: 12, x: 0, y: 6)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 52)

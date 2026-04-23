@@ -42,7 +42,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "FDF8F2").ignoresSafeArea()
+            Color.glowzaBackground.ignoresSafeArea()
 
             // ── Paged content ──
             TabView(selection: $currentIndex) {
@@ -70,7 +70,7 @@ struct OnboardingView: View {
             HStack(spacing: 7) {
                 ForEach(0..<pages.count, id: \.self) { i in
                     Capsule()
-                        .fill(i == currentIndex ? Color(hex: "E5A820") : Color.gray.opacity(0.25))
+                        .fill(i == currentIndex ? Color.glowzaGold : Color.gray.opacity(0.25))
                         .frame(width: i == currentIndex ? 22 : 7, height: 7)
                         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: currentIndex)
                 }
@@ -92,7 +92,7 @@ struct OnboardingPageView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "FDF8F2").ignoresSafeArea()
+            Color.glowzaBackground.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -110,7 +110,7 @@ struct OnboardingPageView: View {
                     // Badge over image
                     Label(page.badge, systemImage: "checkmark.seal.fill")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "E5A820"))
+                        .foregroundColor(Color.glowzaGold)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
                         .background(.ultraThinMaterial)
@@ -125,16 +125,16 @@ struct OnboardingPageView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(page.titleLine1)
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .foregroundColor(Color.glowzaTextPrimary)
 
                         Text(page.titleLine2)
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color(hex: "E5A820"))
+                            .foregroundColor(Color.glowzaGold)
                     }
 
                     Text(page.subtitle)
                         .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(Color(hex: "6B6B6B"))
+                        .foregroundColor(Color.glowzaSubtext)
                         .lineSpacing(5)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -160,13 +160,13 @@ struct OnboardingPageView: View {
                     .frame(height: 56)
                     .background(
                         LinearGradient(
-                            colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                            colors: [Color.glowzaGold, Color.glowzaGoldDark],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: Color(hex: "E5A820").opacity(0.35), radius: 12, x: 0, y: 5)
+                    .shadow(color: Color.glowzaGold.opacity(0.35), radius: 12, x: 0, y: 5)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 48)

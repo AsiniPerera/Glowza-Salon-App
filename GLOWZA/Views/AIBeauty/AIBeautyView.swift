@@ -153,7 +153,7 @@ struct AIBeautyView: View {
                 .frame(height: 54)
                 .background(
                     LinearGradient(
-                        colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                        colors: [Color.glowzaGold, Color.glowzaGoldDark],
                         startPoint: .leading, endPoint: .trailing
                     )
                 )
@@ -277,7 +277,7 @@ struct AIBeautyView: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(
                                 LinearGradient(
-                                    colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                                    colors: [Color.glowzaGold, Color.glowzaGoldDark],
                                     startPoint: .topLeading, endPoint: .bottomTrailing
                                 )
                             )

@@ -69,7 +69,7 @@ struct ReceiptView: View {
             }
             .padding(18)
             .background(
-                LinearGradient(colors: [Color(hex: "C8860A"), Color(hex: "E5A820")],
+                LinearGradient(colors: [Color.glowzaGoldDark, Color.glowzaGold],
                                startPoint: .leading, endPoint: .trailing)
             )
 
@@ -110,7 +110,7 @@ struct ReceiptView: View {
                         .resizable().scaledToFit()
                         .frame(height: 60)
                         .padding(6)
-                        .background(Color(hex: "FAF7F2"))
+                        .background(Color.glowzaBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,7 +147,7 @@ struct ReceiptView: View {
                 Spacer()
                 Circle().fill(Color.glowzaBackground).frame(width: 20, height: 20).offset(x: 10)
             }
-            Rectangle().fill(Color(hex: "EDEAE4")).frame(height: 1).padding(.horizontal, 10)
+            Rectangle().fill(Color.glowzaBorder).frame(height: 1).padding(.horizontal, 10)
         }
     }
 
@@ -163,7 +163,7 @@ struct ReceiptView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity).frame(height: 54)
                 .background(
-                    LinearGradient(colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                    LinearGradient(colors: [Color.glowzaGold, Color.glowzaGoldDark],
                                    startPoint: .leading, endPoint: .trailing)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))

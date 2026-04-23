@@ -185,7 +185,7 @@ struct DateTimeSelectionView: View {
                 .frame(maxWidth: .infinity).frame(height: 38)
                 .background(
                     selected ? Color.glowzaGoldDark :
-                    !slot.available ? Color(hex: "F0EAE0") : Color.white
+                    !slot.available ? Color.glowzaBorder : Color.white
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
@@ -234,7 +234,7 @@ func flowButton(label: String, enabled: Bool, action: @escaping () -> Void) -> s
             .foregroundColor(.white)
             .frame(maxWidth: .infinity).frame(height: 54)
             .background(
-                LinearGradient(colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                LinearGradient(colors: [Color.glowzaGold, Color.glowzaGoldDark],
                                startPoint: .leading, endPoint: .trailing)
                     .opacity(enabled ? 1 : 0.5)
             )

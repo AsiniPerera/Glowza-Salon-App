@@ -67,11 +67,11 @@ struct PaymentView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity).frame(height: 54)
                     .background(
-                        LinearGradient(colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                        LinearGradient(colors: [Color.glowzaGold, Color.glowzaGoldDark],
                                        startPoint: .leading, endPoint: .trailing)
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: Color(hex: "E5A820").opacity(0.35), radius: 10, x: 0, y: 5)
+                    .shadow(color: Color.glowzaGold.opacity(0.35), radius: 10, x: 0, y: 5)
                 }
                 .disabled(isPaying)
                 .padding(.horizontal, 20).padding(.vertical, 16)
@@ -102,11 +102,11 @@ struct PaymentView: View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(hex: "E5A820").opacity(0.12))
+                    .fill(Color.glowzaGold.opacity(0.12))
                     .frame(width: 48, height: 48)
                 Image(systemName: service.icon)
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "C8860A"))
+                    .foregroundColor(Color.glowzaGoldDark)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -131,10 +131,10 @@ struct PaymentView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("LKR")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(Color(hex: "C8860A"))
+                    .foregroundColor(Color.glowzaGoldDark)
                 Text("\(Int(total))")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color(hex: "C8860A"))
+                    .foregroundColor(Color.glowzaGoldDark)
             }
         }
         .padding(14)
@@ -142,7 +142,7 @@ struct PaymentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(Color(hex: "E5A820").opacity(0.3), lineWidth: 1)
+                .strokeBorder(Color.glowzaGold.opacity(0.3), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
     }
@@ -156,7 +156,7 @@ struct PaymentView: View {
                     radioCircle(selected: topChoice == .card)
                     Image(systemName: "creditcard.fill")
                         .font(.system(size: 15))
-                        .foregroundColor(topChoice == .card ? Color(hex: "C8860A") : Color.glowzaSubtext)
+                        .foregroundColor(topChoice == .card ? Color.glowzaGoldDark : Color.glowzaSubtext)
                     Text("Credit / Debit Card")
                         .font(.system(size: 15, weight: topChoice == .card ? .semibold : .regular))
                         .foregroundColor(Color.glowzaTextPrimary)
@@ -183,15 +183,15 @@ struct PaymentView: View {
                     HStack(spacing: 8) {
                         ZStack {
                             Circle()
-                                .fill(Color(hex: "E5A820").opacity(0.12))
+                                .fill(Color.glowzaGold.opacity(0.12))
                                 .frame(width: 28, height: 28)
                             Image(systemName: "plus")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(Color(hex: "C8860A"))
+                                .foregroundColor(Color.glowzaGoldDark)
                         }
                         Text("Add New Card")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "C8860A"))
+                            .foregroundColor(Color.glowzaGoldDark)
                         Spacer()
                     }
                     .padding(.horizontal, 16).padding(.vertical, 12)
@@ -203,7 +203,7 @@ struct PaymentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(topChoice == .card ? Color(hex: "C8860A").opacity(0.35) : Color.clear, lineWidth: 1.5)
+                .strokeBorder(topChoice == .card ? Color.glowzaGoldDark.opacity(0.35) : Color.clear, lineWidth: 1.5)
         )
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
@@ -275,7 +275,7 @@ struct PaymentView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(topChoice == .applePay ? Color(hex: "C8860A").opacity(0.35) : Color.clear, lineWidth: 1.5)
+                    .strokeBorder(topChoice == .applePay ? Color.glowzaGoldDark.opacity(0.35) : Color.clear, lineWidth: 1.5)
             )
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
         }
@@ -315,7 +315,7 @@ struct PaymentView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(topChoice == .googlePay ? Color(hex: "C8860A").opacity(0.35) : Color.clear, lineWidth: 1.5)
+                    .strokeBorder(topChoice == .googlePay ? Color.glowzaGoldDark.opacity(0.35) : Color.clear, lineWidth: 1.5)
             )
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
         }
@@ -337,7 +337,7 @@ struct PaymentView: View {
                     .font(.system(size: 16, weight: .bold)).foregroundColor(Color.glowzaTextPrimary)
                 Spacer()
                 Text("LKR \(Int(total))")
-                    .font(.system(size: 20, weight: .bold)).foregroundColor(Color(hex: "C8860A"))
+                    .font(.system(size: 20, weight: .bold)).foregroundColor(Color.glowzaGoldDark)
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
         }
@@ -350,14 +350,14 @@ struct PaymentView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 12))
-                .foregroundColor(Color(hex: "C8860A").opacity(0.7))
+                .foregroundColor(Color.glowzaGoldDark.opacity(0.7))
                 .frame(width: 18)
             Text(label)
                 .font(.system(size: 13)).foregroundColor(Color.glowzaSubtext)
             Spacer()
             Text(value)
                 .font(.system(size: 13, weight: highlight ? .bold : .medium))
-                .foregroundColor(highlight ? Color(hex: "C8860A") : Color.glowzaTextPrimary)
+                .foregroundColor(highlight ? Color.glowzaGoldDark : Color.glowzaTextPrimary)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
     }
@@ -370,12 +370,12 @@ struct PaymentView: View {
             VStack(spacing: 24) {
                 ZStack {
                     Circle()
-                        .stroke(Color(hex: "E5A820").opacity(0.2), lineWidth: 6)
+                        .stroke(Color.glowzaGold.opacity(0.2), lineWidth: 6)
                         .frame(width: 80, height: 80)
                     Circle()
                         .trim(from: 0, to: 0.7)
                         .stroke(
-                            LinearGradient(colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                            LinearGradient(colors: [Color.glowzaGold, Color.glowzaGoldDark],
                                            startPoint: .leading, endPoint: .trailing),
                             style: StrokeStyle(lineWidth: 6, lineCap: .round)
                         )
@@ -384,7 +384,7 @@ struct PaymentView: View {
                         .modifier(SpinModifier())
                     Image(systemName: "lock.fill")
                         .font(.system(size: 26))
-                        .foregroundColor(Color(hex: "C8860A"))
+                        .foregroundColor(Color.glowzaGoldDark)
                 }
                 VStack(spacing: 6) {
                     Text("Processing Payment")
@@ -406,11 +406,11 @@ struct PaymentView: View {
     private func radioCircle(selected: Bool) -> some View {
         ZStack {
             Circle()
-                .strokeBorder(selected ? Color(hex: "C8860A") : Color(hex: "C8C0B4"),
+                .strokeBorder(selected ? Color.glowzaGoldDark : Color.glowzaBorder,
                               lineWidth: selected ? 2 : 1.5)
                 .frame(width: 22, height: 22)
             if selected {
-                Circle().fill(Color(hex: "C8860A")).frame(width: 11, height: 11)
+                Circle().fill(Color.glowzaGoldDark).frame(width: 11, height: 11)
             }
         }
     }
@@ -498,7 +498,7 @@ private struct AddCardSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "FAF7F2").ignoresSafeArea()
+                Color.glowzaBackground.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 20) {
 
@@ -535,15 +535,15 @@ private struct AddCardSheet: View {
                         // Security note
                         HStack(spacing: 8) {
                             Image(systemName: "lock.shield.fill")
-                                .foregroundColor(Color(hex: "27AE60"))
+                                .foregroundColor(Color.glowzaSuccess)
                                 .font(.system(size: 13))
                             Text("Your card details are encrypted and never stored on our servers.")
                                 .font(.system(size: 11))
-                                .foregroundColor(Color(hex: "8A8A8A"))
+                                .foregroundColor(Color.glowzaSubtext)
                                 .lineSpacing(3)
                         }
                         .padding(12)
-                        .background(Color(hex: "27AE60").opacity(0.07))
+                        .background(Color.glowzaSuccess.opacity(0.07))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         .padding(.horizontal, 20)
 
@@ -560,7 +560,7 @@ private struct AddCardSheet: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity).frame(height: 52)
                             .background(
-                                LinearGradient(colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
+                                LinearGradient(colors: [Color.glowzaGold, Color.glowzaGoldDark],
                                                startPoint: .leading, endPoint: .trailing)
                                     .opacity(isValid ? 1 : 0.45)
                             )
@@ -579,7 +579,7 @@ private struct AddCardSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
-                        .foregroundColor(Color(hex: "C8860A"))
+                        .foregroundColor(Color.glowzaGoldDark)
                 }
             }
         }
@@ -652,22 +652,22 @@ private struct AddCardSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(hex: "8A8A8A"))
+                .foregroundColor(Color.glowzaSubtext)
             HStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "C8860A"))
+                    .foregroundColor(Color.glowzaGoldDark)
                     .frame(width: 18)
                 field()
                     .font(.system(size: 15))
-                    .foregroundColor(Color(hex: "1A1A1A"))
+                    .foregroundColor(Color.glowzaTextPrimary)
             }
             .padding(.horizontal, 14).padding(.vertical, 12)
             .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Color(hex: "E5A820").opacity(0.3), lineWidth: 1)
+                    .strokeBorder(Color.glowzaGold.opacity(0.3), lineWidth: 1)
             )
         }
     }

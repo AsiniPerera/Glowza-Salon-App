@@ -42,22 +42,22 @@ struct ProfileView: View {
     @State private var twoFactorEnabled = true
     @State private var loginNotificationsEnabled = true
     
-    let goldColor = colorFromHex("E5A820")
-    let goldDarkColor = colorFromHex("C8860A")
-    let lightBg = colorFromHex("F5F0E8")
-    let darkBg = colorFromHex("1A1A1A")
-    let lightCard = Color.white
-    let darkCard = colorFromHex("2D2D2D")
-    let lightText = colorFromHex("1A1A1A")
-    let darkText = colorFromHex("F5F0E8")
-    let lightSubtext = colorFromHex("8A8A8A")
-    let darkSubtext = colorFromHex("C0C0C0")
-    let errorColor = colorFromHex("F44336")
-    
-    var backgroundColor: Color { isDarkModeEnabled ? darkBg : lightBg }
-    var cardBackground: Color { isDarkModeEnabled ? darkCard : lightCard }
-    var textPrimary: Color { isDarkModeEnabled ? darkText : lightText }
-    var textSecondary: Color { isDarkModeEnabled ? darkSubtext : lightSubtext }
+    var goldColor: Color    { .glowzaGold }
+    var goldDarkColor: Color { .glowzaGoldDark }
+    var lightBg: Color      { .glowzaBackground }
+    var darkBg: Color       { Color(hex: "0F1A16") }
+    var lightCard: Color    { .white }
+    var darkCard: Color     { Color(hex: "1A2A22") }
+    var lightText: Color    { .glowzaTextPrimary }
+    var darkText: Color     { Color(hex: "F0F5F3") }
+    var lightSubtext: Color { .glowzaSubtext }
+    var darkSubtext: Color  { Color(hex: "9ABFB2") }
+    var errorColor: Color   { .glowzaError }
+
+    var backgroundColor: Color  { isDarkModeEnabled ? darkBg : lightBg }
+    var cardBackground: Color   { isDarkModeEnabled ? darkCard : lightCard }
+    var textPrimary: Color      { isDarkModeEnabled ? darkText : lightText }
+    var textSecondary: Color    { isDarkModeEnabled ? darkSubtext : lightSubtext }
     
     var body: some View {
         NavigationView {
@@ -534,7 +534,7 @@ struct ProfileView: View {
                 .font(.system(size: 14, weight: .regular))
                 .foregroundColor(textPrimary)
                 .padding(12)
-                .background(isDarkModeEnabled ? colorFromHex("3D3D3D") : colorFromHex("F5F5F5"))
+                .background(isDarkModeEnabled ? Color(hex: "1A2A22") : Color.glowzaCardBg)
                 .cornerRadius(8)
         }
     }
@@ -552,7 +552,7 @@ struct ProfileView: View {
                 .font(.system(size: 14, weight: .regular))
                 .foregroundColor(textPrimary)
                 .padding(12)
-                .background(isDarkModeEnabled ? colorFromHex("3D3D3D") : colorFromHex("F5F5F5"))
+                .background(isDarkModeEnabled ? Color(hex: "1A2A22") : Color.glowzaCardBg)
                 .cornerRadius(8)
         }
     }

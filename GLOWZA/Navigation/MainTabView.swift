@@ -42,21 +42,20 @@ struct MainTabView: View {
                 }
                 .tag(4)
         }
-        .tint(Color(hex: "C8860A"))                     // active tab gold
+        .tint(Color.glowzaGold)
         .onAppear { styleTabBar() }
     }
 
     private func styleTabBar() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(Color(hex: "F5F0E8"))
+        appearance.backgroundColor = UIColor.white
 
-        // Item color
         let normalAttr: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(Color(hex: "ABABAB"))
+            .foregroundColor: UIColor(Color.glowzaTextDisabled)
         ]
         let selectedAttr: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(Color(hex: "C8860A"))
+            .foregroundColor: UIColor(Color.glowzaGold)
         ]
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttr
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttr
@@ -92,17 +91,17 @@ struct PlaceholderScreen: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "F5F0E8").ignoresSafeArea()
+            Color.glowzaBackground.ignoresSafeArea()
             VStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.system(size: 52))
-                    .foregroundColor(Color(hex: "C8860A").opacity(0.5))
+                    .foregroundColor(Color.glowzaGoldDark.opacity(0.5))
                 Text(title)
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(Color(hex: "1A1A1A"))
+                    .foregroundColor(Color.glowzaTextPrimary)
                 Text(subtitle)
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "8A8A8A"))
+                    .foregroundColor(Color.glowzaSubtext)
             }
         }
     }

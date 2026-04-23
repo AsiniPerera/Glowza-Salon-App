@@ -119,7 +119,7 @@ struct ConsentFormView: View {
                         .background(
                             LinearGradient(
                                 colors: canProceed
-                                    ? [Color(hex: "E5A820"), Color(hex: "C8860A")]
+                                    ? [Color.glowzaGold, Color.glowzaGoldDark]
                                     : [Color(hex: "CCCCCC"), Color(hex: "BBBBBB")],
                                 startPoint: .leading, endPoint: .trailing
                             )
@@ -141,7 +141,7 @@ struct ConsentFormView: View {
                     .foregroundColor(Color.glowzaTextPrimary.opacity(0.75))
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)
-                    .background(Color(hex: "EEEBE4"))
+                    .background(Color.glowzaCardBg)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
 
@@ -158,7 +158,7 @@ struct ConsentFormView: View {
                     }
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
-                    .background(Color(hex: "FFF8E7"))
+                    .background(Color.glowzaCardBg)
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
                     .transition(.opacity)
                 }
@@ -185,7 +185,7 @@ struct ConsentFormView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 20).padding(.vertical, 14)
-                .background(Color(hex: "FFF8E7"))
+                .background(Color.glowzaCardBg)
                 .overlay(Rectangle().fill(Color.glowzaGoldDark).frame(height: 3), alignment: .bottom)
                 .transition(.move(edge: .top).combined(with: .opacity))
                 .zIndex(10)
@@ -226,7 +226,7 @@ struct ConsentFormView: View {
             )
         }
         .padding(18)
-        .background(Color(hex: "FAF7F0"))
+        .background(Color.glowzaBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)

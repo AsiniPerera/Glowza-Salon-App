@@ -85,6 +85,9 @@ extension Color {
     static let glowzaSubtext = Color(hex: "8A8A8A")
     static let glowzaTextDisabled = Color(hex: "ABABAB")
     
+    // Border / Divider
+    static let glowzaBorder = Color(hex: "E0D5C5")
+
     // State Colors
     static let glowzaSuccess = Color(hex: "4CAF50")
     static let glowzaWarning = Color(hex: "FF9800")
