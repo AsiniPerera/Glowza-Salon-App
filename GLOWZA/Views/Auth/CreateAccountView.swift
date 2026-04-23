@@ -329,9 +329,24 @@ struct CreateAccountView: View {
 
         showError = false
         isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            isLoading = false
-            withAnimation { isAuthenticated = true }
+        Task {
+            do {
+                try await AuthService.shared.signUp(
+                    fullName: fullName,
+                    email:    email,
+                    phone:    phone,
+                    password: password
+                )
+                await MainActor.run {
+                    isLoading = false
+                    withAnimation { isAuthenticated = true }
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    fail(error.localizedDescription)
+                }
+            }
         }
     }
 

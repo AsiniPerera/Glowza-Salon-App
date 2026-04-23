@@ -280,9 +280,20 @@ struct SignInView: View {
         guard !password.isEmpty else { errorMsg = "Please enter your password."; showError = true; return }
         showError = false
         isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            isLoading = false
-            withAnimation { isAuthenticated = true }
+        Task {
+            do {
+                try await AuthService.shared.signIn(email: email, password: password)
+                await MainActor.run {
+                    isLoading = false
+                    withAnimation { isAuthenticated = true }
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMsg  = error.localizedDescription
+                    showError = true
+                }
+            }
         }
     }
 }
