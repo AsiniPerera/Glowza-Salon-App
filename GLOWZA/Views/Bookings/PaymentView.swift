@@ -1,6 +1,11 @@
 import SwiftUI
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "FF006E")
+
+private enum PaymentStage {
+    case summary
+    case method
+}
 
 struct PaymentView: View {
 
@@ -8,7 +13,9 @@ struct PaymentView: View {
     let onPay: (Booking) -> Void
     let onBack: () -> Void
 
+    @State private var stage: PaymentStage = .summary
     @State private var isPaying = false
+    @State private var selectedSavedCard = "**** 2345"
 
     private var service: SalonService { draft.service ?? draft.salon.services[0] }
     private var subtotal: Double { service.price }
@@ -16,217 +23,244 @@ struct PaymentView: View {
     private var total: Double { subtotal + tax }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack(spacing: 12) {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A"))
-                        .frame(width: 36, height: 36)
-                        .background(Color(hex: "F5F5F5"))
-                        .clipShape(Circle())
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Payment").font(.system(size: 17, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                    Text("Step 3 of 3").font(.system(size: 11)).foregroundColor(Color(hex: "8A8A8A"))
-                }
-                Spacer()
-                Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 18)).foregroundColor(brand.opacity(0.7))
-            }
-            .padding(.horizontal, 20).padding(.vertical, 14)
-            .background(Color.white)
-
-            // Progress bar (3/3 filled)
-            HStack(spacing: 4) {
-                ForEach(0..<3, id: \.self) { _ in
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(brand).frame(height: 4)
-                }
-            }
-            .padding(.horizontal, 20)
-
-            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1)
+        ZStack(alignment: .bottom) {
+            Color(hex: "F1F1F1").ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 16) {
-                    summaryCard
-                    paymentMethodSection
-                    priceBreakdownCard
-                    securityNote
-                    Spacer().frame(height: 90)
-                }
-                .padding(.horizontal, 20).padding(.top, 20)
-            }
-
-            // Pay button
-            bottomBar
-        }
-        .background(Color.white.ignoresSafeArea())
-    }
-
-    // MARK: - Summary Card
-    private var summaryCard: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(brand.opacity(0.10)).frame(width: 54, height: 54)
-                    Image(systemName: service.icon)
-                        .font(.system(size: 22)).foregroundColor(brand)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(service.name)
-                        .font(.system(size: 15, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                    Text(draft.salon.name)
-                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                }
-                Spacer()
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 22)).foregroundColor(brand)
-            }
-            .padding(16)
-
-            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1)
-
-            VStack(spacing: 12) {
-                summaryRow(icon: "calendar",      label: "Date",     value: draft.date.formatted(date: .long, time: .omitted))
-                summaryRow(icon: "clock.fill",    label: "Time",     value: draft.timeSlot)
-                summaryRow(icon: "timer",         label: "Duration", value: service.duration)
-                summaryRow(icon: "mappin.fill",   label: "Location", value: draft.salon.location)
-            }
-            .padding(16)
-        }
-        .background(Color(hex: "F9F9F9"))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-
-    private func summaryRow(icon: String, label: String, value: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon).font(.system(size: 13)).foregroundColor(brand).frame(width: 20)
-            Text(label).font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
-            Spacer()
-            Text(value).font(.system(size: 13, weight: .medium)).foregroundColor(Color(hex: "1A1A1A"))
-        }
-    }
-
-    // MARK: - Payment Method
-    private var paymentMethodSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Payment Method")
-                .font(.system(size: 16, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-
-            ForEach(PaymentMethodType.allCases, id: \.self) { method in
-                Button(action: { draft.paymentMethod = method }) {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle()
-                                .fill(draft.paymentMethod == method ? brand : Color(hex: "F5F5F5"))
-                                .frame(width: 42, height: 42)
-                            Image(systemName: method.icon)
-                                .font(.system(size: 17))
-                                .foregroundColor(draft.paymentMethod == method ? .white : Color(hex: "8A8A8A"))
-                        }
-                        Text(method.rawValue)
-                            .font(.system(size: 14, weight: draft.paymentMethod == method ? .semibold : .regular))
-                            .foregroundColor(Color(hex: "1A1A1A"))
-                        Spacer()
-                        // Radio dot
-                        ZStack {
-                            Circle().stroke(Color(hex: "CCCCCC"), lineWidth: 1.5).frame(width: 22, height: 22)
-                            if draft.paymentMethod == method {
-                                Circle().fill(brand).frame(width: 13, height: 13)
-                            }
-                        }
+                VStack(alignment: .leading, spacing: 18) {
+                    header
+                    if stage == .summary {
+                        bookingSummaryContent
+                    } else {
+                        paymentMethodContent
                     }
-                    .padding(14)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(draft.paymentMethod == method ? brand : Color(hex: "EBEBEB"), lineWidth: 1.5)
-                    )
+                    Spacer().frame(height: 110)
                 }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    // MARK: - Price Breakdown
-    private var priceBreakdownCard: some View {
-        VStack(spacing: 12) {
-            priceRow(label: "Service Fee", value: "LKR \(Int(subtotal))")
-            priceRow(label: "Tax (10%)", value: "LKR \(Int(tax))")
-            Rectangle().fill(Color(hex: "EBEBEB")).frame(height: 1)
-            HStack {
-                Text("Total")
-                    .font(.system(size: 16, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                Spacer()
-                Text("LKR \(Int(total))")
-                    .font(.system(size: 18, weight: .bold)).foregroundColor(brand)
-            }
-        }
-        .padding(16)
-        .background(Color(hex: "F9F9F9"))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-
-    private func priceRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label).font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
-            Spacer()
-            Text(value).font(.system(size: 13, weight: .medium)).foregroundColor(Color(hex: "1A1A1A"))
-        }
-    }
-
-    // MARK: - Security Note
-    private var securityNote: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "lock.shield.fill")
-                .font(.system(size: 16)).foregroundColor(brand)
-            Text("Your payment is encrypted and processed securely. We never store your card details.")
-                .font(.system(size: 12)).foregroundColor(Color(hex: "6B6B6B")).lineSpacing(3)
-        }
-        .padding(14)
-        .background(Color(hex: "FFF0F4"))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    // MARK: - Bottom Bar
-    private var bottomBar: some View {
-        VStack(spacing: 0) {
-            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1)
-            VStack(spacing: 8) {
-                Button(action: processPayment) {
-                    HStack(spacing: 10) {
-                        if isPaying {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: "lock.fill").font(.system(size: 14))
-                            Text("Pay LKR \(Int(total))")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 52)
-                    .background(brand)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: brand.opacity(0.28), radius: 10, x: 0, y: 4)
-                }
-                .disabled(isPaying)
                 .padding(.horizontal, 20)
-
-                HStack(spacing: 5) {
-                    Image(systemName: "lock.fill").font(.system(size: 10)).foregroundColor(brand.opacity(0.6))
-                    Text("SSL Encrypted · 100% Secure").font(.system(size: 11)).foregroundColor(Color(hex: "ABABAB"))
-                }
+                .padding(.top, 14)
             }
-            .padding(.vertical, 16).padding(.bottom, 8)
-            .background(Color.white)
+
+            bottomButton
         }
     }
 
-    // MARK: - Process Payment
+    private var header: some View {
+        HStack {
+            Button(action: {
+                if stage == .summary {
+                    onBack()
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) { stage = .summary }
+                }
+            }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color(hex: "5C5E65"))
+            }
+            Spacer()
+        }
+    }
+
+    private var bookingSummaryContent: some View {
+        VStack(spacing: 18) {
+            Text("Booking Summary")
+                .font(.system(size: 48, weight: .medium, design: .serif))
+                .foregroundColor(Color(hex: "1F2126"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(spacing: 10) {
+                Image("SplashLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 82, height: 62)
+                Text("GLOWZA")
+                    .font(.system(size: 20, weight: .medium, design: .serif))
+                    .tracking(2)
+                    .foregroundColor(Color(hex: "7B7D84"))
+            }
+
+            Text("THANK YOU FOR YOUR BOOKING.")
+                .font(.system(size: 27, weight: .medium))
+                .tracking(1)
+                .foregroundColor(brand)
+
+            Text("YOUR APPOINTMENT HAS BEEN\nSUCCESSFULLY SCHEDULED.")
+                .font(.system(size: 16, weight: .medium))
+                .tracking(1.3)
+                .multilineTextAlignment(.center)
+                .foregroundColor(Color(hex: "3C3F45"))
+                .frame(maxWidth: .infinity)
+
+            Text(summaryMultiline)
+                .font(.system(size: 14, weight: .medium))
+                .tracking(1)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .foregroundColor(Color(hex: "2D2F35"))
+
+            Text("PLEASE ARRIVE 10–15 MINUTES EARLY. CONTACT THE\nSALON FOR ANY CHANGES OR CANCELLATIONS. WE\nLOOK FORWARD TO SERVING YOU.")
+                .font(.system(size: 11, weight: .medium))
+                .tracking(1.3)
+                .multilineTextAlignment(.center)
+                .foregroundColor(Color(hex: "4B4E55"))
+                .frame(maxWidth: .infinity)
+                .padding(.top, 8)
+        }
+    }
+
+    private var paymentMethodContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Selected Payment Method")
+                .font(.system(size: 36, weight: .semibold, design: .rounded))
+                .foregroundColor(Color(hex: "1F2126"))
+
+            paymentOptionRow(
+                title: "Credit/ Debit Card",
+                selected: draft.paymentMethod == .card,
+                action: { draft.paymentMethod = .card }
+            )
+
+            if draft.paymentMethod == .card {
+                VStack(spacing: 14) {
+                    savedCardRow(label: "**** 2345", iconText: "◉", iconColor: .orange)
+                    savedCardRow(label: "**** 3456", iconText: "VISA", iconColor: Color(hex: "1554D1"))
+                    Button(action: {}) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .medium))
+                            Text("Add Card")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(Color(hex: "0E58E8"))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+
+            paymentOptionRow(
+                title: "Apple Pay",
+                selected: draft.paymentMethod == .online,
+                trailingText: "Pay",
+                action: { draft.paymentMethod = .online }
+            )
+
+            paymentOptionRow(
+                title: "Google Pay",
+                selected: draft.paymentMethod == .cash,
+                trailingText: "GPay",
+                action: { draft.paymentMethod = .cash }
+            )
+        }
+    }
+
+    private func paymentOptionRow(
+        title: String,
+        selected: Bool,
+        trailingText: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack {
+                Circle()
+                    .stroke(selected ? brand : Color(hex: "D1D2D7"), lineWidth: 2)
+                    .frame(width: 22, height: 22)
+                    .overlay {
+                        if selected {
+                            Circle().fill(brand).frame(width: 10, height: 10)
+                        }
+                    }
+                Text(title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "2A2C32"))
+                Spacer()
+                if let trailingText {
+                    Text(trailingText)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "2A2C32"))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(hex: "F6F6F8"))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func savedCardRow(label: String, iconText: String, iconColor: Color) -> some View {
+        Button(action: { selectedSavedCard = label }) {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.white)
+                    .frame(width: 44, height: 30)
+                    .overlay {
+                        Text(iconText)
+                            .font(.system(size: iconText == "VISA" ? 12 : 14, weight: .bold))
+                            .foregroundColor(iconColor)
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(hex: "D9DADE"), lineWidth: 1))
+                Text(label)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "2A2C32"))
+            Spacer()
+                Circle()
+                    .stroke(selectedSavedCard == label ? brand : Color(hex: "D0D1D5"), lineWidth: 2)
+                    .frame(width: 22, height: 22)
+                    .overlay {
+                        if selectedSavedCard == label {
+                            Circle().fill(brand).frame(width: 10, height: 10)
+                        }
+                    }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var bottomButton: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                if stage == .summary {
+                    withAnimation(.easeInOut(duration: 0.2)) { stage = .method }
+                } else {
+                    processPayment()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    if isPaying {
+                        ProgressView().tint(.white)
+                    } else {
+                        Text(stage == .summary ? "Pay Securely" : "Pay Now")
+                            .font(.system(size: 36, weight: .semibold, design: .rounded))
+                    }
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 70)
+                .background(brand)
+                .clipShape(Capsule())
+            }
+            .disabled(isPaying)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .background(Color(hex: "F1F1F1"))
+        }
+    }
+
+    private var summaryMultiline: String {
+        let date = draft.date.formatted(.dateTime.day().month(.wide).year())
+        let time = draft.timeSlot.isEmpty ? "09:30 AM" : draft.timeSlot
+        return """
+        CLIENT NAME: ASINI PERERA
+        SERVICE/TREATMENT: \(service.name.uppercased())
+        SALON: \(draft.salon.name.uppercased())
+        DATE & TIME: \(date.uppercased()), \(time)
+        SPECIALIST: NADEESHA SILVA
+        TOTAL COST: LKR \(Int(total))
+        """
+    }
+
     private func processPayment() {
         isPaying = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {

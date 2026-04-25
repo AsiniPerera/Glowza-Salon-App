@@ -19,32 +19,26 @@ struct ConsentFormView: View {
 
     @Binding var draft: BookingDraft
     let onConfirm: () -> Void
-    let onBack:    () -> Void
+    let onBack: () -> Void
 
-    @State private var canvasView          = PKCanvasView()
-    @State private var iAcknowledge        = false
-    @State private var isExpanded          = false
+    @State private var canvasView = PKCanvasView()
 
-    private let dark   = Color(hex: "1A1A1A")
-    private let accent = Color(hex: "AF1C47")
-    private let bg     = Color.white
-
-    private var subtotal: Double { draft.service?.price ?? 0 }
-    private var taxes:    Double { subtotal * 0.10 }
-    private var total:    Double { subtotal + taxes }
+    private let dark = Color(hex: "1F2126")
+    private let accent = Color(hex: "FF006E")
     private var hasSignature: Bool { !canvasView.drawing.strokes.isEmpty }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            bg.ignoresSafeArea()
+            Color(hex: "F1F1F1").ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 16) {
                     header
-                    consentPreviewSection
+                    Text("Final Consent Form")
+                        .font(.system(size: 52, weight: .medium, design: .serif))
+                        .foregroundColor(dark)
+                        .padding(.horizontal, 20)
                     signatureSection
-                    consentWarning
-                    paymentSummarySection
                     Spacer().frame(height: 110)
                 }
                 .padding(.top, 16)
@@ -56,343 +50,99 @@ struct ConsentFormView: View {
         .navigationBarHidden(true)
     }
 
-    // MARK: - Header
     private var header: some View {
-        HStack(spacing: 12) {
+        HStack {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(dark)
-                    .frame(width: 36, height: 36)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Digital Consent & Payment")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(dark)
-                HStack(spacing: 4) {
-                    Image(systemName: "shield.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(accent)
-                    Text("Secure & Protected")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(accent)
-                }
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Color(hex: "5F6168"))
             }
             Spacer()
         }
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Consent Preview Card
-    private var consentPreviewSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("CONSENT FORM PREVIEW")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .tracking(1)
-                .padding(.horizontal, 20)
-
-            VStack(alignment: .leading, spacing: 16) {
-                // Header
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(Color(hex: "F5EDE8"))
-                            .frame(width: 44, height: 44)
-                        Text("G+")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(accent)
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Treatment Consent Form")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(dark)
-                        Text("Glowza Aesthetic Studio")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "8A8A8A"))
-                    }
-                    Spacer()
-                    Button(action: {}) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "doc.fill")
-                                .font(.system(size: 11))
-                            Text("PDF")
-                                .font(.system(size: 11, weight: .semibold))
-                        }
-                        .foregroundColor(accent)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(hex: "F5EDE8"))
-                        .cornerRadius(8)
-                    }
-                }
-
-                // Sections
-                consentSection(
-                    title: "Purpose of Treatment",
-                    body: "This treatment is designed to improve skin texture, tone, and overall radiance. Results may vary and multiple sessions may be recommended."
-                )
-
-                if isExpanded {
-                    consentSection(
-                        title: "Potential Risks & Side Effects",
-                        body: "Minor redness, swelling, or sensitivity may occur post-treatment. These effects are temporary and typically subside within 24–48 hours."
-                    )
-                    consentSection(
-                        title: "Aftercare & Recommendations",
-                        body: "Avoid sun exposure for 48 hours. Apply SPF 50 daily. Do not use exfoliants or retinoids for 72 hours post-treatment."
-                    )
-                }
-
-                Button(action: { withAnimation { isExpanded.toggle() } }) {
-                    HStack(spacing: 4) {
-                        Text(isExpanded ? "Collapse" : "View full document")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(accent)
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(accent)
-                    }
-                }
-            }
-            .padding(18)
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-            .padding(.horizontal, 20)
-        }
-    }
-
-    private func consentSection(title: String, body: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(dark)
-            Text(body)
-                .font(.system(size: 12))
-                .foregroundColor(Color(hex: "5A4A42"))
-                .lineSpacing(4)
-        }
-    }
-
-    // MARK: - Signature Section
     private var signatureSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("SIGNATURE")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .tracking(1)
-                .padding(.horizontal, 20)
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("TREATMENT CONSENT FORM")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(dark)
+                    .tracking(3)
+                Text("REF: GZ-2024-089")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "666A72"))
+                    .tracking(1.6)
+                Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .foregroundColor(Color(hex: "4A4C52"))
+                    .lineSpacing(6)
+            }
+            .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Sign below to confirm")
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "8A8A8A"))
+                    Text("ELECTRONIC SIGNATURE")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(dark)
+                        .tracking(2.2)
                     Spacer()
                     Button(action: { canvasView.drawing = PKDrawing() }) {
                         Text("Clear")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Color(hex: "E05A4B"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: "777A81"))
+                            .tracking(1)
                     }
                 }
 
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "FAFAFA"))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(hex: "E8E0DC"), lineWidth: 1)
-                        )
-                        .frame(height: 120)
+                    Rectangle()
+                        .fill(Color(hex: "F7F7F7"))
+                        .overlay(Rectangle().stroke(Color(hex: "C4C4C7"), lineWidth: 1))
+                        .frame(height: 160)
 
                     if !hasSignature {
-                        Text("Your Signature")
-                            .font(.system(size: 20, design: .serif))
-                            .foregroundColor(Color(hex: "D0C8C0"))
+                        VStack(spacing: 12) {
+                            Text("Sign here")
+                                .font(.system(size: 48, weight: .regular, design: .serif))
+                                .foregroundColor(Color(hex: "D0D0D3"))
                             .italic()
+                            Rectangle()
+                                .fill(Color(hex: "D6D6D9"))
+                                .frame(width: 220, height: 1)
+                        }
                     }
 
                     SignatureCanvasView(canvasView: $canvasView)
-                        .frame(height: 120)
-                        .cornerRadius(12)
-                }
-
-                HStack(spacing: 6) {
-                    Image(systemName: "shield.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(accent)
-                    Text("I confirm that I have read and understood the consent form and agree to the treatment.")
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: "8A8A8A"))
+                        .frame(height: 160)
                 }
             }
-            .padding(16)
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-            .padding(.horizontal, 20)
         }
-    }
-
-    // MARK: - Consent Warning
-    private var consentWarning: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "shield.fill")
-                .font(.system(size: 16))
-                .foregroundColor(Color(hex: "AF1C47"))
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Consent must be signed before payment")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color(hex: "7A5C00"))
-                Text("Please sign the consent form above to proceed.")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "9A7A30"))
-            }
-        }
-        .padding(14)
-        .background(Color(hex: "FFF8E7"))
-        .cornerRadius(12)
+        .padding(18)
+        .background(Color(hex: "E5E2E2"))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Payment Summary
-    private var paymentSummarySection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("PAYMENT SUMMARY")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .tracking(1)
-                .padding(.horizontal, 20)
-
-            VStack(spacing: 14) {
-                if let service = draft.service {
-                    HStack(spacing: 12) {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(hex: "FFF0F4"))
-                            .frame(width: 52, height: 52)
-                            .overlay(
-                                Image(systemName: service.icon)
-                                    .font(.system(size: 20))
-                                    .foregroundColor(accent)
-                            )
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(service.name)
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(dark)
-                            Text("Duration: \(service.duration)")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "8A8A8A"))
-                        }
-                        Spacer()
-                        Text("LKR \(Int(service.price))")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(dark)
-                    }
-
-                    Divider()
-                }
-
-                paymentRow("Subtotal",    amount: subtotal, bold: false)
-                paymentRow("Taxes & Fees (10%)", amount: taxes,    bold: false)
-
-                Divider()
-
-                paymentRow("Total",       amount: total,    bold: true)
-            }
-            .padding(18)
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-            .padding(.horizontal, 20)
-        }
-    }
-
-    private func paymentRow(_ label: String, amount: Double, bold: Bool) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: bold ? 15 : 13, weight: bold ? .bold : .regular))
-                .foregroundColor(bold ? dark : Color(hex: "8A8A8A"))
-            Spacer()
-            Text("LKR \(String(format: "%.0f", amount))")
-                .font(.system(size: bold ? 16 : 13, weight: bold ? .bold : .regular))
-                .foregroundColor(bold ? accent : dark)
-        }
-    }
-
-    // MARK: - Bottom Bar
     private var bottomBar: some View {
-        let canProceed = hasSignature
-        return VStack(spacing: 10) {
+        VStack(spacing: 0) {
             Button(action: {
-                if canProceed {
-                    draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
-                    onConfirm()
-                }
+                guard hasSignature else { return }
+                draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
+                onConfirm()
             }) {
-                HStack(spacing: 8) {
-                    Spacer()
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 13))
-                    Text("Pay LKR \(String(format: "%.0f", total)) Securely")
-                        .font(.system(size: 16, weight: .bold))
-                    Spacer()
-                }
-                .foregroundColor(.white)
-                .padding(.vertical, 16)
-                .background(canProceed ? Color(hex: "1A1A1A") : Color(hex: "A0A0A0"))
-                .cornerRadius(14)
+                Text("Next")
+                    .font(.system(size: 38, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 70)
+                    .background(hasSignature ? accent : Color(hex: "BFC2C8"))
+                    .clipShape(Capsule())
             }
-            .disabled(!canProceed)
-
-            HStack(spacing: 5) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-                Text("100% Secure Payments")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-            }
-
-            HStack(spacing: 12) {
-                Button(action: {}) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 12))
-                        Text("Download Receipt")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundColor(dark)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: "E8E0DC"), lineWidth: 1))
-                }
-                Button(action: {}) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "calendar.badge.plus")
-                            .font(.system(size: 12))
-                        Text("View Booking Details")
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundColor(dark)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: "E8E0DC"), lineWidth: 1))
-                }
-            }
+            .disabled(!hasSignature)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .background(Color(hex: "F1F1F1"))
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(
-            Color.white
-                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: -4)
-        )
     }
 }

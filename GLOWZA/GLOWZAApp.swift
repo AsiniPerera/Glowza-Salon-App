@@ -38,9 +38,9 @@ struct RootView: View {
 
             case .splash:
                 SplashView(
-                    onLogin:   { withAnimation { screen = .login } },
-                    onCreate:  { withAnimation { screen = .createAccount } },
-                    onFaceID:  { withAnimation { isAuthenticated = true } }
+                    onLogin:  { withAnimation { screen = .login } },
+                    onCreate: { withAnimation { screen = .createAccount } },
+                    onGuest:  { withAnimation { screen = .onboarding } }
                 )
                 .transition(.opacity)
                 .zIndex(5)
@@ -56,7 +56,8 @@ struct RootView: View {
             case .login:
                 SignInView(
                     onSignIn:        { withAnimation { isAuthenticated = true } },
-                    onCreateAccount: { withAnimation { screen = .createAccount } }
+                    onCreateAccount: { withAnimation { screen = .createAccount } },
+                    onBack:          { withAnimation { screen = .splash } }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .zIndex(3)
@@ -64,7 +65,8 @@ struct RootView: View {
             case .createAccount:
                 CreateAccountView(
                     onCreateAccount: { withAnimation { isAuthenticated = true } },
-                    onSignIn:        { withAnimation { screen = .login } }
+                    onSignIn:        { withAnimation { screen = .login } },
+                    onBack:          { withAnimation { screen = .splash } }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .zIndex(3)

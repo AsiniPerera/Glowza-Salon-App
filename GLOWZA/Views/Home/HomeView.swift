@@ -1,7 +1,7 @@
 import SwiftUI
 import MapKit
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "FF006E")
 
 // MARK: - Models
 struct ServiceCategory: Identifiable, Hashable {
@@ -35,53 +35,26 @@ struct SalonAnnotation: Identifiable, Hashable {
 // MARK: - HomeView
 struct HomeView: View {
 
-    @State private var searchText        = ""
-    @State private var selectedFilter    = "All"
-    @State private var selectedServiceID: UUID? = nil
-    @State private var showMapSheet      = false
+    @State private var searchText = ""
     @State private var selectedSalonName: String? = nil
-    @State private var promoIndex        = 0
-
-    private let filters = ["All", "Nearest", "Top Rated", "Open Now"]
-
-    private let promos: [(title: String, sub: String, icon: String)] = [
-        ("Get 20% Off Your First Visit",   "Book any treatment today",    "sparkles"),
-        ("Summer Glow Package",            "Up to 40% off skin care",     "sun.max.fill"),
-        ("Refer a Friend & Save",          "Earn LKR 500 credit",         "person.2.fill"),
-    ]
+    @State private var showMapSheet = false
 
     private let services: [ServiceCategory] = [
-        .init(name: "Skin Care",     icon: "face.smiling",       category: "Skin"),
-        .init(name: "Chemical Peel", icon: "wand.and.sparkles",  category: "Skin"),
-        .init(name: "Laser Hair",    icon: "sun.max",            category: "Hair"),
-        .init(name: "Hair Care",     icon: "leaf",               category: "Hair"),
-        .init(name: "Nails",         icon: "hand.raised.fill",   category: "Nails"),
-        .init(name: "Fillers",       icon: "syringe",            category: "Aesthetic"),
-        .init(name: "Botox",         icon: "cross.case.fill",    category: "Aesthetic"),
-        .init(name: "Dark Circle",   icon: "eye.fill",           category: "Aesthetic"),
+        .init(name: "Skin Care", icon: "leaf", category: "Skin"),
+        .init(name: "Chemical\nPeel", icon: "atom", category: "Skin"),
+        .init(name: "Laser Hair", icon: "bolt", category: "Hair"),
+        .init(name: "Hair Care", icon: "scissors", category: "Hair")
     ]
 
     private let allSalons: [SalonPreview] = [
-        .init(name: "Haley Avenue",      location: "Moratuwa, Colombo",     distance: "2.0 km", rating: 4.7, reviews: 312, score: 0.95,
+        .init(name: "Haley Avenue", location: "Moratuwa, Colombo", distance: "2 km", rating: 4.7, reviews: 312, score: 0.95,
               coordinate: CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820), imageName: "Salon1"),
-        .init(name: "Glow Studio",       location: "Moratuwa, Colombo",     distance: "3.5 km", rating: 4.6, reviews: 198, score: 0.88,
-              coordinate: CLLocationCoordinate2D(latitude: 6.7713, longitude: 79.8783), imageName: "salon2"),
-        .init(name: "Luxe Aesthetics",   location: "Dehiwala, Colombo",     distance: "5.0 km", rating: 4.5, reviews: 245, score: 0.82,
+        .init(name: "Haley Avenue", location: "Moratuwa, Colombo", distance: "2 km", rating: 4.7, reviews: 312, score: 0.95,
+              coordinate: CLLocationCoordinate2D(latitude: 6.7713, longitude: 79.8783), imageName: "Salon1"),
+        .init(name: "Haley Avenue", location: "Moratuwa, Colombo", distance: "2 km", rating: 4.7, reviews: 312, score: 0.95,
               coordinate: CLLocationCoordinate2D(latitude: 6.8490, longitude: 79.8684), imageName: "Salon1"),
-        .init(name: "Velvet Touch",      location: "Nugegoda, Colombo",     distance: "6.2 km", rating: 4.4, reviews: 131, score: 0.78,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8696, longitude: 79.8999), imageName: "salon2"),
-        .init(name: "Aura Beauty Bar",   location: "Colombo 03",            distance: "8.1 km", rating: 4.8, reviews: 420, score: 0.97,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8935, longitude: 79.8534), imageName: "Salon1"),
-        .init(name: "Silk & Shine",      location: "Battaramulla, Colombo", distance: "4.3 km", rating: 4.9, reviews: 287, score: 0.93,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8901, longitude: 79.8812), imageName: "salon2"),
-        .init(name: "Prime Beauty",      location: "Wattala, Colombo",      distance: "7.8 km", rating: 4.3, reviews: 165, score: 0.75,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8623, longitude: 79.8567), imageName: "Salon1"),
-        .init(name: "Elegance Salon",    location: "Malabe, Colombo",       distance: "9.2 km", rating: 4.6, reviews: 276, score: 0.86,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8734, longitude: 79.9234), imageName: "salon2"),
-        .init(name: "Crystal Beauty",    location: "Colombo 04",            distance: "6.5 km", rating: 4.7, reviews: 354, score: 0.92,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8845, longitude: 79.8645), imageName: "Salon1"),
-        .init(name: "Radiant Aesthetic", location: "Galle Road, Colombo",   distance: "3.2 km", rating: 4.8, reviews: 398, score: 0.96,
-              coordinate: CLLocationCoordinate2D(latitude: 6.8556, longitude: 79.8734), imageName: "salon2"),
+        .init(name: "Haley Avenue", location: "Moratuwa, Colombo", distance: "2 km", rating: 4.7, reviews: 312, score: 0.95,
+              coordinate: CLLocationCoordinate2D(latitude: 6.8696, longitude: 79.8999), imageName: "Salon1")
     ]
 
     private var filteredSalons: [SalonPreview] {
@@ -89,33 +62,28 @@ struct HomeView: View {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.location.localizedCaseInsensitiveContains(searchText)
         }
-        if let sid = selectedServiceID,
-           let cat = services.first(where: { $0.id == sid })?.category {
-            let names = Set(
-                SalonCatalog.shared.salons
-                    .filter { $0.services.contains { $0.category == cat } }
-                    .map { $0.name }
-            )
-            result = result.filter { names.contains($0.name) }
-        }
-        switch selectedFilter {
-        case "Nearest":   return result.sorted { $0.distance < $1.distance }
-        case "Top Rated": return result.sorted { $0.rating > $1.rating }
-        default:          return result
-        }
+        return result
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.white.ignoresSafeArea()
+                Color(hex: "F1F1F1").ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
-                        topBar.padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 16)
-                        searchRow.padding(.horizontal, 20).padding(.bottom, 20)
-                        promoCarousel.padding(.bottom, 28)
-                        servicesSection.padding(.horizontal, 20).padding(.bottom, 28)
-                        featuredSection.padding(.bottom, 32)
+                        topBar
+                            .padding(.horizontal, 24)
+                            .padding(.top, 18)
+                            .padding(.bottom, 18)
+                        searchBar
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 20)
+                        servicesSection
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 22)
+                        nearbySection
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 24)
                     }
                 }
             }
@@ -134,300 +102,162 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Top Bar
+    // MARK: - Top Bar (as design)
     private var topBar: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle().fill(brand.opacity(0.10)).frame(width: 44, height: 44)
-                Image(systemName: "person.fill")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(brand)
-            }
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(hex: "9FD8CE"))
+                .frame(width: 38, height: 38)
+                .overlay {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(Color(hex: "3E4A50"))
+                }
+
             VStack(alignment: .leading, spacing: 2) {
-                Text("Hello 👋").font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                Text("Asini Perera").font(.system(size: 17, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
+                Text("Welcome")
+                    .font(.system(size: 30, weight: .regular, design: .rounded))
+                    .foregroundColor(Color(hex: "1D1F24"))
+                Text("Alexandra")
+                    .font(.system(size: 34, weight: .medium, design: .rounded))
+                    .foregroundColor(Color(hex: "1D1F24"))
             }
+
             Spacer()
-            Button(action: {}) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: "bell")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Color(hex: "1A1A1A"))
-                    Circle().fill(brand).frame(width: 8, height: 8).offset(x: 2, y: -2)
-                }
-            }
-        }
-    }
-
-    // MARK: - Search Row
-    private var searchRow: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color(hex: "ABABAB"))
-                TextField("Search salons, services…", text: $searchText)
-                    .font(.system(size: 14))
-            }
-            .padding(.horizontal, 14)
-            .frame(height: 46)
-            .background(Color(hex: "F5F5F5"))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-
-            Button(action: { showMapSheet = true }) {
-                Image(systemName: "map")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(width: 46, height: 46)
-                    .background(brand)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
 
             Button(action: {}) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(brand)
-                    .frame(width: 46, height: 46)
-                    .background(brand.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Circle()
+                    .fill(Color(hex: "FFC4D8"))
+                    .frame(width: 42, height: 42)
+                    .overlay {
+                        Image(systemName: "bell")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(brand)
+                    }
             }
         }
     }
 
-    // MARK: - Promo Carousel
-    private var promoCarousel: some View {
-        VStack(spacing: 10) {
-            TabView(selection: $promoIndex) {
-                ForEach(promos.indices, id: \.self) { i in
-                    PromoCard(title: promos[i].title, subtitle: promos[i].sub, icon: promos[i].icon)
-                        .padding(.horizontal, 20)
-                        .tag(i)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 162)
-
-            HStack(spacing: 6) {
-                ForEach(promos.indices, id: \.self) { i in
-                    Capsule()
-                        .fill(i == promoIndex ? brand : Color(hex: "DCDCDC"))
-                        .frame(width: i == promoIndex ? 20 : 6, height: 6)
-                        .animation(.spring(response: 0.35), value: promoIndex)
-                }
-            }
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(hex: "A4A7AF"))
+            TextField("Search salons or city ...", text: $searchText)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundColor(Color(hex: "71757F"))
         }
+        .padding(.horizontal, 18)
+        .frame(height: 46)
+        .background(Color(hex: "EDEDEF"))
+        .clipShape(Capsule())
     }
 
-    // MARK: - Services
     private var servicesSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Services").font(.system(size: 18, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                Spacer()
-                Text("See All").font(.system(size: 13, weight: .semibold)).foregroundColor(brand)
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Premium Services")
+                .font(.system(size: 36, weight: .medium, design: .serif))
+                .foregroundColor(Color(hex: "1B1D21"))
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(services) { svc in
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3)) {
-                                selectedServiceID = selectedServiceID == svc.id ? nil : svc.id
+            HStack(alignment: .top, spacing: 20) {
+                ForEach(services) { service in
+                    VStack(spacing: 8) {
+                        Circle()
+                            .stroke(brand, lineWidth: 1.4)
+                            .frame(width: 62, height: 62)
+                            .overlay {
+                                Image(systemName: service.icon)
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(brand)
                             }
-                        }) {
-                            VStack(spacing: 8) {
-                                ZStack {
-                                    Circle()
-                                        .fill(selectedServiceID == svc.id ? brand : brand.opacity(0.08))
-                                        .frame(width: 54, height: 54)
-                                    Image(systemName: svc.icon)
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(selectedServiceID == svc.id ? .white : brand)
-                                }
-                                Text(svc.name)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(Color(hex: "1A1A1A"))
-                                    .lineLimit(1)
-                                    .frame(width: 64)
-                            }
-                        }
+                        Text(service.name)
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundColor(Color(hex: "42444A"))
+                            .multilineTextAlignment(.center)
+                            .frame(width: 70)
                     }
                 }
             }
         }
     }
 
-    // MARK: - Featured Salons
-    private var featuredSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private var nearbySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(filteredSalons.count == allSalons.count ? "Top Salons" : "Matching Salons")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Color(hex: "1A1A1A"))
+                Text("Nearby Salons")
+                    .font(.system(size: 34, weight: .medium, design: .rounded))
+                    .foregroundColor(Color(hex: "1B1D21"))
                 Spacer()
-
-                // Filter chips
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(filters, id: \.self) { f in
-                            Button(action: { selectedFilter = f }) {
-                                Text(f)
-                                    .font(.system(size: 12, weight: selectedFilter == f ? .semibold : .regular))
-                                    .foregroundColor(selectedFilter == f ? .white : Color(hex: "6B6B6B"))
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(selectedFilter == f ? brand : Color(hex: "F5F5F5"))
-                                    .clipShape(Capsule())
-                            }
-                        }
+                Button(action: { showMapSheet = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Map View")
+                            .font(.system(size: 16, weight: .medium))
                     }
+                    .foregroundColor(brand)
                 }
             }
-            .padding(.horizontal, 20)
 
-            if filteredSalons.isEmpty {
-                Text("No salons match your search.")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 20)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 14) {
-                        ForEach(filteredSalons) { salon in
-                            Button(action: { selectedSalonName = salon.name }) {
-                                SalonCard(salon: salon)
-                            }
-                        }
+            VStack(spacing: 8) {
+                ForEach(filteredSalons) { salon in
+                    Button(action: { selectedSalonName = salon.name }) {
+                        SalonRowCard(salon: salon)
                     }
-                    .padding(.horizontal, 20)
                 }
             }
         }
     }
 }
 
-// MARK: - Promo Card
-private struct PromoCard: View {
-    let title: String
-    let subtitle: String
-    let icon: String
-
-    var body: some View {
-        ZStack(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(hex: "AF1C47"))
-
-            // Background accent circle
-            Circle()
-                .fill(Color.white.opacity(0.07))
-                .frame(width: 140, height: 140)
-                .offset(x: 220, y: -40)
-
-            Circle()
-                .fill(Color.white.opacity(0.05))
-                .frame(width: 100, height: 100)
-                .offset(x: 260, y: 20)
-
-            HStack(spacing: 20) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Label("Limited Time", systemImage: "clock.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.75))
-
-                    Text(title)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Text(subtitle)
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.80))
-
-                    Text("Book Now →")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .background(Color.white.opacity(0.20))
-                        .clipShape(Capsule())
-                }
-
-                Spacer()
-
-                Image(systemName: icon)
-                    .font(.system(size: 36, weight: .light))
-                    .foregroundColor(.white.opacity(0.30))
-            }
-            .padding(.horizontal, 22)
-        }
-        .frame(height: 152)
-    }
-}
-
-// MARK: - Salon Card
-private struct SalonCard: View {
+private struct SalonRowCard: View {
     let salon: SalonPreview
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Image area
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(hex: "F5F5F5"))
-                    .frame(height: 130)
-                    .overlay(
-                        Image(systemName: "photo")
-                            .font(.system(size: 28))
-                            .foregroundColor(Color(hex: "DCDCDC"))
-                    )
+        HStack(spacing: 12) {
+            Image(salon.imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 92, height: 92)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                // PRO badge
-                Text("PRO")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(hex: "AF1C47"))
-                    .clipShape(Capsule())
-                    .padding(10)
-            }
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top) {
+                    Text(salon.name)
+                        .font(.system(size: 32, weight: .medium, design: .rounded))
+                        .foregroundColor(Color(hex: "1F2126"))
+                    Spacer()
+                    Text(salon.distance)
+                        .font(.system(size: 22, weight: .regular, design: .rounded))
+                        .foregroundColor(Color(hex: "8E9198"))
+                }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(salon.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "1A1A1A"))
-                    .lineLimit(1)
-
-                Text(salon.location)
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "A3A6AE"))
+                    Text(salon.location)
+                        .font(.system(size: 24, weight: .regular, design: .rounded))
+                        .foregroundColor(Color(hex: "8A8E95"))
+                }
 
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(Color(hex: "F59E0B"))
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "E4B234"))
                     Text(String(format: "%.1f", salon.rating))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .font(.system(size: 26, weight: .medium, design: .rounded))
+                        .foregroundColor(Color(hex: "2E3036"))
                     Text("(\(salon.reviews))")
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: "8A8A8A"))
-                    Spacer()
-                    Text(salon.distance)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Color(hex: "AF1C47"))
+                        .font(.system(size: 24, weight: .regular, design: .rounded))
+                        .foregroundColor(Color(hex: "8A8E95"))
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 4)
-        .frame(width: 185)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(hex: "F8F8F8"))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -459,7 +289,7 @@ struct SalonMapView: View {
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") { dismiss() }
-                            .foregroundColor(Color(hex: "AF1C47"))
+                            .foregroundColor(brand)
                     }
                 }
         }
@@ -473,11 +303,11 @@ struct ServiceCategoryCard: View {
         VStack(spacing: 6) {
             ZStack {
                 Circle()
-                    .fill(isSelected ? Color(hex: "AF1C47") : Color(hex: "AF1C47").opacity(0.08))
+                    .fill(isSelected ? brand : brand.opacity(0.08))
                     .frame(width: 44, height: 44)
                 Image(systemName: service.icon)
                     .font(.system(size: 18))
-                    .foregroundColor(isSelected ? .white : Color(hex: "AF1C47"))
+                    .foregroundColor(isSelected ? .white : brand)
             }
             Text(service.name).font(.system(size: 11)).foregroundColor(Color(hex: "1A1A1A"))
         }

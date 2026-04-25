@@ -1,182 +1,193 @@
 import SwiftUI
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "FF006E")
 
 // MARK: - Sign In View
 struct SignInView: View {
 
     var onSignIn: (() -> Void)? = nil
     var onCreateAccount: (() -> Void)? = nil
+    var onBack: (() -> Void)? = nil
     var onForgotPassword: (() -> Void)? = nil
 
     @State private var email = ""
     @State private var password = ""
     @State private var isLoading = false
-    @State private var errorMessage: String? = nil
-    @State private var appear = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
-
-                // ── Header ──
-                VStack(alignment: .leading, spacing: 8) {
-                    // Logo mark
-                    ZStack {
-                        Circle().fill(brand.opacity(0.10)).frame(width: 56, height: 56)
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundColor(brand)
-                    }
-                    .padding(.bottom, 8)
-
-                    Text("Welcome back")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(Color(hex: "1A1A1A"))
-                    Text("Sign in to your account")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "8A8A8A"))
+                Button(action: { onBack?() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(Color(hex: "606269"))
                 }
-                .padding(.top, 60)
+                .padding(.top, 24)
                 .padding(.horizontal, 28)
-                .opacity(appear ? 1 : 0)
-                .offset(y: appear ? 0 : 16)
 
-                Spacer().frame(height: 40)
+                Spacer().frame(height: 24)
 
-                // ── Form ──
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Welcome back!")
+                        .font(.system(size: 50, weight: .bold, design: .rounded))
+                        .foregroundColor(brand)
+                    Text("Glad to see you, Again!")
+                        .font(.system(size: 53, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(hex: "55575E"))
+                        .lineLimit(2)
+                }
+                .padding(.horizontal, 28)
+
+                Spacer().frame(height: 26)
+
                 VStack(spacing: 16) {
-                    GlowzaTextField(placeholder: "Email address", text: $email,
-                                    keyboardType: .emailAddress, icon: "envelope")
-
-                    GlowzaTextField(placeholder: "Password", text: $password,
-                                    isSecure: true, icon: "lock")
-
-                    // Forgot password
-                    HStack {
-                        Spacer()
-                        Button(action: { onForgotPassword?() }) {
-                            Text("Forgot password?")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(brand)
-                        }
-                    }
+                    authInput(placeholder: "Enter your email", text: $email, isSecure: false)
+                    authInput(placeholder: "Enter your password", text: $password, isSecure: true)
                 }
                 .padding(.horizontal, 28)
-                .opacity(appear ? 1 : 0)
-                .offset(y: appear ? 0 : 20)
 
-                // Error
-                if let err = errorMessage {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.circle.fill")
-                        Text(err)
+                HStack {
+                    Spacer()
+                    Button(action: { onForgotPassword?() }) {
+                        Text("Forgot Password?")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color(hex: "5E6066"))
                     }
-                    .font(.system(size: 13))
-                    .foregroundColor(brand)
-                    .padding(.horizontal, 28)
-                    .padding(.top, 12)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+                .padding(.top, 12)
+                .padding(.horizontal, 28)
 
                 Spacer().frame(height: 28)
 
-                // ── Sign In button ──
                 Button(action: signIn) {
                     Group {
                         if isLoading {
                             ProgressView().tint(.white)
                         } else {
-                            Text("Sign In")
-                                .font(.system(size: 16, weight: .semibold))
+                            Text("Login")
+                                .font(.system(size: 20, weight: .medium, design: .rounded))
                         }
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(canSignIn ? brand : Color(hex: "BEBEBE"))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .shadow(color: canSignIn ? brand.opacity(0.28) : .clear, radius: 12, x: 0, y: 5)
+                    .frame(height: 72)
+                    .background(canSignIn ? brand : Color(hex: "C9CBD0"))
+                    .clipShape(Capsule())
                 }
                 .disabled(!canSignIn || isLoading)
                 .padding(.horizontal, 28)
-                .opacity(appear ? 1 : 0)
 
-                Spacer().frame(height: 20)
+                Spacer().frame(height: 24)
 
-                // ── Divider ──
-                HStack {
-                    Rectangle().fill(Color(hex: "EBEBEB")).frame(height: 1)
-                    Text("or").font(.system(size: 13)).foregroundColor(Color(hex: "ABABAB"))
-                        .padding(.horizontal, 12)
-                    Rectangle().fill(Color(hex: "EBEBEB")).frame(height: 1)
+                dividerText("Or Login with")
+                    .padding(.horizontal, 28)
+
+                Spacer().frame(height: 24)
+
+                Button(action: {}) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "faceid")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("Sign in with Face ID")
+                            .font(.system(size: 20, weight: .semibold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 72)
+                    .background(brand)
+                    .clipShape(Capsule())
                 }
                 .padding(.horizontal, 28)
 
                 Spacer().frame(height: 20)
 
-                // ── Social buttons ──
-                VStack(spacing: 12) {
-                    socialButton(icon: "apple.logo", label: "Continue with Apple") {}
-                    socialButton(icon: "g.circle.fill", label: "Continue with Google") {}
+                HStack(spacing: 12) {
+                    socialIcon(text: "f", color: Color(hex: "1877F2"))
+                    socialIcon(text: "", color: .black)
+                    socialIcon(text: "G", color: Color(hex: "4285F4"))
                 }
                 .padding(.horizontal, 28)
-                .opacity(appear ? 1 : 0)
 
-                Spacer().frame(height: 40)
+                Spacer().frame(height: 56)
 
-                // ── Create account link ──
-                HStack(spacing: 5) {
+                HStack(spacing: 4) {
                     Text("Don't have an account?")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "8A8A8A"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "5D5F66"))
                     Button(action: { onCreateAccount?() }) {
-                        Text("Create one")
-                            .font(.system(size: 14, weight: .semibold))
+                        Text("Register Now")
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(brand)
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 40)
-                .opacity(appear ? 1 : 0)
+                .padding(.bottom, 24)
             }
         }
-        .background(Color.white.ignoresSafeArea())
-        .onAppear {
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.05)) {
-                appear = true
-            }
-        }
+        .background(Color(hex: "F1F1F1").ignoresSafeArea())
     }
 
     private var canSignIn: Bool { !email.isEmpty && !password.isEmpty }
 
-    private func socialButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "1A1A1A"))
-                Text(label)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(hex: "1A1A1A"))
+    private func authInput(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {
+        HStack(spacing: 8) {
+            if isSecure {
+                SecureField(placeholder, text: text)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "4F5158"))
+            } else {
+                TextField(placeholder, text: text)
+                    .keyboardType(.emailAddress)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "4F5158"))
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(Color(hex: "F5F5F5"))
-            .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
-                    .stroke(Color(hex: "EBEBEB"), lineWidth: 1)
-            )
+
+            if isSecure {
+                Image(systemName: "eye")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(Color(hex: "7D8088"))
+            }
+        }
+        .padding(.horizontal, 22)
+        .frame(height: 70)
+        .background(Color(hex: "F1F1F1"))
+        .overlay(
+            RoundedRectangle(cornerRadius: 35, style: .continuous)
+                .stroke(Color(hex: "D1D3D8"), lineWidth: 1.1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
+    }
+
+    private func dividerText(_ text: String) -> some View {
+        HStack(spacing: 14) {
+            Rectangle().fill(Color(hex: "DCDDDF")).frame(height: 1)
+            Text(text)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(hex: "64666D"))
+            Rectangle().fill(Color(hex: "DCDDDF")).frame(height: 1)
+        }
+    }
+
+    private func socialIcon(text: String, color: Color) -> some View {
+        Button(action: {}) {
+            Text(text)
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundColor(color)
+                .frame(maxWidth: .infinity)
+                .frame(height: 68)
+                .background(Color(hex: "F1F1F1"))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color(hex: "DCDDE0"), lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
 
     private func signIn() {
         guard canSignIn else { return }
         isLoading = true
-        errorMessage = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             isLoading = false
             onSignIn?()
         }

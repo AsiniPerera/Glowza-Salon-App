@@ -1,351 +1,317 @@
 import SwiftUI
+import PhotosUI
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "FF006E")
 
-// MARK: - Profile View
 struct ProfileView: View {
+    @State private var viewModel = ProfileViewModel()
 
-    @State private var showSignOutAlert = false
-    @State private var showEditProfile  = false
-    @State private var showPassword     = false
-    @State private var showSecurity     = false
+    @State private var showEditProfileSheet = false
+    @State private var showChangePasswordSheet = false
+    @State private var showSecurityPrivacySheet = false
+    @State private var showTermsSheet = false
+    @State private var showUpdatesAlert = false
 
-    @State private var isFaceIDEnabled        = false
-    @State private var loginNotificationsOn   = true
-    @State private var twoFactorEnabled       = true
-
-    @State private var editFullName = "Asini Perera"
-    @State private var editEmail    = "asini.perera@email.com"
-    @State private var editPhone    = "+94 71 234 5678"
+    @AppStorage("faceIDEnabled") private var isFaceIDEnabled = true
+    @AppStorage("pushNotifications") private var pushNotificationsOn = true
+    @AppStorage("voiceOverEnabled") private var voiceOverEnabled = true
+    @AppStorage("highContrastEnabled") private var highContrastEnabled = true
+    @AppStorage("darkModeEnabled") private var darkModeEnabled = true
 
     @State private var currentPassword = ""
-    @State private var newPassword     = ""
+    @State private var newPassword = ""
     @State private var confirmPassword = ""
+    @State private var passwordError: String? = nil
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    profileHeader
-                    statsRow.padding(.top, 20)
-                    sectionGroup(title: "Account") {
-                        expandableRow(
-                            icon: "person.fill", label: "Edit Profile",
-                            isExpanded: $showEditProfile,
-                            content: editProfileContent
-                        )
-                        expandableRow(
-                            icon: "lock.fill", label: "Change Password",
-                            isExpanded: $showPassword,
-                            content: changePasswordContent
-                        )
-                        expandableRow(
-                            icon: "shield.fill", label: "Security",
-                            isExpanded: $showSecurity,
-                            content: securityContent
-                        )
+                VStack(alignment: .leading, spacing: 0) {
+                    headerSection
+                    sectionTitle("Account Settings")
+                    actionRow(icon: "person", title: "Edit Profile", hasChevron: true) {
+                        showEditProfileSheet = true
                     }
-                    sectionGroup(title: "Preferences") {
-                        toggleRow(icon: "faceid",        label: "Face ID Login",      value: $isFaceIDEnabled)
-                        toggleRow(icon: "bell.fill",     label: "Login Notifications", value: $loginNotificationsOn)
+                    actionRow(icon: "lock", title: "Change Password", hasChevron: true) {
+                        showChangePasswordSheet = true
                     }
-                    sectionGroup(title: "My Activity") {
-                        navLinkRow(icon: "heart.fill",       label: "Favourites",          destination: FavoritesView())
-                        navLinkRow(icon: "chart.xyaxis.line", label: "Treatment Tracking",  destination: TreatmentTrackingView())
+                    NavigationLink(destination: TreatmentTrackingView()) {
+                        rowView(icon: "clock.arrow.circlepath", title: "Treatment History", hasChevron: true)
                     }
-                    sectionGroup(title: "App") {
-                        navLinkRow(icon: "gearshape.fill",   label: "Settings",            destination: SettingsView())
+                    .buttonStyle(.plain)
+
+                    sectionTitle("Security & Privacy")
+                    actionRow(icon: "shield", title: "Security & Privacy", hasChevron: true) {
+                        showSecurityPrivacySheet = true
                     }
-                    sectionGroup(title: "Support") {
-                        linkRow(icon: "questionmark.circle.fill", label: "Help Center")
-                        linkRow(icon: "doc.text.fill",            label: "Terms & Conditions")
-                        linkRow(icon: "hand.raised.fill",         label: "Privacy Policy")
+                    toggleRow(icon: "faceid", title: "Face ID", isOn: $isFaceIDEnabled)
+
+                    sectionTitle("Notifications")
+                    toggleRow(icon: "bell", title: "Push Notifications", isOn: $pushNotificationsOn)
+
+                    sectionTitle("Accessibility")
+                    toggleRow(icon: "mic", title: "VoiceOver Support", isOn: $voiceOverEnabled)
+                    toggleRow(icon: "eye", title: "High Contrast Mode", isOn: $highContrastEnabled)
+                    toggleRow(icon: "moon", title: "Dark Mode", isOn: $darkModeEnabled)
+
+                    sectionTitle("General")
+                    actionRow(icon: "gearshape", title: "App Updates", hasChevron: true) {
+                        showUpdatesAlert = true
                     }
-                    signOutButton.padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 40)
+                    actionRow(icon: "doc.text", title: "Terms & Conditions", hasChevron: true) {
+                        showTermsSheet = true
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
-            .background(Color(hex: "F7F7F7").ignoresSafeArea())
+            .background(Color(hex: "F1F1F1").ignoresSafeArea())
             .navigationBarHidden(true)
         }
-        .alert("Sign Out", isPresented: $showSignOutAlert) {
-            Button("Sign Out", role: .destructive) {}
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Are you sure you want to sign out?")
-        }
-    }
-
-    // MARK: - Header
-    private var profileHeader: some View {
-        ZStack(alignment: .bottom) {
-            brand.frame(height: 160)
-            VStack(spacing: 0) {
-                ZStack {
-                    Circle().fill(Color.white).frame(width: 90, height: 90)
-                        .shadow(color: brand.opacity(0.2), radius: 12)
-                    Text(initials(editFullName))
-                        .font(.system(size: 30, weight: .bold)).foregroundColor(brand)
-                }
-                .offset(y: 45)
-            }
-        }
-        .padding(.bottom, 60)
-        .overlay(alignment: .topTrailing) {
-            Button(action: { showEditProfile.toggle() }) {
-                Image(systemName: "pencil")
-                    .font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
-                    .frame(width: 34, height: 34)
-                    .background(Color.white.opacity(0.2))
-                    .clipShape(Circle())
-            }
-            .padding(.top, 16).padding(.trailing, 20)
-        }
-    }
-
-    private func initials(_ name: String) -> String {
-        name.split(separator: " ").prefix(2).compactMap { $0.first }.map { String($0) }.joined()
-    }
-
-    // MARK: - Name/email below avatar
-    private var statsRow: some View {
-        VStack(spacing: 4) {
-            Text(editFullName)
-                .font(.system(size: 18, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-            Text(editEmail)
-                .font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
-            HStack(spacing: 20) {
-                statItem(value: "\(BookingStore.shared.bookings.count)", label: "Bookings")
-                statDivider
-                statItem(value: "\(BookingStore.shared.bookings.filter { $0.review != nil }.count)", label: "Reviews")
-                statDivider
-                statItem(value: "GLOWZA", label: "Member")
-            }
-            .padding(.top, 12)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 8)
-    }
-
-    private func statItem(value: String, label: String) -> some View {
-        VStack(spacing: 2) {
-            Text(value).font(.system(size: 18, weight: .bold)).foregroundColor(brand)
-            Text(label).font(.system(size: 11)).foregroundColor(Color(hex: "8A8A8A"))
-        }
-    }
-
-    private var statDivider: some View {
-        Rectangle().fill(Color(hex: "EBEBEB")).frame(width: 1, height: 30)
-    }
-
-    // MARK: - Section Group
-    private func sectionGroup<C: View>(title: String, @ViewBuilder content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold)).foregroundColor(Color(hex: "ABABAB"))
-                .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
-            VStack(spacing: 0) { content() }
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .padding(.horizontal, 16)
-        }
-    }
-
-    // MARK: - Expandable Row
-    private func expandableRow<C: View>(
-        icon: String, label: String,
-        isExpanded: Binding<Bool>,
-        @ViewBuilder content: () -> C
-    ) -> some View {
-        VStack(spacing: 0) {
-            Button(action: { withAnimation(.easeInOut(duration: 0.25)) { isExpanded.wrappedValue.toggle() } }) {
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
-                        Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
+        .sheet(isPresented: $showEditProfileSheet) {
+            NavigationStack {
+                editProfileSheet
+                    .navigationTitle("Edit Profile")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Close") { showEditProfileSheet = false }
+                        }
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Save") {
+                                viewModel.saveProfile()
+                                showEditProfileSheet = false
+                            }
+                        }
                     }
-                    Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
-                    Spacer()
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "ABABAB"))
-                }
-                .padding(.horizontal, 16).frame(height: 56)
+            }
+        }
+        .sheet(isPresented: $showChangePasswordSheet) {
+            NavigationStack {
+                changePasswordSheet
+                    .navigationTitle("Change Password")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button("Close") { showChangePasswordSheet = false }
+                        }
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Update") { updatePassword() }
+                        }
+                    }
+            }
+        }
+        .sheet(isPresented: $showSecurityPrivacySheet) {
+            NavigationStack {
+                SettingsView()
+            }
+        }
+        .sheet(isPresented: $showTermsSheet) {
+            NavigationStack {
+                termsSheet
+                    .navigationTitle("Terms & Conditions")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") { showTermsSheet = false }
+                        }
+                    }
+            }
+        }
+        .alert("App is up to date", isPresented: $showUpdatesAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("You are using the latest version of GLOWZA.")
+        }
+        .onChange(of: viewModel.selectedPhotoItem) { _, _ in
+            viewModel.loadPhotoFromPicker()
+        }
+    }
+
+    private var headerSection: some View {
+        VStack(spacing: 10) {
+            Text("My profile")
+                .font(.system(size: 38, weight: .bold, design: .rounded))
+                .foregroundColor(brand)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 24)
+
+            PhotosPicker(selection: $viewModel.selectedPhotoItem, matching: .images) {
+                Circle()
+                    .stroke(brand, lineWidth: 2)
+                    .frame(width: 132, height: 132)
+                    .overlay {
+                        if let avatar = viewModel.avatarImage {
+                            avatar
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 120, height: 120)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(Color(hex: "F7D4E1"))
+                                .frame(width: 120, height: 120)
+                                .overlay {
+                                    Text(initials(viewModel.fullName))
+                                        .font(.system(size: 38, weight: .bold, design: .rounded))
+                                        .foregroundColor(brand)
+                                }
+                        }
+                    }
+                    .overlay(alignment: .bottomTrailing) {
+                        Circle()
+                            .fill(brand)
+                            .frame(width: 30, height: 30)
+                            .overlay {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                    }
+                    .padding(.top, 4)
             }
             .buttonStyle(.plain)
 
-            if isExpanded.wrappedValue {
-                Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
-                content().padding(.horizontal, 16).padding(.vertical, 16)
-            }
-            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+            Text(viewModel.fullName)
+                .font(.system(size: 24, weight: .medium, design: .rounded))
+                .foregroundColor(Color(hex: "4B4E54"))
+                .padding(.bottom, 8)
         }
     }
 
-    // MARK: - Toggle Row
-    @ViewBuilder
-    private func toggleRow(icon: String, label: String, value: Binding<Bool>) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
-                Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
-            }
-            Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 36, weight: .semibold, design: .rounded))
+            .foregroundColor(brand)
+            .padding(.top, 18)
+            .padding(.bottom, 4)
+    }
+
+    private func actionRow(icon: String, title: String, hasChevron: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            rowView(icon: icon, title: title, hasChevron: hasChevron)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func toggleRow(icon: String, title: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(Color(hex: "585A61"))
+                .frame(width: 24)
+            Text(title)
+                .font(.system(size: 30, weight: .regular, design: .rounded))
+                .foregroundColor(Color(hex: "4D5057"))
             Spacer()
-            Toggle("", isOn: value).tint(brand).labelsHidden()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(brand)
         }
-        .padding(.horizontal, 16).frame(height: 56)
-        Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+        .frame(height: 56)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color(hex: "E7E7EA")).frame(height: 1)
+        }
     }
 
-    // MARK: - Link Row
-    @ViewBuilder
-    private func linkRow(icon: String, label: String) -> some View {
-        Button(action: {}) {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle().fill(Color(hex: "F5F5F5")).frame(width: 36, height: 36)
-                    Image(systemName: icon).font(.system(size: 14)).foregroundColor(Color(hex: "6B6B6B"))
-                }
-                Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
-                Spacer()
+    private func rowView(icon: String, title: String, hasChevron: Bool) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(Color(hex: "585A61"))
+                .frame(width: 24)
+            Text(title)
+                .font(.system(size: 30, weight: .regular, design: .rounded))
+                .foregroundColor(Color(hex: "4D5057"))
+            Spacer()
+            if hasChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "CCCCCC"))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(hex: "A2A5AC"))
             }
-            .padding(.horizontal, 16).frame(height: 56)
         }
-        .buttonStyle(.plain)
-        Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+        .frame(height: 56)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color(hex: "E7E7EA")).frame(height: 1)
+        }
     }
 
-    // MARK: - Navigation Link Row
-    @ViewBuilder
-    private func navLinkRow<D: View>(icon: String, label: String, destination: D) -> some View {
-        NavigationLink(destination: destination) {
-            HStack(spacing: 14) {
-                ZStack {
-                    Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
-                    Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
+    private var editProfileSheet: some View {
+        Form {
+            Section("Profile Photo") {
+                PhotosPicker(selection: $viewModel.selectedPhotoItem, matching: .images) {
+                    Label("Choose from Photos", systemImage: "photo.on.rectangle")
                 }
-                Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "CCCCCC"))
             }
-            .padding(.horizontal, 16).frame(height: 56)
-        }
-        .buttonStyle(.plain)
-        Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
-    }
-
-    // MARK: - Edit Profile Content
-    @ViewBuilder
-    private func editProfileContent() -> some View {
-        VStack(spacing: 14) {
-            profileField(icon: "person.fill", placeholder: "Full Name", text: $editFullName)
-            profileField(icon: "envelope.fill", placeholder: "Email", text: $editEmail, keyboard: .emailAddress)
-            profileField(icon: "phone.fill", placeholder: "Phone", text: $editPhone, keyboard: .phonePad)
-            Button(action: {}) {
-                Text("Save Changes")
-                    .font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(brand)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Section("Profile Information") {
+                TextField("Full Name", text: $viewModel.fullName)
+                TextField("Email", text: $viewModel.email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                TextField("Phone", text: $viewModel.phone)
+                    .keyboardType(.phonePad)
             }
-        }
-    }
-
-    private func profileField(icon: String, placeholder: String,
-                               text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand).frame(width: 20)
-            TextField(placeholder, text: text).keyboardType(keyboard)
-                .font(.system(size: 14)).foregroundColor(Color(hex: "1A1A1A"))
-        }
-        .padding(12)
-        .background(Color(hex: "F5F5F5"))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    // MARK: - Change Password Content
-    @ViewBuilder
-    private func changePasswordContent() -> some View {
-        VStack(spacing: 14) {
-            secureField(placeholder: "Current Password", text: $currentPassword)
-            secureField(placeholder: "New Password", text: $newPassword)
-            secureField(placeholder: "Confirm New Password", text: $confirmPassword)
-            if !newPassword.isEmpty && !confirmPassword.isEmpty && newPassword != confirmPassword {
-                Text("Passwords do not match")
-                    .font(.system(size: 12)).foregroundColor(Color(hex: "D9534F"))
-            }
-            Button(action: {}) {
-                Text("Update Password")
-                    .font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 46)
-                    .background(newPassword == confirmPassword && !newPassword.isEmpty
-                                ? brand : Color(hex: "CCCCCC"))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .disabled(newPassword.isEmpty || newPassword != confirmPassword)
-        }
-    }
-
-    private func secureField(placeholder: String, text: Binding<String>) -> some View {
-        SecureField(placeholder, text: text)
-            .font(.system(size: 14)).foregroundColor(Color(hex: "1A1A1A"))
-            .padding(12)
-            .background(Color(hex: "F5F5F5"))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    // MARK: - Security Content
-    @ViewBuilder
-    private func securityContent() -> some View {
-        VStack(spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Two-Factor Authentication")
-                        .font(.system(size: 14, weight: .medium)).foregroundColor(Color(hex: "1A1A1A"))
-                    Text("Add an extra layer of security")
-                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
+            Section("Skin Type") {
+                Picker("Skin Type", selection: $viewModel.skinType) {
+                    ForEach(viewModel.skinTypes, id: \.self) { type in
+                        Text(type).tag(type)
+                    }
                 }
-                Spacer()
-                Toggle("", isOn: $twoFactorEnabled).tint(brand).labelsHidden()
             }
-            .padding(12)
-            .background(Color(hex: "F5F5F5"))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Login Notifications")
-                        .font(.system(size: 14, weight: .medium)).foregroundColor(Color(hex: "1A1A1A"))
-                    Text("Get alerts for new logins")
-                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                }
-                Spacer()
-                Toggle("", isOn: $loginNotificationsOn).tint(brand).labelsHidden()
-            }
-            .padding(12)
-            .background(Color(hex: "F5F5F5"))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
 
-    // MARK: - Sign Out
-    private var signOutButton: some View {
-        Button(action: { showSignOutAlert = true }) {
-            HStack(spacing: 8) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 14))
-                Text("Sign Out")
-                    .font(.system(size: 15, weight: .semibold))
+    private var changePasswordSheet: some View {
+        Form {
+            Section("Security") {
+                SecureField("Current Password", text: $currentPassword)
+                SecureField("New Password", text: $newPassword)
+                SecureField("Confirm Password", text: $confirmPassword)
             }
-            .foregroundColor(Color(hex: "D9534F"))
-            .frame(maxWidth: .infinity).frame(height: 50)
-            .background(Color(hex: "D9534F").opacity(0.07))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color(hex: "D9534F").opacity(0.2), lineWidth: 1))
+            if let passwordError {
+                Section {
+                    Text(passwordError)
+                        .foregroundColor(.red)
+                }
+            }
         }
+    }
+
+    private var termsSheet: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("By using GLOWZA, you agree to book responsibly, provide accurate details, and follow salon policies.")
+                Text("Cancellations and rescheduling may be subject to salon terms. Payment information is handled securely.")
+                Text("Treatment outcomes vary by individual. Please consult professionals before any procedure.")
+                Text("For support, contact our in-app help center.")
+            }
+            .font(.system(size: 15))
+            .padding(20)
+        }
+    }
+
+    private func updatePassword() {
+        guard !currentPassword.isEmpty, !newPassword.isEmpty, !confirmPassword.isEmpty else {
+            passwordError = "Please fill all password fields."
+            return
+        }
+        guard newPassword == confirmPassword else {
+            passwordError = "New password and confirmation do not match."
+            return
+        }
+        guard newPassword.count >= 6 else {
+            passwordError = "Password must be at least 6 characters."
+            return
+        }
+        passwordError = nil
+        currentPassword = ""
+        newPassword = ""
+        confirmPassword = ""
+        showChangePasswordSheet = false
+    }
+
+    private func initials(_ name: String) -> String {
+        name.split(separator: " ").prefix(2).compactMap { $0.first }.map(String.init).joined()
     }
 }
 

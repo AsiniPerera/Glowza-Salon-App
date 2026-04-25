@@ -51,220 +51,147 @@ struct BookAppointmentView: View {
     let onNext: () -> Void
     let onBack: () -> Void
 
-    @State private var selectedDateOffset: Int = 1
-    @State private var selectedTime: String    = ""
+    @State private var selectedDateOffset: Int = 0
+    @State private var selectedTime: String = ""
 
-    private let dark   = Color(hex: "1A1A1A")
-    private let accent = Color(hex: "AF1C47")
-    private let bg     = Color.white
+    private let accent = Color(hex: "FF006E")
+    private let dark = Color(hex: "2A2C32")
 
-    private var weekDays: [(label: String, num: Int, date: Date)] {
-        (0..<7).map { offset in
+    private var days: [(label: String, num: Int, date: Date)] {
+        (0..<10).map { offset in
             let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
-            let day  = Calendar.current.component(.day, from: date)
-            let wday = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][Calendar.current.component(.weekday, from: date) - 1]
+            let day = Calendar.current.component(.day, from: date)
+            let wday = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][Calendar.current.component(.weekday, from: date) - 1]
             return (wday, day, date)
         }
     }
 
+    private var monthYear: String {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: draft.date).uppercased()
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            bg.ignoresSafeArea()
+            Color(hex: "F1F1F1").ignoresSafeArea()
+
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 20) {
-                    flowHeader
-                    serviceCard
-                    salonCard
+                VStack(alignment: .leading, spacing: 18) {
+                    topBack
+                    serviceSelectionHeader
+                    selectedServiceCard
+                    Divider().overlay(Color(hex: "E4E4E7"))
                     dateSection
                     timeSection
-                    bookingSummaryBox
-                    secureNotice
                     Spacer().frame(height: 100)
                 }
-                .padding(.top, 16)
+                .padding(.horizontal, 24)
+                .padding(.top, 14)
                 .padding(.bottom, 20)
             }
+
             bottomBar
         }
         .navigationBarHidden(true)
+        .onAppear {
+            draft.date = days[selectedDateOffset].date
+            selectedTime = draft.timeSlot
+        }
     }
 
-    // MARK: - Header
-    private var flowHeader: some View {
-        HStack(spacing: 12) {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 13, weight: .semibold))
+    private var topBack: some View {
+        Button(action: onBack) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(Color(hex: "5F6168"))
+        }
+        .padding(.top, 2)
+    }
+
+    private var serviceSelectionHeader: some View {
+        Text("SELECT SALON & SERVICES")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(Color(hex: "56585F"))
+            .tracking(1.4)
+            .padding(.top, 6)
+    }
+
+    private var selectedServiceCard: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(draft.salon.name)
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundColor(dark)
-                    .frame(width: 36, height: 36)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Book Appointment")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(dark)
-                Text("Secure your beauty time")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "8A8A8A"))
+                Text(draft.service?.name ?? "Skin Facials")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "7A7D84"))
             }
             Spacer()
-            Image(systemName: "shield.checkered")
-                .font(.system(size: 18))
-                .foregroundColor(accent)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
+        .frame(height: 86)
+        .background(Color(hex: "E5E2E2"))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(accent, lineWidth: 1.6)
+                .mask(
+                    HStack {
+                        Rectangle().frame(width: 6)
+                        Spacer()
+                    }
+                )
+        )
     }
 
-    // MARK: - Selected Service Card
-    private var serviceCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Selected Service")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .padding(.horizontal, 20)
-
-            if let service = draft.service {
-                HStack(spacing: 14) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "FFF0F4"))
-                        .frame(width: 64, height: 64)
-                        .overlay(
-                            Image(systemName: service.icon)
-                                .font(.system(size: 26))
-                                .foregroundColor(accent)
-                        )
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(service.name)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(dark)
-                        HStack(spacing: 12) {
-                            Label(service.duration, systemImage: "clock")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "8A8A8A"))
-                        }
-                    }
-                    Spacer()
-                    Text("LKR \(Int(service.price))")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(accent)
-                }
-                .padding(14)
-                .background(Color.white)
-                .cornerRadius(14)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-                .padding(.horizontal, 20)
-            } else {
-                Text("No service selected")
-                    .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-                    .padding(.horizontal, 20)
-            }
-        }
-    }
-
-    // MARK: - Selected Salon Card
-    private var salonCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Selected Salon")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .padding(.horizontal, 20)
-
-            HStack(spacing: 14) {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "FFF0F4"))
-                    .frame(width: 64, height: 64)
-                    .overlay(
-                        Image(systemName: "building.2.fill")
-                            .font(.system(size: 22))
-                            .foregroundColor(accent)
-                    )
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(draft.salon.name)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(dark)
-                    HStack(spacing: 4) {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(Color(hex: "8A8A8A"))
-                        Text(draft.salon.location)
-                            .font(.system(size: 12))
-                            .foregroundColor(Color(hex: "8A8A8A"))
-                    }
-                    HStack(spacing: 3) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(Color(hex: "AF1C47"))
-                        Text(String(format: "%.1f", draft.salon.rating))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(dark)
-                    }
-                }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-            }
-            .padding(14)
-            .background(Color.white)
-            .cornerRadius(14)
-            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-            .padding(.horizontal, 20)
-        }
-    }
-
-    // MARK: - Date Section
     private var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Select Date")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(dark)
+                Text("SELECT DATE")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "56585F"))
+                    .tracking(1.2)
                 Spacer()
-                Image(systemName: "calendar")
-                    .font(.system(size: 16))
-                    .foregroundColor(accent)
+                Text(monthYear)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Color(hex: "56585F"))
+                    .tracking(1)
             }
-            .padding(.horizontal, 20)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(weekDays.indices, id: \.self) { i in
-                        let day = weekDays[i]
-                        let isSelected = selectedDateOffset == i
+                HStack(spacing: 14) {
+                    ForEach(days.indices, id: \.self) { i in
+                        let item = days[i]
+                        let isSelected = i == selectedDateOffset
                         Button(action: {
                             selectedDateOffset = i
-                            draft.date = day.date
+                            draft.date = item.date
                         }) {
-                            VStack(spacing: 4) {
-                                Text(day.label)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(isSelected ? .white : Color(hex: "8A8A8A"))
-                                Text("\(day.num)")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(isSelected ? .white : dark)
+                            VStack(spacing: 6) {
+                                Text(item.label)
+                                    .font(.system(size: 14, weight: .medium))
+                                Text("\(item.num)")
+                                    .font(.system(size: 34, weight: .medium, design: .serif))
                             }
-                            .frame(width: 52, height: 66)
-                            .background(isSelected ? Color(hex: "AF1C47") : Color.white)
-                            .cornerRadius(14)
-                            .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+                            .foregroundColor(isSelected ? .white : Color(hex: "3B3D42"))
+                            .frame(width: 64, height: 96)
+                            .background(isSelected ? accent : Color(hex: "EAE7E7"))
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.vertical, 2)
             }
         }
     }
 
-    // MARK: - Time Section
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Select Time")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(dark)
-                .padding(.horizontal, 20)
+            Text("AVAILABLE TIMES")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color(hex: "56585F"))
+                .tracking(1.2)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                 ForEach(BookingDraft.timeSlots, id: \.time) { slot in
@@ -275,145 +202,45 @@ struct BookAppointmentView: View {
                         draft.timeSlot = slot.time
                     }) {
                         Text(slot.time)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(
-                                !slot.available ? Color(hex: "C8B8B0") :
-                                isSelected ? .white : dark
+                                !slot.available ? Color(hex: "BDBFC5") : (isSelected ? .white : dark)
                             )
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
+                            .padding(.vertical, 7)
                             .background(
-                                isSelected ? Color(hex: "AF1C47") :
-                                !slot.available ? Color(hex: "F0EDED") : Color.white
+                                isSelected ? accent : Color(hex: "F1F1F1")
                             )
-                            .cornerRadius(12)
-                            .shadow(color: .black.opacity(isSelected ? 0 : 0.04), radius: 3, x: 0, y: 1)
+                            .overlay(
+                                Capsule().stroke(Color(hex: "BBBBBE"), lineWidth: isSelected ? 0 : 1)
+                            )
+                            .clipShape(Capsule())
                     }
                     .disabled(!slot.available)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.bottom, 6)
         }
     }
 
-    // MARK: - Booking Summary Box
-    private var bookingSummaryBox: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: "list.clipboard.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(accent)
-                Text("Booking Summary")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(dark)
-            }
-
-            VStack(spacing: 8) {
-                summaryRow(label: "Service",
-                           value: draft.service?.name ?? "Not selected")
-                summaryRow(label: "Salon",   value: draft.salon.name)
-                summaryRow(label: "Date",    value: formattedDate(draft.date))
-                summaryRow(label: "Time",    value: selectedTime.isEmpty ? "Not selected" : selectedTime)
-                summaryRow(label: "Duration", value: draft.service?.duration ?? "—")
-            }
-
-            Rectangle()
-                .fill(Color(hex: "E8E0DC"))
-                .frame(height: 1)
-                .overlay(
-                    HStack(spacing: 4) {
-                        ForEach(0..<15, id: \.self) { _ in
-                            Rectangle()
-                                .fill(Color(hex: "E8E0DC"))
-                                .frame(width: 8, height: 1)
-                            Spacer()
-                        }
-                    }
-                )
-
-            HStack {
-                Text("Total")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(dark)
-                Spacer()
-                Text("LKR \(Int(draft.service?.price ?? 0))")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(accent)
-            }
-        }
-        .padding(18)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-        .padding(.horizontal, 20)
-    }
-
-    private func summaryRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundColor(Color(hex: "8A8A8A"))
-            Spacer()
-            Text(value)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(dark)
-                .multilineTextAlignment(.trailing)
-        }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "EEE, d MMM yyyy"
-        return f.string(from: date)
-    }
-
-    // MARK: - Secure Notice
-    private var secureNotice: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "shield.checkered")
-                .font(.system(size: 13))
-                .foregroundColor(accent)
-            Text("Your booking is secure and confirmed instantly.")
-                .font(.system(size: 12))
-                .foregroundColor(Color(hex: "8A8A8A"))
-        }
-        .padding(.horizontal, 20)
-    }
-
-    // MARK: - Bottom Bar
     private var bottomBar: some View {
-        let canProceed = !selectedTime.isEmpty && draft.service != nil
-        return VStack(spacing: 6) {
+        let canProceed = !selectedTime.isEmpty
+        return VStack(spacing: 0) {
             Button(action: {
                 if canProceed { onNext() }
             }) {
-                HStack {
-                    Spacer()
-                    Text("Review Booking")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                    Spacer()
-                }
-                .padding(.vertical, 16)
-                .background(canProceed ? Color(hex: "1A1A1A") : Color(hex: "A0A0A0"))
-                .cornerRadius(14)
+                Text("Confirm")
+                    .font(.system(size: 36, weight: .semibold, design: .rounded))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 70)
+                    .background(canProceed ? accent : Color(hex: "BFC2C8"))
+                    .clipShape(Capsule())
             }
             .disabled(!canProceed)
-
-            HStack(spacing: 5) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-                Text("100% Secure Payments")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(hex: "8A8A8A"))
-            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            .background(Color(hex: "F1F1F1"))
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(
-            Color.white
-                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: -4)
-        )
     }
 }
