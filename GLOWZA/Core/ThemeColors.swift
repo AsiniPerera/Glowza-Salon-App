@@ -69,28 +69,36 @@ struct ShadowStyle {
 
 // MARK: - Color Extensions
 extension Color {
-    // Primary Colors
-    static let glowzaGold = Color(hex: "E5A820")
-    static let glowzaGoldDark = Color(hex: "C8860A")
-    static let glowzaBrown = Color(hex: "4A3828")
-    
-    // Neutral Colors
-    static let glowzaBackground = Color(hex: "F5F0E8")
-    static let glowzaSurface = Color.white
-    static let glowzaCardBg = Color(hex: "F0E6D2")
-    
-    // Text Colors
-    static let glowzaTextPrimary = Color(hex: "1A1A1A")
-    static let glowzaTextSecondary = Color(hex: "5E5E5E")
-    static let glowzaSubtext = Color(hex: "8A8A8A")
-    static let glowzaTextDisabled = Color(hex: "ABABAB")
-    
-    // Border / Divider
-    static let glowzaBorder = Color(hex: "E0D5C5")
+    // ── Brand Primary ─────────────────────────────
+    /// Main brand color: deep rose #AF1C47
+    static let glowzaPrimary    = Color(hex: "AF1C47")
+    /// Darker shade for pressed states
+    static let glowzaPrimaryDark = Color(hex: "8A1538")
+    /// Very light tint background
+    static let glowzaPrimaryTint = Color(hex: "FFF0F4")
 
-    // State Colors
-    static let glowzaSuccess = Color(hex: "4CAF50")
-    static let glowzaWarning = Color(hex: "FF9800")
-    static let glowzaError = Color(hex: "F44336")
-    static let glowzaInfo = Color(hex: "2196F3")
+    // ── Legacy aliases (backward-compatible) ──────
+    static let glowzaGold       = Color(hex: "AF1C47")   // remapped
+    static let glowzaGoldDark   = Color(hex: "8A1538")   // remapped
+    static let glowzaBrown      = Color(hex: "1A1A1A")
+
+    // ── Neutral ───────────────────────────────────
+    static let glowzaBackground = Color.white
+    static let glowzaSurface    = Color.white
+    static let glowzaCardBg     = Color(hex: "F9F9F9")
+
+    // ── Text ──────────────────────────────────────
+    static let glowzaTextPrimary    = Color(hex: "1A1A1A")
+    static let glowzaTextSecondary  = Color(hex: "4A4A4A")
+    static let glowzaSubtext        = Color(hex: "8A8A8A")
+    static let glowzaTextDisabled   = Color(hex: "BEBEBE")
+
+    // ── Border / Divider ──────────────────────────
+    static let glowzaBorder = Color(hex: "EBEBEB")
+
+    // ── State Colors ──────────────────────────────
+    static let glowzaSuccess = Color(hex: "00A878")
+    static let glowzaWarning = Color(hex: "F59E0B")
+    static let glowzaError   = Color(hex: "AF1C47")
+    static let glowzaInfo    = Color(hex: "3B82F6")
 }

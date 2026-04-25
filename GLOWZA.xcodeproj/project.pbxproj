@@ -6,15 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXFileReference section */
-		45F070742F91E8D000505233 /* GLOWZA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GLOWZA.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
-
 /* Begin PBXBuildFile section */
 		CC33DD442F99000000000001 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB222F99000000000001 /* FirebaseCore */; };
 		CC33DD442F99000000000002 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB222F99000000000002 /* FirebaseAuth */; };
 		CC33DD442F99000000000003 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AA11BB222F99000000000003 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		45F070742F91E8D000505233 /* GLOWZA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GLOWZA.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		45F070762F91E8D000505233 /* GLOWZA */ = {

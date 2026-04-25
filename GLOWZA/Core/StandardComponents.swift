@@ -1,70 +1,76 @@
 import SwiftUI
 
+// MARK: - Brand Colors (quick access)
+private let brand = Color(hex: "AF1C47")
+private let brandDark = Color(hex: "8A1538")
+private let brandTint = Color(hex: "FFF0F4")
+
 // MARK: - Standard Card
 struct StandardCard<Content: View>: View {
     let content: Content
     var cornerRadius: CGFloat = CornerRadius.base
-    
+
     init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content()
     }
-    
+
     var body: some View {
         content
             .background(Color.white)
-            .cornerRadius(cornerRadius)
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 4)
     }
 }
 
-// MARK: - Primary Button
+// MARK: - Primary Button (rose fill)
 struct PrimaryButton: View {
     let title: String
     let action: () -> Void
     var isLoading: Bool = false
-    
+    var isDisabled: Bool = false
+
     var body: some View {
         Button(action: action) {
-            if isLoading {
-                ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-            } else {
-                Text(title)
-                    .font(Typography.headline)
-                    .fontWeight(.semibold)
+            Group {
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                } else {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold))
+                }
             }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 48)
-        .foregroundColor(.white)
-        .background(
-            LinearGradient(
-                gradient: Gradient(colors: [Color.glowzaGold, Color.glowzaGoldDark]),
-                startPoint: .leading,
-                endPoint: .trailing
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .foregroundColor(.white)
+            .background(
+                (isDisabled || isLoading) ? Color(hex: "BEBEBE") : brand
             )
-        )
-        .cornerRadius(CornerRadius.lg)
-        .disabled(isLoading)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .disabled(isLoading || isDisabled)
     }
 }
 
-// MARK: - Secondary Button
+// MARK: - Secondary Button (rose outline)
 struct SecondaryButton: View {
     let title: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(Typography.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.glowzaGoldDark)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(brand)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(brandTint)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(brand.opacity(0.3), lineWidth: 1)
+                )
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 48)
-        .background(Color.glowzaGold.opacity(0.12))
-        .cornerRadius(CornerRadius.lg)
     }
 }
 
@@ -73,49 +79,47 @@ struct StandardSearchBar: View {
     @Binding var text: String
     var placeholder: String = "Search..."
     var onSearch: (() -> Void)? = nil
-    
+
     var body: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.glowzaTextDisabled)
-            
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Color(hex: "ABABAB"))
+
             TextField(placeholder, text: $text)
-                .font(Typography.body)
+                .font(.system(size: 15))
                 .submitLabel(.search)
                 .onSubmit { onSearch?() }
-            
+
             if !text.isEmpty {
                 Button(action: { text = "" }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.glowzaTextDisabled)
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "ABABAB"))
                 }
             }
         }
-        .padding(.horizontal, Spacing.md)
-        .frame(height: 44)
-        .background(Color.white)
-        .cornerRadius(CornerRadius.lg)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .padding(.horizontal, 14)
+        .frame(height: 46)
+        .background(Color(hex: "F5F5F5"))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
 
 // MARK: - Standard Badge
 struct StandardBadge: View {
     let title: String
-    var backgroundColor: Color = .glowzaGold
+    var backgroundColor: Color = .glowzaPrimary
     var textColor: Color = .white
-    
+
     var body: some View {
         Text(title)
-            .font(Typography.caption)
-            .fontWeight(.semibold)
+            .font(.system(size: 11, weight: .semibold))
             .foregroundColor(textColor)
-            .padding(.horizontal, Spacing.base)
-            .padding(.vertical, Spacing.xs)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
             .background(backgroundColor)
-            .cornerRadius(CornerRadius.full)
+            .clipShape(Capsule())
     }
 }
 
@@ -124,54 +128,49 @@ struct SectionHeader: View {
     let title: String
     let subtitle: String?
     let action: (() -> Void)?
-    
+
     init(_ title: String, subtitle: String? = nil, action: (() -> Void)? = nil) {
         self.title = title
         self.subtitle = subtitle
         self.action = action
     }
-    
+
     var body: some View {
-        HStack(spacing: Spacing.base) {
-            VStack(alignment: .leading, spacing: Spacing.xs) {
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(Typography.title2)
-                    .foregroundColor(.glowzaTextPrimary)
-                
-                if let subtitle = subtitle {
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                if let subtitle {
                     Text(subtitle)
-                        .font(Typography.caption)
-                        .foregroundColor(.glowzaSubtext)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A"))
                 }
             }
-            
             Spacer()
-            
-            if let action = action {
+            if let action {
                 Button(action: action) {
                     Text("See All")
-                        .font(Typography.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.glowzaGoldDark)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(brand)
                 }
             }
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, 20)
     }
 }
 
-// MARK: - Rating View
+// MARK: - Rating Stars View
 struct RatingView: View {
     let rating: Double
-    var size: CGFloat = 16
-    var spacing: CGFloat = 4
-    
+    var size: CGFloat = 14
+
     var body: some View {
-        HStack(spacing: spacing) {
-            ForEach(1...5, id: \.self) { index in
-                Image(systemName: index <= Int(rating) ? "star.fill" : "star")
-                    .font(.system(size: size, weight: .semibold))
-                    .foregroundColor(index <= Int(rating) ? .glowzaGold : .glowzaTextDisabled)
+        HStack(spacing: 2) {
+            ForEach(1...5, id: \.self) { i in
+                Image(systemName: Double(i) <= rating ? "star.fill" : (Double(i) - 0.5 <= rating ? "star.leadinghalf.filled" : "star"))
+                    .font(.system(size: size))
+                    .foregroundColor(Double(i) <= rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
             }
         }
     }
@@ -181,30 +180,27 @@ struct RatingView: View {
 struct LocationChip: View {
     let location: String
     let distance: String?
-    
+
     var body: some View {
-        HStack(spacing: Spacing.xs) {
+        HStack(spacing: 6) {
             Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 14))
-                .foregroundColor(.glowzaGoldDark)
-            
+                .font(.system(size: 13))
+                .foregroundColor(brand)
             VStack(alignment: .leading, spacing: 0) {
                 Text(location)
-                    .font(Typography.caption)
-                    .foregroundColor(.glowzaTextPrimary)
-                
-                if let distance = distance {
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                if let distance {
                     Text(distance)
-                        .font(Typography.caption2)
-                        .foregroundColor(.glowzaSubtext)
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "8A8A8A"))
                 }
             }
-            
             Spacer()
         }
-        .padding(Spacing.sm)
-        .background(Color.glowzaCardBg.opacity(0.6))
-        .cornerRadius(CornerRadius.base)
+        .padding(10)
+        .background(Color(hex: "F9F9F9"))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -213,42 +209,74 @@ struct FilterChip: View {
     let title: String
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(Typography.bodySmall)
-                .fontWeight(isSelected ? .semibold : .medium)
-                .foregroundColor(isSelected ? .white : .glowzaBrown)
-                .padding(.horizontal, Spacing.base)
-                .padding(.vertical, Spacing.sm)
-                .background(
-                    isSelected
-                    ? LinearGradient(
-                        gradient: Gradient(colors: [Color.glowzaGold, Color.glowzaGoldDark]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    : LinearGradient(
-                        gradient: Gradient(colors: [Color.white, Color.white]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(CornerRadius.full)
+                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .foregroundColor(isSelected ? .white : Color(hex: "1A1A1A"))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? brand : Color(hex: "F5F5F5"))
+                .clipShape(Capsule())
                 .overlay(
-                    Capsule()
-                        .stroke(
-                            isSelected ? Color.clear : Color.glowzaGold.opacity(0.3),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(
-                    color: isSelected ? Color.glowzaGold.opacity(0.25) : Color.clear,
-                    radius: 4,
-                    x: 0,
-                    y: 2
+                    Capsule().stroke(isSelected ? Color.clear : Color(hex: "EBEBEB"), lineWidth: 1)
                 )
         }
+    }
+}
+
+// MARK: - Glowza Text Field
+struct GlowzaTextField: View {
+    let placeholder: String
+    @Binding var text: String
+    var isSecure: Bool = false
+    var keyboardType: UIKeyboardType = .default
+    var icon: String? = nil
+
+    @State private var showPassword = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "ABABAB"))
+                    .frame(width: 20)
+            }
+            if isSecure && !showPassword {
+                SecureField(placeholder, text: $text)
+                    .font(.system(size: 15))
+            } else {
+                TextField(placeholder, text: $text)
+                    .font(.system(size: 15))
+                    .keyboardType(keyboardType)
+            }
+            if isSecure {
+                Button(action: { showPassword.toggle() }) {
+                    Image(systemName: showPassword ? "eye.slash" : "eye")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "ABABAB"))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 52)
+        .background(Color(hex: "F8F8F8"))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(hex: "EBEBEB"), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Divider
+struct GlowzaDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color(hex: "F0F0F0"))
+            .frame(height: 1)
+            .padding(.horizontal, 20)
     }
 }

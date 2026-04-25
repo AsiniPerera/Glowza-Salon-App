@@ -1,411 +1,352 @@
 import SwiftUI
 
-// MARK: - ProfileView
-struct ProfileView: View {
-    @State private var showSignOutAlert = false
+private let brand = Color(hex: "AF1C47")
 
-    // Design tokens matching reference
-    private let bg        = Color(hex: "F5EDE8")
-    private let card      = Color.white
-    private let primary   = Color(hex: "1A1A1A")
-    private let secondary = Color(hex: "9A8A82")
-    private let accent    = Color(hex: "8B5533")   // warm terracotta-brown
+// MARK: - Profile View
+struct ProfileView: View {
+
+    @State private var showSignOutAlert = false
+    @State private var showEditProfile  = false
+    @State private var showPassword     = false
+    @State private var showSecurity     = false
+
+    @State private var isFaceIDEnabled        = false
+    @State private var loginNotificationsOn   = true
+    @State private var twoFactorEnabled       = true
+
+    @State private var editFullName = "Asini Perera"
+    @State private var editEmail    = "asini.perera@email.com"
+    @State private var editPhone    = "+94 71 234 5678"
+
+    @State private var currentPassword = ""
+    @State private var newPassword     = ""
+    @State private var confirmPassword = ""
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 14) {
-                    heroCard
-                    personalDetailsCard
-                    beautyPreferencesCard
-                    skinConcernsCard
-                    paymentMethodCard
-                    loyaltyPointsCard
-                    quickLinksGrid
-
-                    Button(action: { showSignOutAlert = true }) {
-                        Text("Log Out")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(accent)
+                VStack(spacing: 0) {
+                    profileHeader
+                    statsRow.padding(.top, 20)
+                    sectionGroup(title: "Account") {
+                        expandableRow(
+                            icon: "person.fill", label: "Edit Profile",
+                            isExpanded: $showEditProfile,
+                            content: editProfileContent
+                        )
+                        expandableRow(
+                            icon: "lock.fill", label: "Change Password",
+                            isExpanded: $showPassword,
+                            content: changePasswordContent
+                        )
+                        expandableRow(
+                            icon: "shield.fill", label: "Security",
+                            isExpanded: $showSecurity,
+                            content: securityContent
+                        )
                     }
-                    .padding(.vertical, 10)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 36)
-            }
-            .background(bg.ignoresSafeArea())
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Image(systemName: "bell")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(primary)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(primary)
+                    sectionGroup(title: "Preferences") {
+                        toggleRow(icon: "faceid",        label: "Face ID Login",      value: $isFaceIDEnabled)
+                        toggleRow(icon: "bell.fill",     label: "Login Notifications", value: $loginNotificationsOn)
+                    }
+                    sectionGroup(title: "My Activity") {
+                        navLinkRow(icon: "heart.fill",       label: "Favourites",          destination: FavoritesView())
+                        navLinkRow(icon: "chart.xyaxis.line", label: "Treatment Tracking",  destination: TreatmentTrackingView())
+                    }
+                    sectionGroup(title: "App") {
+                        navLinkRow(icon: "gearshape.fill",   label: "Settings",            destination: SettingsView())
+                    }
+                    sectionGroup(title: "Support") {
+                        linkRow(icon: "questionmark.circle.fill", label: "Help Center")
+                        linkRow(icon: "doc.text.fill",            label: "Terms & Conditions")
+                        linkRow(icon: "hand.raised.fill",         label: "Privacy Policy")
+                    }
+                    signOutButton.padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 40)
                 }
             }
+            .background(Color(hex: "F7F7F7").ignoresSafeArea())
+            .navigationBarHidden(true)
         }
-        .alert("Log Out", isPresented: $showSignOutAlert) {
-            Button("Log Out", role: .destructive) {
-                NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
-            }
+        .alert("Sign Out", isPresented: $showSignOutAlert) {
+            Button("Sign Out", role: .destructive) {}
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Are you sure you want to sign out of your account?")
+            Text("Are you sure you want to sign out?")
         }
     }
 
-    // MARK: - Hero Card
-    private var heroCard: some View {
-        HStack(alignment: .center, spacing: 16) {
-            // Circular avatar
-            ZStack {
-                Circle()
-                    .fill(Color(hex: "E8C9B8"))
-                    .frame(width: 82, height: 82)
-                Image(systemName: "person.fill")
-                    .font(.system(size: 38))
-                    .foregroundColor(accent)
-            }
-
-            VStack(alignment: .leading, spacing: 5) {
-                // Name + PRO badge
-                HStack(alignment: .center, spacing: 8) {
-                    Text("Alina Sharma")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(primary)
-                    Text("PRO")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color(hex: "1A1A1A"))
-                        .cornerRadius(6)
-                }
-
-                HStack(spacing: 5) {
-                    Image(systemName: "shield")
-                        .font(.system(size: 12))
-                        .foregroundColor(accent)
-                    Text("Glowza Pro Member")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(accent)
-                }
-
-                Text("Member since May 2024")
-                    .font(.system(size: 12))
-                    .foregroundColor(secondary)
-
-                Button(action: {}) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text("Edit Profile")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color(hex: "1A1A1A"))
-                    .cornerRadius(20)
-                }
-                .padding(.top, 4)
-            }
-            Spacer()
-        }
-        .padding(16)
-        .background(card)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
-    }
-
-    // MARK: - Personal Details
-    private var personalDetailsCard: some View {
-        profileCard(icon: "person", title: "Personal Details", linkLabel: "View all") {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top) {
-                    infoCell(icon: "envelope", text: "alina.sharma@gmail.com")
-                    Spacer()
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 12))
-                                .foregroundColor(secondary)
-                            Text("Date of Birth")
-                                .font(.system(size: 12))
-                                .foregroundColor(secondary)
-                        }
-                        Text("12 May 1993")
-                            .font(.system(size: 13))
-                            .foregroundColor(primary)
-                            .padding(.leading, 18)
-                    }
-                }
-                infoCell(icon: "phone", text: "+91 98765 43210")
-            }
-        }
-    }
-
-    // MARK: - Beauty Preferences
-    private var beautyPreferencesCard: some View {
-        profileCard(icon: "sparkles", title: "Beauty Preferences", linkLabel: "View all") {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                prefCell(icon: "scissors",               label: "Hair",              value: "Straight, Medium")
-                prefCell(icon: "sun.max",                label: "Skin Type",         value: "Combination")
-                prefCell(icon: "paintpalette",           label: "Skin Tone",         value: "Light - Medium")
-                prefCell(icon: "clock",                  label: "Preferred Services",value: "HydraFacial, Laser, Facials")
-            }
-        }
-    }
-
-    // MARK: - Skin Concerns
-    private var skinConcernsCard: some View {
-        profileCard(icon: "face.smiling", title: "Skin Concerns", linkLabel: "View all") {
-            ProfileFlowLayout(spacing: 8) {
-                ForEach(["Dullness", "Acne Marks", "Uneven Tone", "Dark Spots"], id: \.self) { tag in
-                    Text(tag)
-                        .font(.system(size: 13))
-                        .foregroundColor(primary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color(hex: "DDD0C8"), lineWidth: 1)
-                        )
-                }
-            }
-        }
-    }
-
-    // MARK: - Saved Payment Method
-    private var paymentMethodCard: some View {
-        profileCard(icon: "creditcard", title: "Saved Payment Method", linkLabel: "Manage") {
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(hex: "EEF2FF"))
-                    .frame(width: 52, height: 34)
-                    .overlay(
-                        Text("VISA")
-                            .font(.system(size: 13, weight: .bold, design: .serif))
-                            .foregroundColor(Color(hex: "1A3CC8"))
-                    )
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Visa ending in 4242")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(primary)
-                    Text("Expires 09/26")
-                        .font(.system(size: 12))
-                        .foregroundColor(secondary)
-                }
-
-                Spacer()
-
-                Text("Default")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(hex: "3A9E5A"))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(Color(hex: "E6F5EC"))
-                    .cornerRadius(20)
-            }
-        }
-    }
-
-    // MARK: - Loyalty Points
-    private var loyaltyPointsCard: some View {
-        profileCard(icon: "star", title: "Loyalty Points", linkLabel: "View Details") {
-            HStack(spacing: 12) {
+    // MARK: - Header
+    private var profileHeader: some View {
+        ZStack(alignment: .bottom) {
+            brand.frame(height: 160)
+            VStack(spacing: 0) {
                 ZStack {
-                    Circle()
-                        .fill(Color(hex: "FFF0EC"))
-                        .frame(width: 48, height: 48)
-                    Image(systemName: "star")
-                        .font(.system(size: 20))
-                        .foregroundColor(accent)
+                    Circle().fill(Color.white).frame(width: 90, height: 90)
+                        .shadow(color: brand.opacity(0.2), radius: 12)
+                    Text(initials(editFullName))
+                        .font(.system(size: 30, weight: .bold)).foregroundColor(brand)
                 }
-
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        Text("1,280")
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(primary)
-                        Text("Points")
-                            .font(.system(size: 14))
-                            .foregroundColor(secondary)
-                    }
-                    Text("Redeem your points on services & products")
-                        .font(.system(size: 12))
-                        .foregroundColor(secondary)
-                        .lineLimit(2)
-                }
-
-                Spacer()
-
-                Button(action: {}) {
-                    Text("Redeem Points")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(accent)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(Color(hex: "F5EDE8"))
-                        .cornerRadius(20)
-                }
+                .offset(y: 45)
             }
+        }
+        .padding(.bottom, 60)
+        .overlay(alignment: .topTrailing) {
+            Button(action: { showEditProfile.toggle() }) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
+                    .frame(width: 34, height: 34)
+                    .background(Color.white.opacity(0.2))
+                    .clipShape(Circle())
+            }
+            .padding(.top, 16).padding(.trailing, 20)
         }
     }
 
-    // MARK: - Quick Links 2×2 Grid
-    private var quickLinksGrid: some View {
-        let links: [(String, String, String)] = [
-            ("calendar.badge.clock", "Booking History",  "View your past & upcoming appointments"),
-            ("heart",                "Saved Salons",      "Your favorite salons at your fingertips"),
-            ("doc.text",             "Receipts",          "View and download your receipts"),
-            ("headphones",           "Help & Support",    "Get help, faqs and contact support"),
-        ]
-        return LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            ForEach(links, id: \.1) { icon, title, subtitle in
-                Button(action: {}) {
-                    HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: icon)
-                            .font(.system(size: 18))
-                            .foregroundColor(accent)
-                            .frame(width: 24)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(title)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(primary)
-                                .multilineTextAlignment(.leading)
-                            Text(subtitle)
-                                .font(.system(size: 11))
-                                .foregroundColor(secondary)
-                                .multilineTextAlignment(.leading)
-                                .lineLimit(3)
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(14)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(card)
-                    .cornerRadius(14)
-                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-                }
-                .buttonStyle(.plain)
+    private func initials(_ name: String) -> String {
+        name.split(separator: " ").prefix(2).compactMap { $0.first }.map { String($0) }.joined()
+    }
+
+    // MARK: - Name/email below avatar
+    private var statsRow: some View {
+        VStack(spacing: 4) {
+            Text(editFullName)
+                .font(.system(size: 18, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
+            Text(editEmail)
+                .font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
+            HStack(spacing: 20) {
+                statItem(value: "\(BookingStore.shared.bookings.count)", label: "Bookings")
+                statDivider
+                statItem(value: "\(BookingStore.shared.bookings.filter { $0.review != nil }.count)", label: "Reviews")
+                statDivider
+                statItem(value: "GLOWZA", label: "Member")
             }
+            .padding(.top, 12)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 8)
+    }
+
+    private func statItem(value: String, label: String) -> some View {
+        VStack(spacing: 2) {
+            Text(value).font(.system(size: 18, weight: .bold)).foregroundColor(brand)
+            Text(label).font(.system(size: 11)).foregroundColor(Color(hex: "8A8A8A"))
         }
     }
 
-    // MARK: - Card Container
-    private func profileCard<Content: View>(
-        icon: String,
-        title: String,
-        linkLabel: String,
-        @ViewBuilder content: () -> Content
+    private var statDivider: some View {
+        Rectangle().fill(Color(hex: "EBEBEB")).frame(width: 1, height: 30)
+    }
+
+    // MARK: - Section Group
+    private func sectionGroup<C: View>(title: String, @ViewBuilder content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .semibold)).foregroundColor(Color(hex: "ABABAB"))
+                .padding(.horizontal, 20).padding(.top, 24).padding(.bottom, 8)
+            VStack(spacing: 0) { content() }
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - Expandable Row
+    private func expandableRow<C: View>(
+        icon: String, label: String,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> C
     ) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(accent)
-                Text(title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(primary)
-                Spacer()
-                Button(action: {}) {
-                    Text(linkLabel)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(accent)
+        VStack(spacing: 0) {
+            Button(action: { withAnimation(.easeInOut(duration: 0.25)) { isExpanded.wrappedValue.toggle() } }) {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
+                        Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
+                    }
+                    Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
+                    Spacer()
+                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "ABABAB"))
                 }
+                .padding(.horizontal, 16).frame(height: 56)
             }
-            content()
-        }
-        .padding(16)
-        .background(card)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
-    }
+            .buttonStyle(.plain)
 
-    // MARK: - Info Cell
-    private func infoCell(icon: String, text: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(secondary)
-            Text(text)
-                .font(.system(size: 13))
-                .foregroundColor(primary)
+            if isExpanded.wrappedValue {
+                Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+                content().padding(.horizontal, 16).padding(.vertical, 16)
+            }
+            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
         }
     }
 
-    // MARK: - Pref Cell
-    private func prefCell(icon: String, label: String, value: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(accent)
-                .frame(width: 20)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(primary)
-                Text(value)
-                    .font(.system(size: 12))
-                    .foregroundColor(secondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+    // MARK: - Toggle Row
+    @ViewBuilder
+    private func toggleRow(icon: String, label: String, value: Binding<Bool>) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
+                Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
+            }
+            Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
+            Spacer()
+            Toggle("", isOn: value).tint(brand).labelsHidden()
+        }
+        .padding(.horizontal, 16).frame(height: 56)
+        Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+    }
+
+    // MARK: - Link Row
+    @ViewBuilder
+    private func linkRow(icon: String, label: String) -> some View {
+        Button(action: {}) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(Color(hex: "F5F5F5")).frame(width: 36, height: 36)
+                    Image(systemName: icon).font(.system(size: 14)).foregroundColor(Color(hex: "6B6B6B"))
+                }
+                Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "CCCCCC"))
+            }
+            .padding(.horizontal, 16).frame(height: 56)
+        }
+        .buttonStyle(.plain)
+        Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+    }
+
+    // MARK: - Navigation Link Row
+    @ViewBuilder
+    private func navLinkRow<D: View>(icon: String, label: String, destination: D) -> some View {
+        NavigationLink(destination: destination) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
+                    Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
+                }
+                Text(label).font(.system(size: 15)).foregroundColor(Color(hex: "1A1A1A"))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold)).foregroundColor(Color(hex: "CCCCCC"))
+            }
+            .padding(.horizontal, 16).frame(height: 56)
+        }
+        .buttonStyle(.plain)
+        Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 16)
+    }
+
+    // MARK: - Edit Profile Content
+    @ViewBuilder
+    private func editProfileContent() -> some View {
+        VStack(spacing: 14) {
+            profileField(icon: "person.fill", placeholder: "Full Name", text: $editFullName)
+            profileField(icon: "envelope.fill", placeholder: "Email", text: $editEmail, keyboard: .emailAddress)
+            profileField(icon: "phone.fill", placeholder: "Phone", text: $editPhone, keyboard: .phonePad)
+            Button(action: {}) {
+                Text("Save Changes")
+                    .font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
+                    .frame(maxWidth: .infinity).frame(height: 46)
+                    .background(brand)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func profileField(icon: String, placeholder: String,
+                               text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand).frame(width: 20)
+            TextField(placeholder, text: text).keyboardType(keyboard)
+                .font(.system(size: 14)).foregroundColor(Color(hex: "1A1A1A"))
+        }
+        .padding(12)
+        .background(Color(hex: "F5F5F5"))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: - Change Password Content
+    @ViewBuilder
+    private func changePasswordContent() -> some View {
+        VStack(spacing: 14) {
+            secureField(placeholder: "Current Password", text: $currentPassword)
+            secureField(placeholder: "New Password", text: $newPassword)
+            secureField(placeholder: "Confirm New Password", text: $confirmPassword)
+            if !newPassword.isEmpty && !confirmPassword.isEmpty && newPassword != confirmPassword {
+                Text("Passwords do not match")
+                    .font(.system(size: 12)).foregroundColor(Color(hex: "D9534F"))
+            }
+            Button(action: {}) {
+                Text("Update Password")
+                    .font(.system(size: 15, weight: .semibold)).foregroundColor(.white)
+                    .frame(maxWidth: .infinity).frame(height: 46)
+                    .background(newPassword == confirmPassword && !newPassword.isEmpty
+                                ? brand : Color(hex: "CCCCCC"))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .disabled(newPassword.isEmpty || newPassword != confirmPassword)
+        }
+    }
+
+    private func secureField(placeholder: String, text: Binding<String>) -> some View {
+        SecureField(placeholder, text: text)
+            .font(.system(size: 14)).foregroundColor(Color(hex: "1A1A1A"))
+            .padding(12)
+            .background(Color(hex: "F5F5F5"))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    // MARK: - Security Content
+    @ViewBuilder
+    private func securityContent() -> some View {
+        VStack(spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Two-Factor Authentication")
+                        .font(.system(size: 14, weight: .medium)).foregroundColor(Color(hex: "1A1A1A"))
+                    Text("Add an extra layer of security")
+                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
+                }
+                Spacer()
+                Toggle("", isOn: $twoFactorEnabled).tint(brand).labelsHidden()
+            }
+            .padding(12)
+            .background(Color(hex: "F5F5F5"))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Login Notifications")
+                        .font(.system(size: 14, weight: .medium)).foregroundColor(Color(hex: "1A1A1A"))
+                    Text("Get alerts for new logins")
+                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
+                }
+                Spacer()
+                Toggle("", isOn: $loginNotificationsOn).tint(brand).labelsHidden()
+            }
+            .padding(12)
+            .background(Color(hex: "F5F5F5"))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+    }
+
+    // MARK: - Sign Out
+    private var signOutButton: some View {
+        Button(action: { showSignOutAlert = true }) {
+            HStack(spacing: 8) {
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 14))
+                Text("Sign Out")
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundColor(Color(hex: "D9534F"))
+            .frame(maxWidth: .infinity).frame(height: 50)
+            .background(Color(hex: "D9534F").opacity(0.07))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(hex: "D9534F").opacity(0.2), lineWidth: 1))
+        }
     }
 }
 
-// MARK: - Flow Layout for tag pills
-struct ProfileFlowLayout: Layout {
-    var spacing: CGFloat = 8
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? 0
-        var x: CGFloat = 0
-        var y: CGFloat = 0
-        var rowH: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x + size.width > width && x > 0 {
-                x = 0; y += rowH + spacing; rowH = 0
-            }
-            x += size.width + spacing
-            rowH = max(rowH, size.height)
-        }
-        return CGSize(width: width, height: y + rowH)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var x = bounds.minX
-        var y = bounds.minY
-        var rowH: CGFloat = 0
-        for sub in subviews {
-            let size = sub.sizeThatFits(.unspecified)
-            if x + size.width > bounds.maxX && x > bounds.minX {
-                x = bounds.minX; y += rowH + spacing; rowH = 0
-            }
-            sub.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
-            x += size.width + spacing
-            rowH = max(rowH, size.height)
-        }
-    }
-}
-
-// MARK: - Sign Out Notification
-extension Notification.Name {
-    static let glowzaSignOut = Notification.Name("GlowzaSignOut")
-}
-
-#Preview {
-    ProfileView()
-}
-
+#Preview { ProfileView() }

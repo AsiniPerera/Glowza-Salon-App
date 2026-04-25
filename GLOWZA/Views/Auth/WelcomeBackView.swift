@@ -1,7 +1,8 @@
 import SwiftUI
-import LocalAuthentication
 
-// MARK: - Welcome Back View (cream + gold theme, matches home palette)
+private let brand = Color(hex: "AF1C47")
+
+// MARK: - Welcome Back View
 struct WelcomeBackView: View {
 
     let userName: String
@@ -9,101 +10,93 @@ struct WelcomeBackView: View {
 
     @State private var avatarScale: CGFloat = 0.5
     @State private var avatarOpacity: CGFloat = 0
-    @State private var textOpacity: CGFloat = 0
-    @State private var textOffset: CGFloat = 24
-    @State private var cardOpacity: CGFloat = 0
-    @State private var cardOffset: CGFloat = 20
-    @State private var buttonOpacity: CGFloat = 0
+    @State private var contentOpacity: CGFloat = 0
+    @State private var contentOffset: CGFloat = 24
 
     var body: some View {
         ZStack {
-            Color.glowzaBackground.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
+
+            // Soft backdrop
+            Circle()
+                .fill(brand.opacity(0.05))
+                .frame(width: 340, height: 340)
+                .offset(x: 160, y: -200)
 
             VStack(spacing: 0) {
                 Spacer()
 
-                // ── Avatar + Greeting ──
+                // ── Avatar + greeting ──
                 VStack(spacing: 20) {
                     ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.glowzaGold.opacity(0.25), Color.glowzaGold.opacity(0.05)],
-                                    startPoint: .topLeading, endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 112, height: 112)
-
-                        Circle()
-                            .stroke(Color.glowzaGold.opacity(0.5), lineWidth: 2)
-                            .frame(width: 112, height: 112)
-
+                        Circle().fill(brand.opacity(0.10)).frame(width: 110, height: 110)
+                        Circle().fill(brand.opacity(0.15)).frame(width: 86, height: 86)
+                        Circle().fill(brand).frame(width: 68, height: 68)
+                            .shadow(color: brand.opacity(0.30), radius: 14, x: 0, y: 6)
                         Image(systemName: "person.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(Color.glowzaGoldDark)
+                            .font(.system(size: 30, weight: .medium))
+                            .foregroundColor(.white)
                     }
                     .scaleEffect(avatarScale)
                     .opacity(avatarOpacity)
 
                     VStack(spacing: 6) {
                         Text("Hello, Welcome Back 👋")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundColor(Color.glowzaTextPrimary)
-
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(Color(hex: "4A4A4A"))
                         Text(userName)
                             .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(Color.glowzaGoldDark)
-
-                        Text("We're glad to have you back.")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(Color.glowzaSubtext)
+                            .foregroundColor(Color(hex: "1A1A1A"))
+                        Text("Great to have you back!")
+                            .font(.system(size: 14))
+                            .foregroundColor(Color(hex: "8A8A8A"))
                     }
-                    .opacity(textOpacity)
-                    .offset(y: textOffset)
+                    .opacity(contentOpacity)
+                    .offset(y: contentOffset)
                 }
 
                 Spacer().frame(height: 32)
 
-                // ── Upcoming Appointment Card ──
+                // ── Upcoming appointment card ──
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Label("Upcoming Appointment", systemImage: "calendar.badge.clock")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.glowzaGoldDark)
+                            .foregroundColor(brand)
                         Spacer()
+                        Text("View")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(brand)
                     }
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 14)
 
-                    Divider().background(Color.glowzaGold.opacity(0.3))
+                    Rectangle().fill(Color(hex: "F5F5F5")).frame(height: 1)
                         .padding(.bottom, 14)
 
                     HStack(spacing: 14) {
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.glowzaGold.opacity(0.15))
+                            .fill(brand.opacity(0.08))
                             .frame(width: 50, height: 50)
                             .overlay(
                                 Image(systemName: "sparkles")
-                                    .font(.system(size: 22))
-                                    .foregroundColor(Color.glowzaGoldDark)
+                                    .font(.system(size: 20))
+                                    .foregroundColor(brand)
                             )
-
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Laser Treatment")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color.glowzaTextPrimary)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(Color(hex: "1A1A1A"))
                             Text("Tomorrow · 10:00 AM")
                                 .font(.system(size: 13))
-                                .foregroundColor(Color.glowzaSubtext)
+                                .foregroundColor(Color(hex: "6B6B6B"))
                             Text("Haley Avenue, Colombo")
                                 .font(.system(size: 12))
-                                .foregroundColor(Color.glowzaGoldDark)
+                                .foregroundColor(brand)
                         }
-
                         Spacer()
-
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.glowzaGoldDark.opacity(0.6))
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(hex: "ABABAB"))
                     }
                 }
                 .padding(20)
@@ -111,12 +104,12 @@ struct WelcomeBackView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .shadow(color: Color.black.opacity(0.06), radius: 16, x: 0, y: 6)
                 .padding(.horizontal, 24)
-                .opacity(cardOpacity)
-                .offset(y: cardOffset)
+                .opacity(contentOpacity)
+                .offset(y: contentOffset)
 
                 Spacer()
 
-                // ── Enter Button ──
+                // ── CTA ──
                 Button(action: onContinue) {
                     HStack(spacing: 10) {
                         Text("Go to Dashboard")
@@ -129,39 +122,24 @@ struct WelcomeBackView: View {
                     .padding(.horizontal, 24)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.glowzaGold, Color.glowzaGoldDark],
-                            startPoint: .leading, endPoint: .trailing
-                        )
-                    )
+                    .background(brand)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: Color.glowzaGold.opacity(0.4), radius: 12, x: 0, y: 6)
+                    .shadow(color: brand.opacity(0.30), radius: 12, x: 0, y: 6)
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 52)
-                .opacity(buttonOpacity)
+                .opacity(contentOpacity)
             }
         }
-        .onAppear { animateIn() }
-    }
-
-    private func animateIn() {
-        withAnimation(.spring(response: 0.65, dampingFraction: 0.65).delay(0.1)) {
-            avatarScale = 1.0; avatarOpacity = 1.0
-        }
-        withAnimation(.easeOut(duration: 0.5).delay(0.35)) {
-            textOpacity = 1.0; textOffset = 0
-        }
-        withAnimation(.easeOut(duration: 0.5).delay(0.55)) {
-            cardOpacity = 1.0; cardOffset = 0
-        }
-        withAnimation(.easeOut(duration: 0.4).delay(0.8)) {
-            buttonOpacity = 1.0
+        .onAppear {
+            withAnimation(.spring(response: 0.65, dampingFraction: 0.65).delay(0.1)) {
+                avatarScale = 1; avatarOpacity = 1
+            }
+            withAnimation(.easeOut(duration: 0.5).delay(0.35)) {
+                contentOpacity = 1; contentOffset = 0
+            }
         }
     }
 }
 
-#Preview {
-    WelcomeBackView(userName: "Asini") {}
-}
+#Preview { WelcomeBackView(userName: "Asini") {} }

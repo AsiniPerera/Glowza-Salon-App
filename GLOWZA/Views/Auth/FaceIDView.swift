@@ -1,91 +1,93 @@
 import SwiftUI
+import LocalAuthentication
 
+private let brand = Color(hex: "AF1C47")
 
+// MARK: - Face ID Auth View
 struct FaceIDAuthView: View {
     @StateObject private var viewModel = AuthViewModel()
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.glowzaBackground, Color.white],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
-            VStack(spacing: 28) {
+            Circle().fill(brand.opacity(0.06)).frame(width: 360).offset(x: 160, y: -200)
+            Circle().fill(brand.opacity(0.04)).frame(width: 280).offset(x: -130, y: 320)
+
+            VStack(spacing: 0) {
                 Spacer()
 
-                VStack(spacing: 18) {
+                VStack(spacing: 32) {
+                    // Icon
                     ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.9))
-                            .frame(width: 128, height: 128)
-                            .shadow(color: Color.black.opacity(0.08), radius: 24, y: 12)
-
+                        Circle().fill(brand.opacity(0.08)).frame(width: 130, height: 130)
+                        Circle().fill(brand.opacity(0.12)).frame(width: 100, height: 100)
+                        Circle().fill(brand).frame(width: 76, height: 76)
+                            .shadow(color: brand.opacity(0.30), radius: 16)
                         Image(systemName: viewModel.biometricIconName)
-                            .font(.system(size: 52, weight: .light))
-                            .foregroundColor(Color.glowzaGoldDark)
+                            .font(.system(size: 34, weight: .light))
+                            .foregroundColor(.white)
                     }
 
-                    Text("Secure Sign In")
-                        .font(.system(size: 32, weight: .semibold, design: .rounded))
-                        .foregroundColor(.black)
-
-                    Text("Use Face ID for a faster, private sign in to your GLOWZA account.")
-                        .font(.system(size: 17, weight: .regular))
-                        .foregroundColor(.black.opacity(0.65))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                        .padding(.horizontal, 18)
+                    VStack(spacing: 10) {
+                        Text("Secure Sign In")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(Color(hex: "1A1A1A"))
+                        Text("Use Face ID for a faster, private\nsign in to your GLOWZA account.")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "6B6B6B"))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                    }
                 }
 
-                VStack(spacing: 14) {
+                Spacer().frame(height: 44)
+
+                VStack(spacing: 16) {
                     Button(action: viewModel.authenticate) {
                         HStack(spacing: 10) {
                             if viewModel.isAuthenticating {
-                                ProgressView()
-                                    .tint(.white)
+                                ProgressView().tint(.white)
                             } else {
                                 Image(systemName: viewModel.biometricIconName)
+                                    .font(.system(size: 18, weight: .medium))
                             }
-
-                            Text(viewModel.isAuthenticating ? "Checking Face ID..." : viewModel.biometricButtonTitle)
+                            Text(viewModel.isAuthenticating ? "Checking Face ID…" : viewModel.biometricButtonTitle)
+                                .font(.system(size: 16, weight: .semibold))
                         }
-                        .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.glowzaGold)
-                        .cornerRadius(14)
+                        .frame(height: 54)
+                        .background(viewModel.isAuthenticating ? Color(hex: "BEBEBE") : brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .shadow(color: viewModel.isAuthenticating ? .clear : brand.opacity(0.28), radius: 12, x: 0, y: 5)
                     }
                     .disabled(viewModel.isAuthenticating)
 
-                    Text("Your biometric data stays on this device and is never stored by GLOWZA.")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.black.opacity(0.45))
-                        .multilineTextAlignment(.center)
+                    if viewModel.isAuthenticated {
+                        Label("Face ID verified — you're signed in", systemImage: "checkmark.seal.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "00A878"))
+                            .transition(.scale.combined(with: .opacity))
+                    }
+
+                    HStack(spacing: 5) {
+                        Image(systemName: "lock.shield")
+                            .font(.system(size: 11))
+                            .foregroundColor(brand.opacity(0.6))
+                        Text("Your biometric data stays on this device")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "ABABAB"))
+                    }
                 }
-                .padding(24)
-                .background(Color.white.opacity(0.78))
+                .padding(28)
+                .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.glowzaGold.opacity(0.22), lineWidth: 1)
+                        .stroke(Color(hex: "F0F0F0"), lineWidth: 1)
                 )
-
-                if viewModel.isAuthenticated {
-                    VStack(spacing: 8) {
-                        Label("Face ID verified", systemImage: "checkmark.seal.fill")
-                            .font(.headline)
-                            .foregroundColor(.green)
-
-                        Text("You're signed in and ready to continue.")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(.black.opacity(0.65))
-                    }
-                    .padding(.top, 8)
-                }
 
                 Spacer()
             }
@@ -95,9 +97,7 @@ struct FaceIDAuthView: View {
         .navigationTitle("Face ID")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Authentication Issue", isPresented: errorBinding) {
-            Button("OK", role: .cancel) {
-                viewModel.resetError()
-            }
+            Button("OK", role: .cancel) { viewModel.resetError() }
         } message: {
             Text(viewModel.authenticationError ?? "")
         }
@@ -106,17 +106,11 @@ struct FaceIDAuthView: View {
     private var errorBinding: Binding<Bool> {
         Binding(
             get: { viewModel.authenticationError != nil },
-            set: { newValue in
-                if !newValue {
-                    viewModel.resetError()
-                }
-            }
+            set: { if !$0 { viewModel.resetError() } }
         )
     }
 }
 
 #Preview {
-    NavigationStack {
-        FaceIDAuthView()
-    }
+    NavigationStack { FaceIDAuthView() }
 }

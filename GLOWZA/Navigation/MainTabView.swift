@@ -7,42 +7,37 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
 
-            // 1 — Home
             HomeView()
                 .tabItem {
                     Label("Home", systemImage: selectedTab == 0 ? "house.fill" : "house")
                 }
                 .tag(0)
 
-            // 2 — Bookings
             BookingsView()
                 .tabItem {
                     Label("Bookings", systemImage: selectedTab == 1 ? "calendar.badge.clock" : "calendar")
                 }
                 .tag(1)
 
-            // 3 — AI Beauty
             AIBeautyView()
                 .tabItem {
                     Label("AI Beauty", systemImage: "wand.and.stars")
                 }
                 .tag(2)
 
-            // 4 — Compare
             CompareView()
                 .tabItem {
                     Label("Compare", systemImage: selectedTab == 3 ? "arrow.left.arrow.right.circle.fill" : "arrow.left.arrow.right.circle")
                 }
                 .tag(3)
 
-            // 5 — Profile
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: selectedTab == 4 ? "person.fill" : "person")
                 }
                 .tag(4)
         }
-        .tint(Color.glowzaGold)
+        .tint(Color(hex: "AF1C47"))
         .onAppear { styleTabBar() }
     }
 
@@ -52,35 +47,37 @@ struct MainTabView: View {
         appearance.backgroundColor = UIColor.white
 
         let normalAttr: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(Color.glowzaTextDisabled)
+            .foregroundColor: UIColor(Color(hex: "BEBEBE"))
         ]
         let selectedAttr: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(Color.glowzaGold)
+            .foregroundColor: UIColor(Color(hex: "AF1C47"))
         ]
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttr
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttr
+        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(Color(hex: "BEBEBE"))
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Color(hex: "AF1C47"))
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }
 
-// MARK: - Placeholders (replace when screens are built)
+// MARK: - Placeholder views kept for build compatibility
 struct BookingsPlaceholderView: View {
     var body: some View {
-        PlaceholderScreen(icon: "calendar", title: "Bookings", subtitle: "Share Figma design to build")
+        PlaceholderScreen(icon: "calendar", title: "Bookings", subtitle: "")
     }
 }
 
 struct AIPlaceholderView: View {
     var body: some View {
-        PlaceholderScreen(icon: "wand.and.stars", title: "AI Beauty", subtitle: "Share Figma design to build")
+        PlaceholderScreen(icon: "wand.and.stars", title: "AI Beauty", subtitle: "")
     }
 }
 
 struct ProfilePlaceholderView: View {
     var body: some View {
-        PlaceholderScreen(icon: "person.circle", title: "Profile", subtitle: "Share Figma design to build")
+        PlaceholderScreen(icon: "person.circle", title: "Profile", subtitle: "")
     }
 }
 
@@ -91,22 +88,17 @@ struct PlaceholderScreen: View {
 
     var body: some View {
         ZStack {
-            Color.glowzaBackground.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
             VStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.system(size: 52))
-                    .foregroundColor(Color.glowzaGoldDark.opacity(0.5))
+                    .foregroundColor(Color(hex: "AF1C47").opacity(0.4))
                 Text(title)
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(Color.glowzaTextPrimary)
-                Text(subtitle)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color.glowzaSubtext)
+                    .foregroundColor(Color(hex: "1A1A1A"))
             }
         }
     }
 }
 
-#Preview {
-    MainTabView()
-}
+#Preview { MainTabView() }

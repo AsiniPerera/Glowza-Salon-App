@@ -1,363 +1,402 @@
 import SwiftUI
 
+private let brand = Color(hex: "AF1C47")
+
+// MARK: - Rounded Corner Helper
+struct RoundedCorner: Shape {
+    var radius: CGFloat
+    var corners: UIRectCorner
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners,
+                                cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+// MARK: - Salon Detail View
 struct SalonDetailView: View {
 
     let salonName: String
-    @State private var showBookingFlow = false
-    @State private var preselectedService: SalonService? = nil
-    @State private var activeTab = 0
-    @Environment(TreatmentComparisonStore.self) private var treatStore
+
+    @Environment(TreatmentComparisonStore.self) private var comparisonStore
     @Environment(\.dismiss) private var dismiss
 
-    private var salon: Salon { SalonCatalog.shared.salon(named: salonName) }
-    private var reviews: [BookingReview] { BookingStore.shared.reviews(forSalon: salonName) }
+    @State private var showBookingFlow = false
+    @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0])
+    @State private var isFavourited    = false
+    @State private var photoIndex      = 0
+
+    private var salon: Salon {
+        SalonCatalog.shared.salon(named: salonName)
+    }
+
+    private var reviews: [BookingReview] {
+        let real = BookingStore.shared.reviews(forSalon: salonName)
+        return real.isEmpty ? sampleReviews : real
+    }
+
+    private let sampleReviews: [BookingReview] = [
+        BookingReview(rating: 5, comment: "Absolutely loved the facial treatment! Skin is glowing.", date: Date(), reviewerName: "Dilnoza R."),
+        BookingReview(rating: 4, comment: "Professional staff, clean environment. Will return.", date: Date(), reviewerName: "Amara S."),
+    ]
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.glowzaBackground.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     heroSection
-                    infoStrip
-                    contentSection
-                    Spacer().frame(height: 100)
+                    infoSheet
                 }
             }
+            .ignoresSafeArea(edges: .top)
 
-            bookNowBar
+            // Sticky book bar
+            bookBar
         }
         .navigationBarHidden(true)
+        .onAppear {
+            bookingDraft = BookingDraft(salon: salon)
+            isFavourited = FavoritesStore.shared.isFavorite(salon)
+        }
         .fullScreenCover(isPresented: $showBookingFlow) {
-            BookingFlowView(
-                draft: BookingDraft(salon: salon, service: preselectedService)
-            )
+            BookingFlowView(draft: bookingDraft)
         }
     }
 
     // MARK: - Hero
     private var heroSection: some View {
-        ZStack(alignment: .topLeading) {
-            // Placeholder hero image
+        ZStack(alignment: .top) {
+            // Photo placeholder
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [brand.opacity(0.15), Color(hex: "F5F5F5")],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .frame(height: 320)
+                .overlay(
+                    Image(systemName: "photo")
+                        .font(.system(size: 40))
+                        .foregroundColor(Color(hex: "DCDCDC"))
+                )
+
+            // Overlay gradient
             LinearGradient(
-                colors: [Color(hex: "4A3828"), Color(hex: "C8860A").opacity(0.7)],
-                startPoint: .bottomLeading, endPoint: .topTrailing
+                colors: [Color.black.opacity(0.35), .clear],
+                startPoint: .top, endPoint: .center
             )
-            .frame(height: 260)
-            .overlay(
-                Image(systemName: "building.2.fill")
-                    .font(.system(size: 90))
-                    .foregroundColor(.white.opacity(0.07))
-                    .offset(x: 80, y: 20)
-            )
+            .frame(height: 320)
 
-            // Back button
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(12)
-                    .background(Color.black.opacity(0.3))
-                    .clipShape(Circle())
-            }
-            .padding(.top, 56)
-            .padding(.leading, 20)
+            // Photo counter
+            Text("\(photoIndex + 1) / 6")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.black.opacity(0.4))
+                .clipShape(Capsule())
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 56)
+                .padding(.trailing, 20)
 
-            // Name overlay
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color.glowzaGold)
-                    Text("\(salon.rating, specifier: "%.1f")  (\(salon.reviewCount) reviews)")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white)
-                }
-                Text(salon.name)
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.white)
-                Label(salon.location, systemImage: "mappin.fill")
-                    .font(.system(size: 13))
-                    .foregroundColor(.white.opacity(0.85))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 22)
-            .frame(height: 260, alignment: .bottom)
-        }
-    }
-
-    // MARK: - Info Strip
-    private var infoStrip: some View {
-        HStack(spacing: 0) {
-            infoChip(icon: "phone.fill",       text: salon.phone)
-            Divider().frame(height: 30)
-            infoChip(icon: "clock.fill",       text: salon.openHours)
-            Divider().frame(height: 30)
-            infoChip(icon: "location.fill",    text: salon.distance)
-        }
-        .padding(.vertical, 14)
-        .background(Color.white)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-    }
-
-    private func infoChip(icon: String, text: String) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(Color.glowzaGoldDark)
-            Text(text)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(Color.glowzaTextPrimary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 4)
-    }
-
-    // MARK: - Content (About / Services / Reviews tabs)
-    private var contentSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Custom segmented tabs
-            HStack(spacing: 0) {
-                ForEach(["About", "Services", "Reviews"], id: \.self) { tab in
-                    let idx = ["About", "Services", "Reviews"].firstIndex(of: tab)!
-                    Button(action: { withAnimation { activeTab = idx } }) {
-                        VStack(spacing: 6) {
-                            Text(tab)
-                                .font(.system(size: 14, weight: activeTab == idx ? .bold : .regular))
-                                .foregroundColor(activeTab == idx ? Color.glowzaGoldDark : Color.glowzaSubtext)
-                            Rectangle()
-                                .fill(activeTab == idx ? Color.glowzaGoldDark : Color.clear)
-                                .frame(height: 2)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .background(Color.white)
-            .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
-
-            switch activeTab {
-            case 0: aboutTab
-            case 1: servicesTab
-            default: reviewsTab
-            }
-        }
-    }
-
-    // About tab
-    private var aboutTab: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("About Us")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(Color.glowzaTextPrimary)
-
-            Text(salon.about)
-                .font(.system(size: 14))
-                .foregroundColor(Color.glowzaTextPrimary.opacity(0.8))
-                .lineSpacing(5)
-
-            // Rating summary
-            HStack(spacing: 20) {
-                VStack(spacing: 4) {
-                    Text("\(salon.rating, specifier: "%.1f")")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(Color.glowzaGoldDark)
-                    HStack(spacing: 2) {
-                        ForEach(1...5, id: \.self) { i in
-                            Image(systemName: Double(i) <= salon.rating ? "star.fill" : "star")
-                                .font(.system(size: 12))
-                                .foregroundColor(Color.glowzaGold)
-                        }
-                    }
-                    Text("\(salon.reviewCount) reviews")
-                        .font(.system(size: 11))
-                        .foregroundColor(Color.glowzaSubtext)
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach([5, 4, 3, 2, 1], id: \.self) { star in
-                        HStack(spacing: 8) {
-                            Text("\(star)")
-                                .font(.system(size: 11))
-                                .foregroundColor(Color.glowzaSubtext)
-                                .frame(width: 10)
-                            GeometryReader { geo in
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: "E0D5C5")).frame(height: 6)
-                                    RoundedRectangle(cornerRadius: 3).fill(Color.glowzaGold)
-                                        .frame(width: geo.size.width * barFraction(star: star), height: 6)
-                                }
-                            }
-                            .frame(height: 6)
-                        }
-                    }
-                }
-            }
-            .padding(16)
-            .glowzaCard()
-        }
-        .padding(.horizontal, 20)
-    }
-
-    private func barFraction(star: Int) -> CGFloat {
-        let fractions: [Int: CGFloat] = [5: 0.72, 4: 0.15, 3: 0.07, 2: 0.04, 1: 0.02]
-        return fractions[star] ?? 0
-    }
-
-    // Services tab
-    private var servicesTab: some View {
-        VStack(spacing: 12) {
-            ForEach(salon.services) { service in
-                serviceRow(service)
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-
-    private func serviceRow(_ service: SalonService) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.glowzaGold.opacity(0.12))
-                    .frame(width: 48, height: 48)
-                Image(systemName: service.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(Color.glowzaGoldDark)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(service.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Color.glowzaTextPrimary)
-                HStack(spacing: 10) {
-                    Label(service.duration, systemImage: "clock")
-                    Text(service.category)
-                        .padding(.horizontal, 8).padding(.vertical, 2)
-                        .background(Color.glowzaGold.opacity(0.1))
-                        .clipShape(Capsule())
-                }
-                .font(.system(size: 11))
-                .foregroundColor(Color.glowzaSubtext)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 6) {
-                Text("LKR \(Int(service.price))")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(Color.glowzaGoldDark)
-                HStack(spacing: 8) {
-                    // Compare toggle
-                    let added = treatStore.isAdded(service, from: salon.name)
-                    Button(action: {
-                        if added {
-                            if let item = treatStore.items.first(where: {
-                                $0.service.id == service.id && $0.salonName == salon.name
-                            }) { treatStore.remove(item) }
-                        } else {
-                            treatStore.add(service: service, salonName: salon.name)
-                        }
-                    }) {
-                        Image(systemName: added ? "checkmark.circle.fill" : "plus.circle")
-                            .font(.system(size: 22))
-                            .foregroundColor(added ? Color.glowzaGoldDark : Color.glowzaSubtext.opacity(0.5))
-                    }
-                    Button(action: {
-                        preselectedService = service
-                        showBookingFlow = true
-                    }) {
-                        Text("Book")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 14).padding(.vertical, 6)
-                            .background(Color.glowzaGoldDark)
-                            .clipShape(Capsule())
-                    }
-                }
-            }
-        }
-        .padding(14)
-        .glowzaCard()
-    }
-
-    // Reviews tab
-    private var reviewsTab: some View {
-        VStack(spacing: 12) {
-            if reviews.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "star.bubble")
-                        .font(.system(size: 36)).foregroundColor(Color.glowzaSubtext.opacity(0.4))
-                    Text("No reviews yet")
-                        .font(.system(size: 15)).foregroundColor(Color.glowzaSubtext)
-                }
-                .frame(maxWidth: .infinity).padding(.vertical, 40)
-            } else {
-                ForEach(reviews) { review in
-                    reviewCard(review)
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-
-    private func reviewCard(_ review: BookingReview) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+            // Back + action buttons
             HStack {
-                ZStack {
-                    Circle().fill(Color.glowzaGold.opacity(0.15)).frame(width: 38, height: 38)
-                    Text(String(review.reviewerName.prefix(1)))
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .frame(width: 40, height: 40)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.12), radius: 6)
+                }
+                Spacer()
+                HStack(spacing: 10) {
+                    Button(action: {
+                        isFavourited.toggle()
+                        FavoritesStore.shared.toggle(salon)
+                    }) {
+                        Image(systemName: isFavourited ? "heart.fill" : "heart")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(isFavourited ? brand : Color(hex: "1A1A1A"))
+                            .frame(width: 40, height: 40)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.12), radius: 6)
+                    }
+                    Button(action: {}) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .frame(width: 40, height: 40)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .shadow(color: .black.opacity(0.12), radius: 6)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 56)
+        }
+    }
+
+    // MARK: - Info Sheet
+    private var infoSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+
+            // ── Header ──
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(salon.name)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(Color(hex: "1A1A1A"))
+
+                        HStack(spacing: 8) {
+                            Text("PRO")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(brand)
+                                .clipShape(Capsule())
+
+                            HStack(spacing: 4) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "F59E0B"))
+                                Text(String(format: "%.1f", salon.rating))
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(hex: "1A1A1A"))
+                                Text("(\(salon.reviewCount) reviews)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Color(hex: "8A8A8A"))
+                            }
+                        }
+                    }
+                    Spacer()
+                    // Add first service to compare
+                    if let firstService = salon.services.first {
+                        Button(action: {
+                            if comparisonStore.isAdded(firstService, from: salon.name) {
+                                if let item = comparisonStore.items.first(where: {
+                                    $0.service.id == firstService.id && $0.salonName == salon.name
+                                }) { comparisonStore.remove(item) }
+                            } else {
+                                comparisonStore.add(service: firstService, salonName: salon.name)
+                            }
+                        }) {
+                            Image(systemName: comparisonStore.isAdded(firstService, from: salon.name)
+                                  ? "checkmark.circle.fill" : "plus.circle")
+                                .font(.system(size: 28))
+                                .foregroundColor(brand)
+                        }
+                    }
+                }
+
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(brand)
+                    Text(salon.location)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "6B6B6B"))
+                }
+
+                Text(salon.about)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(hex: "6B6B6B"))
+                    .lineSpacing(4)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+
+            divider
+
+            // ── Popular Services ──
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Popular Services")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                    .padding(.horizontal, 20)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(salon.services) { service in
+                            Button(action: {
+                                bookingDraft.service = service
+                                showBookingFlow = true
+                            }) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(service.name)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundColor(Color(hex: "1A1A1A"))
+                                    Text(service.duration)
+                                        .font(.system(size: 11))
+                                        .foregroundColor(Color(hex: "8A8A8A"))
+                                    Text("LKR \(Int(service.price))")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(brand)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(Color(hex: "FFF0F4"))
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(brand.opacity(0.20), lineWidth: 1)
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+            .padding(.vertical, 20)
+
+            divider
+
+            // ── Info Cards ──
+            HStack(spacing: 12) {
+                infoCard(icon: "clock.fill", title: "Open Today", value: "9 AM – 7 PM")
+                infoCard(icon: "mappin.and.ellipse", title: "Get Direction", value: salon.location)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+
+            divider
+
+            // ── Reviews ──
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text("Reviews")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(Color.glowzaGoldDark)
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                    Spacer()
+                    Text("See All")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(brand)
+                }
+                .padding(.horizontal, 20)
+
+                ForEach(reviews.prefix(2)) { review in
+                    reviewRow(review)
+                }
+            }
+            .padding(.vertical, 20)
+
+            // Bottom padding for sticky bar
+            Spacer().frame(height: 100)
+        }
+        .background(Color.white)
+        .cornerRadius(24, corners: [.topLeft, .topRight])
+        .offset(y: -24)
+    }
+
+    // MARK: - Book Bar
+    private var bookBar: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1)
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Starting from")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "8A8A8A"))
+                    Text("LKR \(Int(salon.services.first?.price ?? 0))")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                }
+                Button(action: { showBookingFlow = true }) {
+                    Text("Book Now")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .shadow(color: brand.opacity(0.28), radius: 10, x: 0, y: 4)
+                }
+                .frame(maxWidth: 200)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .padding(.bottom, 8)
+            .background(Color.white)
+        }
+    }
+
+    // MARK: - Helpers
+    private var divider: some View {
+        Rectangle().fill(Color(hex: "F5F5F5")).frame(height: 6)
+    }
+
+    private func infoCard(icon: String, title: String, value: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(brand)
+                .frame(width: 36, height: 36)
+                .background(brand.opacity(0.08))
+                .clipShape(Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 11)).foregroundColor(Color(hex: "8A8A8A"))
+                Text(value).font(.system(size: 13, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A")).lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color(hex: "F9F9F9"))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func reviewRow(_ review: BookingReview) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle().fill(brand.opacity(0.10)).frame(width: 38, height: 38)
+                    Text(String(review.reviewerName.prefix(1)))
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(brand)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(review.reviewerName)
-                        .font(.system(size: 14, weight: .semibold)).foregroundColor(Color.glowzaTextPrimary)
-                    Text(review.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.system(size: 11)).foregroundColor(Color.glowzaSubtext)
-                }
-                Spacer()
-                HStack(spacing: 2) {
-                    ForEach(1...5, id: \.self) { i in
-                        Image(systemName: i <= review.rating ? "star.fill" : "star")
-                            .font(.system(size: 12))
-                            .foregroundColor(i <= review.rating ? Color.glowzaGold : Color.glowzaSubtext.opacity(0.3))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                    HStack(spacing: 3) {
+                        ForEach(1...5, id: \.self) { i in
+                            Image(systemName: i <= review.rating ? "star.fill" : "star")
+                                .font(.system(size: 10))
+                                .foregroundColor(i <= review.rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
+                        }
                     }
                 }
+                Spacer()
+                Text(review.date, style: .date)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "ABABAB"))
             }
             Text(review.comment)
-                .font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.8)).lineSpacing(4)
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "6B6B6B"))
+                .lineSpacing(3)
         }
-        .padding(14)
-        .glowzaCard()
+        .padding(.horizontal, 20)
     }
+}
 
-    // MARK: - Book Now Bar
-    private var bookNowBar: some View {
-        HStack(spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Starting from")
-                    .font(.system(size: 11)).foregroundColor(Color.glowzaSubtext)
-                Text("LKR \(Int(salon.services.map(\.price).min() ?? 0))")
-                    .font(.system(size: 18, weight: .bold)).foregroundColor(Color.glowzaGoldDark)
-            }
-            Button(action: {
-                preselectedService = nil
-                showBookingFlow = true
-            }) {
-                Text("Book Now")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity).frame(height: 52)
-                    .background(
-                        LinearGradient(colors: [Color(hex: "E5A820"), Color(hex: "C8860A")],
-                                       startPoint: .leading, endPoint: .trailing)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.horizontal, 20).padding(.vertical, 14)
-        .background(.ultraThinMaterial)
+#Preview {
+    NavigationStack {
+        SalonDetailView(salonName: "Haley Avenue")
+            .environment(TreatmentComparisonStore.shared)
     }
 }

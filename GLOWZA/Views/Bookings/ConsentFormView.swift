@@ -1,20 +1,16 @@
 import SwiftUI
 import PencilKit
-import PDFKit
 
-// MARK: - PencilKit Canvas Wrapper
+// MARK: - Signature Canvas (UIViewRepresentable - must keep)
 struct SignatureCanvasView: UIViewRepresentable {
     @Binding var canvasView: PKCanvasView
 
     func makeUIView(context: Context) -> PKCanvasView {
-        canvasView.backgroundColor = .clear
-        canvasView.isOpaque = false
         canvasView.drawingPolicy = .anyInput
-        canvasView.overrideUserInterfaceStyle = .light
-        canvasView.tool = PKInkingTool(.pen, color: UIColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1), width: 2)
+        canvasView.tool          = PKInkingTool(.pen, color: .black, width: 2)
+        canvasView.backgroundColor = .clear
         return canvasView
     }
-
     func updateUIView(_ uiView: PKCanvasView, context: Context) {}
 }
 
@@ -23,405 +19,380 @@ struct ConsentFormView: View {
 
     @Binding var draft: BookingDraft
     let onConfirm: () -> Void
-    let onBack: () -> Void
+    let onBack:    () -> Void
 
-    @State private var canvasView        = PKCanvasView()
-    @State private var ack1              = false
-    @State private var ack2              = false
-    @State private var isSigned          = false
-    @State private var showShareSheet    = false
-    @State private var pdfURL: URL?      = nil
-    @State private var showSignedBanner  = false
-    @State private var showNotReadyAlert = false
+    @State private var canvasView          = PKCanvasView()
+    @State private var iAcknowledge        = false
+    @State private var isExpanded          = false
 
-    private var bothAcked: Bool  { ack1 && ack2 }
-    private var canProceed: Bool { ack1 && ack2 && isSigned }
+    private let dark   = Color(hex: "1A1A1A")
+    private let accent = Color(hex: "AF1C47")
+    private let bg     = Color.white
+
+    private var subtotal: Double { draft.service?.price ?? 0 }
+    private var taxes:    Double { subtotal * 0.10 }
+    private var total:    Double { subtotal + taxes }
+    private var hasSignature: Bool { !canvasView.drawing.strokes.isEmpty }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color.glowzaTextPrimary)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 56)
-            .padding(.bottom, 8)
+        ZStack(alignment: .bottom) {
+            bg.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
-
-                    // Title block
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Treatment Consent Form")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Color.glowzaTextPrimary)
-                        Text("Please review the clinical details of your upcoming aesthetic procedure to ensure informed consent.")
-                            .font(.system(size: 13))
-                            .foregroundColor(Color.glowzaSubtext)
-                            .lineSpacing(4)
-                    }
-
-                    // Procedure Disclosure card
-                    disclosureCard
-
-                    // Client Acknowledgement
-                    acknowledgementSection
-
-                    // Digital Signature
+                VStack(alignment: .leading, spacing: 20) {
+                    header
+                    consentPreviewSection
                     signatureSection
-
-                    Spacer().frame(height: 20)
+                    consentWarning
+                    paymentSummarySection
+                    Spacer().frame(height: 110)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 16)
                 .padding(.bottom, 20)
             }
 
-            // Bottom actions bar — always visible, always tappable
-            VStack(spacing: 12) {
+            bottomBar
+        }
+        .navigationBarHidden(true)
+    }
 
-                // Row: Download PDF + Confirm & Sign
+    // MARK: - Header
+    private var header: some View {
+        HStack(spacing: 12) {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(dark)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Digital Consent & Payment")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(dark)
+                HStack(spacing: 4) {
+                    Image(systemName: "shield.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(accent)
+                    Text("Secure & Protected")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(accent)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Consent Preview Card
+    private var consentPreviewSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("CONSENT FORM PREVIEW")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(Color(hex: "8A8A8A"))
+                .tracking(1)
+                .padding(.horizontal, 20)
+
+            VStack(alignment: .leading, spacing: 16) {
+                // Header
                 HStack(spacing: 12) {
-
-                    // Download PDF — always clickable
-                    Button(action: downloadConsentPDF) {
-                        HStack(spacing: 7) {
-                            Image(systemName: "arrow.down.doc.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Download PDF")
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                        .foregroundColor(Color.glowzaGoldDark)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.glowzaGoldDark, lineWidth: 1.8)
-                        )
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "F5EDE8"))
+                            .frame(width: 44, height: 44)
+                        Text("G+")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(accent)
                     }
-
-                    // Confirm & Sign — always clickable, gold when ready
-                    Button(action: confirmAndSign) {
-                        HStack(spacing: 7) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Confirm & Sign")
-                                .font(.system(size: 15, weight: .bold))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            LinearGradient(
-                                colors: canProceed
-                                    ? [Color.glowzaGold, Color.glowzaGoldDark]
-                                    : [Color(hex: "CCCCCC"), Color(hex: "BBBBBB")],
-                                startPoint: .leading, endPoint: .trailing
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: canProceed ? Color.glowzaGoldDark.opacity(0.3) : .clear,
-                                radius: 8, x: 0, y: 4)
-                    }
-                }
-
-                // Clear Canvas — always clickable
-                Button(action: clearCanvas) {
-                    HStack(spacing: 7) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.system(size: 13, weight: .semibold))
-                        Text("Clear Canvas")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(Color.glowzaTextPrimary.opacity(0.75))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                    .background(Color.glowzaCardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                }
-
-                // Status hint — shown until all steps complete
-                if !canProceed {
-                    HStack(spacing: 7) {
-                        Image(systemName: "info.circle.fill")
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Treatment Consent Form")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(dark)
+                        Text("Glowza Aesthetic Studio")
                             .font(.system(size: 12))
-                            .foregroundColor(Color.glowzaGoldDark.opacity(0.75))
-                        Text(statusHintText)
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.glowzaSubtext)
-                        Spacer()
+                            .foregroundColor(Color(hex: "8A8A8A"))
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(Color.glowzaCardBg)
-                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    .transition(.opacity)
-                }
-            }
-            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: canProceed)
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 28)
-            .background(Color.glowzaBackground)
-        }
-        .background(Color.glowzaBackground.ignoresSafeArea())
-        .sheet(isPresented: $showShareSheet) {
-            if let url = pdfURL {
-                ShareSheetView(items: [url])
-                    .presentationDetents([.medium, .large])
-            }
-        }
-        .overlay(alignment: .top) {
-            if showSignedBanner {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.seal.fill").foregroundColor(Color.glowzaGoldDark)
-                    Text("Consent form signed successfully!")
-                        .font(.system(size: 14, weight: .semibold)).foregroundColor(Color.glowzaTextPrimary)
                     Spacer()
+                    Button(action: {}) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.fill")
+                                .font(.system(size: 11))
+                            Text("PDF")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color(hex: "F5EDE8"))
+                        .cornerRadius(8)
+                    }
                 }
-                .padding(.horizontal, 20).padding(.vertical, 14)
-                .background(Color.glowzaCardBg)
-                .overlay(Rectangle().fill(Color.glowzaGoldDark).frame(height: 3), alignment: .bottom)
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .zIndex(10)
-            }
-        }
-        .animation(.spring(duration: 0.35), value: showSignedBanner)
-        .alert("Almost there!", isPresented: $showNotReadyAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(statusHintText)
-        }
-    }
 
-    // MARK: - Procedure Disclosure
-    private var disclosureCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Procedure Disclosure")
-                .font(.system(size: 17, weight: .bold))
-                .foregroundColor(Color.glowzaGoldDark)
+                // Sections
+                consentSection(
+                    title: "Purpose of Treatment",
+                    body: "This treatment is designed to improve skin texture, tone, and overall radiance. Results may vary and multiple sessions may be recommended."
+                )
 
-            Text("The proposed aesthetic treatment involves the administration of dermal enhancers and neuromodulators designed to refine facial contours and diminish the appearance of fine lines. While generally safe, this clinical procedure requires an understanding of localised physiological responses.")
-                .font(.system(size: 13))
-                .foregroundColor(Color.glowzaTextPrimary.opacity(0.8))
-                .lineSpacing(5)
-
-            disclosureList(
-                title: "EXPECTED BENEFITS",
-                items: ["Enhanced hydration and volume",
-                        "Restoration of structural symmetry",
-                        "Stimulation of natural collagen synthesis"]
-            )
-
-            disclosureList(
-                title: "POTENTIAL RISKS",
-                items: ["Temporary localised erythema",
-                        "Minor swelling or ecchymosis",
-                        "Sensitivity at injection sites"]
-            )
-        }
-        .padding(18)
-        .background(Color.glowzaBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.glowzaGold.opacity(0.25), lineWidth: 1)
-        )
-    }
-
-    private func disclosureList(title: String, items: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 10, weight: .bold))
-                .foregroundColor(Color.glowzaGoldDark)
-                .kerning(1.2)
-            ForEach(items, id: \.self) { item in
-                HStack(alignment: .top, spacing: 8) {
-                    Circle().fill(Color.glowzaGoldDark).frame(width: 5, height: 5).padding(.top, 5)
-                    Text(item).font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.85)).lineSpacing(3)
+                if isExpanded {
+                    consentSection(
+                        title: "Potential Risks & Side Effects",
+                        body: "Minor redness, swelling, or sensitivity may occur post-treatment. These effects are temporary and typically subside within 24–48 hours."
+                    )
+                    consentSection(
+                        title: "Aftercare & Recommendations",
+                        body: "Avoid sun exposure for 48 hours. Apply SPF 50 daily. Do not use exfoliants or retinoids for 72 hours post-treatment."
+                    )
                 }
-            }
-        }
-    }
 
-    // MARK: - Acknowledgement
-    private var acknowledgementSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Client Acknowledgement")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color.glowzaTextPrimary)
-
-            ackRow(checked: $ack1,
-                   text: "I understand that clinical results vary and that additional touch-up appointments may be necessary for optimal aesthetic outcomes.")
-            ackRow(checked: $ack2,
-                   text: "I confirm that I have disclosed all medical history, including allergies, medications, and previous treatments, to my practitioner.")
-        }
-    }
-
-    private func ackRow(checked: Binding<Bool>, text: String) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Button(action: { checked.wrappedValue.toggle() }) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .stroke(checked.wrappedValue ? Color.glowzaGoldDark : Color(hex: "CCBFA8"), lineWidth: 1.5)
-                        .frame(width: 22, height: 22)
-                    if checked.wrappedValue {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(Color.glowzaGoldDark)
+                Button(action: { withAnimation { isExpanded.toggle() } }) {
+                    HStack(spacing: 4) {
+                        Text(isExpanded ? "Collapse" : "View full document")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(accent)
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(accent)
                     }
                 }
             }
-            Text(text)
-                .font(.system(size: 13)).foregroundColor(Color.glowzaTextPrimary.opacity(0.85)).lineSpacing(4)
+            .padding(18)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            .padding(.horizontal, 20)
         }
     }
 
-    // MARK: - Signature
+    private func consentSection(title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(dark)
+            Text(body)
+                .font(.system(size: 12))
+                .foregroundColor(Color(hex: "5A4A42"))
+                .lineSpacing(4)
+        }
+    }
+
+    // MARK: - Signature Section
     private var signatureSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Digital Signature")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(Color.glowzaTextPrimary)
+            Text("SIGNATURE")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(Color(hex: "8A8A8A"))
+                .tracking(1)
+                .padding(.horizontal, 20)
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(Color.glowzaGold.opacity(0.4), lineWidth: 1.5)
-                    )
-
-                // Placeholder hint
-                if !isSigned {
-                    Text("Sign within this area using your finger or stylus")
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Sign below to confirm")
                         .font(.system(size: 13))
-                        .foregroundColor(Color.glowzaSubtext.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                }
-
-                SignatureCanvasView(canvasView: $canvasView)
-                    .onChange(of: canvasView.drawing.bounds) { _, bounds in
-                        isSigned = !canvasView.drawing.strokes.isEmpty
-                    }
-
-                // Signature line
-                VStack {
+                        .foregroundColor(Color(hex: "8A8A8A"))
                     Spacer()
-                    VStack(spacing: 2) {
-                        Rectangle().fill(Color.glowzaSubtext.opacity(0.25)).frame(height: 1)
-                        Text("AUTHORIZED SIGNATURE LINE")
-                            .font(.system(size: 8, weight: .semibold))
-                            .foregroundColor(Color.glowzaSubtext.opacity(0.5))
-                            .kerning(1.5)
+                    Button(action: { canvasView.drawing = PKDrawing() }) {
+                        Text("Clear")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(hex: "E05A4B"))
                     }
-                    .padding(.horizontal, 20).padding(.bottom, 12)
+                }
+
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: "FAFAFA"))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(hex: "E8E0DC"), lineWidth: 1)
+                        )
+                        .frame(height: 120)
+
+                    if !hasSignature {
+                        Text("Your Signature")
+                            .font(.system(size: 20, design: .serif))
+                            .foregroundColor(Color(hex: "D0C8C0"))
+                            .italic()
+                    }
+
+                    SignatureCanvasView(canvasView: $canvasView)
+                        .frame(height: 120)
+                        .cornerRadius(12)
+                }
+
+                HStack(spacing: 6) {
+                    Image(systemName: "shield.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(accent)
+                    Text("I confirm that I have read and understood the consent form and agree to the treatment.")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "8A8A8A"))
                 }
             }
-            .frame(height: 160)
+            .padding(16)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            .padding(.horizontal, 20)
         }
     }
 
-    // MARK: - Actions
-    private func confirmAndSign() {
-        guard canProceed else {
-            showNotReadyAlert = true
-            return
+    // MARK: - Consent Warning
+    private var consentWarning: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "shield.fill")
+                .font(.system(size: 16))
+                .foregroundColor(Color(hex: "AF1C47"))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Consent must be signed before payment")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color(hex: "7A5C00"))
+                Text("Please sign the consent form above to proceed.")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "9A7A30"))
+            }
         }
-        draft.signatureImage = canvasView.drawing.image(
-            from: CGRect(origin: .zero, size: CGSize(width: 400, height: 160)),
-            scale: UIScreen.main.scale
+        .padding(14)
+        .background(Color(hex: "FFF8E7"))
+        .cornerRadius(12)
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Payment Summary
+    private var paymentSummarySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("PAYMENT SUMMARY")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(Color(hex: "8A8A8A"))
+                .tracking(1)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 14) {
+                if let service = draft.service {
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(hex: "FFF0F4"))
+                            .frame(width: 52, height: 52)
+                            .overlay(
+                                Image(systemName: service.icon)
+                                    .font(.system(size: 20))
+                                    .foregroundColor(accent)
+                            )
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(service.name)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(dark)
+                            Text("Duration: \(service.duration)")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "8A8A8A"))
+                        }
+                        Spacer()
+                        Text("LKR \(Int(service.price))")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(dark)
+                    }
+
+                    Divider()
+                }
+
+                paymentRow("Subtotal",    amount: subtotal, bold: false)
+                paymentRow("Taxes & Fees (10%)", amount: taxes,    bold: false)
+
+                Divider()
+
+                paymentRow("Total",       amount: total,    bold: true)
+            }
+            .padding(18)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+            .padding(.horizontal, 20)
+        }
+    }
+
+    private func paymentRow(_ label: String, amount: Double, bold: Bool) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: bold ? 15 : 13, weight: bold ? .bold : .regular))
+                .foregroundColor(bold ? dark : Color(hex: "8A8A8A"))
+            Spacer()
+            Text("LKR \(String(format: "%.0f", amount))")
+                .font(.system(size: bold ? 16 : 13, weight: bold ? .bold : .regular))
+                .foregroundColor(bold ? accent : dark)
+        }
+    }
+
+    // MARK: - Bottom Bar
+    private var bottomBar: some View {
+        let canProceed = hasSignature
+        return VStack(spacing: 10) {
+            Button(action: {
+                if canProceed {
+                    draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
+                    onConfirm()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Spacer()
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 13))
+                    Text("Pay LKR \(String(format: "%.0f", total)) Securely")
+                        .font(.system(size: 16, weight: .bold))
+                    Spacer()
+                }
+                .foregroundColor(.white)
+                .padding(.vertical, 16)
+                .background(canProceed ? Color(hex: "1A1A1A") : Color(hex: "A0A0A0"))
+                .cornerRadius(14)
+            }
+            .disabled(!canProceed)
+
+            HStack(spacing: 5) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(Color(hex: "8A8A8A"))
+                Text("100% Secure Payments")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "8A8A8A"))
+            }
+
+            HStack(spacing: 12) {
+                Button(action: {}) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 12))
+                        Text("Download Receipt")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(dark)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: "E8E0DC"), lineWidth: 1))
+                }
+                Button(action: {}) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "calendar.badge.plus")
+                            .font(.system(size: 12))
+                        Text("View Booking Details")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(dark)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(hex: "E8E0DC"), lineWidth: 1))
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(
+            Color.white
+                .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: -4)
         )
-        showSignedBanner = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            showSignedBanner = false
-            onConfirm()
-        }
-    }
-
-    private var statusHintText: String {
-        if !ack1 || !ack2 { return "Please tick both acknowledgements above" }
-        if !isSigned       { return "Draw your signature to continue" }
-        return ""
-    }
-
-    private func clearCanvas() {
-        canvasView.drawing = PKDrawing()
-        isSigned = false
-    }
-
-    private func downloadConsentPDF() {
-        let liveSignature = canvasView.drawing.strokes.isEmpty ? nil :
-            canvasView.drawing.image(
-                from: CGRect(origin: .zero, size: CGSize(width: 400, height: 160)),
-                scale: UIScreen.main.scale
-            )
-        let pdfData = buildConsentPDF(signatureOverride: liveSignature)
-        let fileName = "ConsentForm_\(draft.salon.name.replacingOccurrences(of: " ", with: "_")).pdf"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        try? pdfData.write(to: url)
-        pdfURL = url
-        showShareSheet = true
-    }
-
-    private func buildConsentPDF(signatureOverride: UIImage? = nil) -> Data {
-        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595, height: 842))
-        return renderer.pdfData { ctx in
-            ctx.beginPage()
-            var y: CGFloat = 40
-            let gold = UIColor(red: 0.898, green: 0.659, blue: 0.039, alpha: 1)
-            gold.setFill()
-            UIBezierPath(rect: CGRect(x: 0, y: 0, width: 595, height: 70)).fill()
-            "GLOWZA — Treatment Consent Form".draw(at: CGPoint(x: 30, y: 24),
-                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 18), .foregroundColor: UIColor.white])
-            y = 100
-            "Procedure Disclosure".draw(at: CGPoint(x: 30, y: y),
-                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 14), .foregroundColor: UIColor.darkGray])
-            y += 24
-            "The proposed aesthetic treatment has been reviewed and consented to by the client.".draw(
-                at: CGPoint(x: 30, y: y),
-                withAttributes: [.font: UIFont.systemFont(ofSize: 11), .foregroundColor: UIColor.darkGray])
-            y += 60
-            "Salon: \(draft.salon.name)".draw(at: CGPoint(x: 30, y: y), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
-            y += 20
-            "Service: \(draft.service?.name ?? "")".draw(at: CGPoint(x: 30, y: y), withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
-            y += 40
-            // Acknowledgements
-            "Client Acknowledgements:".draw(at: CGPoint(x: 30, y: y),
-                withAttributes: [.font: UIFont.boldSystemFont(ofSize: 12), .foregroundColor: UIColor.darkGray])
-            y += 20
-            let ackText1 = "✓  I understand that clinical results vary and additional touch-up appointments may be needed."
-            let ackText2 = "✓  I have disclosed all medical history including allergies, medications, and previous treatments."
-            for ack in [ackText1, ackText2] {
-                let attrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 10), .foregroundColor: UIColor.darkGray]
-                let nsStr = ack as NSString
-                let bounds = nsStr.boundingRect(with: CGSize(width: 535, height: 60),
-                                                options: [.usesLineFragmentOrigin], attributes: attrs, context: nil)
-                nsStr.draw(in: CGRect(x: 30, y: y, width: 535, height: bounds.height + 4), withAttributes: attrs)
-                y += bounds.height + 10
-            }
-            y += 10
-            // Signature
-            let resolvedSig = signatureOverride ?? draft.signatureImage
-            if let sig = resolvedSig {
-                "Digital Signature:".draw(at: CGPoint(x: 30, y: y),
-                    withAttributes: [.font: UIFont.boldSystemFont(ofSize: 12), .foregroundColor: UIColor.darkGray])
-                y += 20
-                sig.draw(in: CGRect(x: 30, y: y, width: 220, height: 88))
-                y += 100
-            }
-            // Date signed
-            let formatter = DateFormatter()
-            formatter.dateStyle = .long
-            formatter.timeStyle = .short
-            "Date Signed: \(formatter.string(from: Date()))".draw(at: CGPoint(x: 30, y: y),
-                withAttributes: [.font: UIFont.italicSystemFont(ofSize: 10), .foregroundColor: UIColor.gray])
-        }
     }
 }

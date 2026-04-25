@@ -1,9 +1,12 @@
 import SwiftUI
 
+private let brand = Color(hex: "AF1C47")
+private let brandDark = Color(hex: "8A1538")
+
 // MARK: - Onboarding Data Model
 struct OnboardingPage: Identifiable {
     let id = UUID()
-    let imageName: String
+    let icon: String
     let badge: String
     let titleLine1: String
     let titleLine2: String
@@ -18,33 +21,32 @@ struct OnboardingView: View {
 
     private let pages: [OnboardingPage] = [
         OnboardingPage(
-            imageName: "onboarding1",
+            icon: "scissors",
             badge: "Expert Care",
             titleLine1: "Meet Your",
             titleLine2: "Expert Stylist",
-            subtitle: "Our curated team of professionals is dedicated to bringing your unique vision to life with precision and luxury."
+            subtitle: "Our curated professionals are dedicated to bringing your unique vision to life with precision and luxury."
         ),
         OnboardingPage(
-            imageName: "onboarding2",
+            icon: "map.fill",
             badge: "Smart Search",
             titleLine1: "Find Salons",
             titleLine2: "Near You",
-            subtitle: "Discover top-rated clinics on an interactive map, filtered by services, distance, and reputation scores."
+            subtitle: "Discover top-rated clinics filtered by services, distance, and reputation scores — right on the map."
         ),
         OnboardingPage(
-            imageName: "onboarding3",
-            badge: "Privacy First",
-            titleLine1: "AI Analysis,",
-            titleLine2: "Zero Cloud",
-            subtitle: "Our on-device AI analyzes your skin and suggests clinical treatments — your photos never leave your device."
+            icon: "wand.and.stars",
+            badge: "AI Powered",
+            titleLine1: "AI Skin",
+            titleLine2: "Analysis",
+            subtitle: "On-device AI analyzes your skin and suggests clinical treatments. Your photos never leave your device."
         )
     ]
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.glowzaBackground.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
-            // ── Paged content ──
             TabView(selection: $currentIndex) {
                 ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
                     OnboardingPageView(
@@ -66,16 +68,16 @@ struct OnboardingView: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .ignoresSafeArea()
 
-            // ── Page indicators ──
-            HStack(spacing: 7) {
+            // Page dots
+            HStack(spacing: 8) {
                 ForEach(0..<pages.count, id: \.self) { i in
                     Capsule()
-                        .fill(i == currentIndex ? Color.glowzaGold : Color.gray.opacity(0.25))
-                        .frame(width: i == currentIndex ? 22 : 7, height: 7)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: currentIndex)
+                        .fill(i == currentIndex ? brand : Color(hex: "DCDCDC"))
+                        .frame(width: i == currentIndex ? 24 : 8, height: 8)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: currentIndex)
                 }
             }
-            .padding(.bottom, 104) // above the button
+            .padding(.bottom, 112)
         }
     }
 }
@@ -86,66 +88,83 @@ struct OnboardingPageView: View {
     let isLast: Bool
     let onNext: () -> Void
 
-    @State private var imageOpacity: CGFloat = 0
-    @State private var contentOffset: CGFloat = 24
-    @State private var contentOpacity: CGFloat = 0
+    @State private var heroScale:  CGFloat = 0.85
+    @State private var heroOpacity: CGFloat = 0
+    @State private var txtOffset:  CGFloat = 28
+    @State private var txtOpacity: CGFloat = 0
 
     var body: some View {
         ZStack {
-            Color.glowzaBackground.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
-                // ── Hero Image ──
-                ZStack(alignment: .bottomLeading) {
-                    Image(page.imageName)
-                        .resizable()
-                        .scaledToFill()
+                // ── Hero illustration area ──
+                ZStack {
+                    // Background shape
+                    RoundedRectangle(cornerRadius: 0)
+                        .fill(brand.opacity(0.06))
                         .frame(maxWidth: .infinity)
-                        .frame(height: UIScreen.main.bounds.height * 0.52)
-                        .clipped()
-                        .clipShape(DiagonalBottomClip())
-                        .opacity(imageOpacity)
+                        .frame(height: UIScreen.main.bounds.height * 0.46)
 
-                    // Badge over image
-                    Label(page.badge, systemImage: "checkmark.seal.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Color.glowzaGold)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .padding(.leading, 24)
-                        .padding(.bottom, 28)
-                        .opacity(contentOpacity)
+                    VStack(spacing: 20) {
+                        // Icon circle
+                        ZStack {
+                            Circle()
+                                .fill(brand.opacity(0.10))
+                                .frame(width: 130, height: 130)
+                            Circle()
+                                .fill(brand.opacity(0.15))
+                                .frame(width: 100, height: 100)
+                            Circle()
+                                .fill(brand)
+                                .frame(width: 80, height: 80)
+                                .shadow(color: brand.opacity(0.30), radius: 18, x: 0, y: 8)
+                            Image(systemName: page.icon)
+                                .font(.system(size: 34, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+
+                        // Badge
+                        Label(page.badge, systemImage: "checkmark.seal.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(brand)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(brand.opacity(0.10))
+                            .clipShape(Capsule())
+                    }
                 }
+                .scaleEffect(heroScale)
+                .opacity(heroOpacity)
+                .clipShape(RoundedRectangle(cornerRadius: 0))
 
-                // ── Text Block ──
+                // ── Text block ──
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(page.titleLine1)
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color.glowzaTextPrimary)
+                            .foregroundColor(Color(hex: "1A1A1A"))
 
                         Text(page.titleLine2)
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color.glowzaGold)
+                            .foregroundColor(brand)
                     }
 
                     Text(page.subtitle)
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(Color.glowzaSubtext)
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "6B6B6B"))
                         .lineSpacing(5)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.top, 20)
-                .padding(.horizontal, 24)
-                .offset(y: contentOffset)
-                .opacity(contentOpacity)
+                .padding(.top, 28)
+                .padding(.horizontal, 28)
+                .offset(y: txtOffset)
+                .opacity(txtOpacity)
 
                 Spacer()
 
-                // ── Button ──
+                // ── CTA button ──
                 Button(action: onNext) {
                     HStack {
                         Text(isLast ? "Get Started" : "Continue")
@@ -158,47 +177,35 @@ struct OnboardingPageView: View {
                     .padding(.horizontal, 24)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.glowzaGold, Color.glowzaGoldDark],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .background(brand)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: Color.glowzaGold.opacity(0.35), radius: 12, x: 0, y: 5)
+                    .shadow(color: brand.opacity(0.30), radius: 12, x: 0, y: 5)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 48)
-                .opacity(contentOpacity)
-                .offset(y: contentOffset)
+                .padding(.horizontal, 28)
+                .padding(.bottom, 52)
+                .offset(y: txtOffset)
+                .opacity(txtOpacity)
             }
         }
         .onAppear {
-            withAnimation(.easeOut(duration: 0.5).delay(0.05)) {
-                imageOpacity = 1
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                heroScale = 1; heroOpacity = 1
             }
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.15)) {
-                contentOffset = 0
-                contentOpacity = 1
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.12)) {
+                txtOffset = 0; txtOpacity = 1
+            }
+        }
+        .onChange(of: page.id) { _, _ in
+            heroScale = 0.85; heroOpacity = 0
+            txtOffset = 28; txtOpacity = 0
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                heroScale = 1; heroOpacity = 1
+            }
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.8).delay(0.12)) {
+                txtOffset = 0; txtOpacity = 1
             }
         }
     }
 }
 
-// MARK: - Diagonal Clip
-struct DiagonalBottomClip: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - 46))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.closeSubpath()
-        return p
-    }
-}
-
-#Preview {
-    OnboardingView()
-}
+#Preview { OnboardingView() }

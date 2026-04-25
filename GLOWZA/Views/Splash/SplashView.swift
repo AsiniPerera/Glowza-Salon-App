@@ -6,251 +6,159 @@ struct SplashView: View {
 
     var onLogin:   (() -> Void)? = nil
     var onCreate:  (() -> Void)? = nil
-    var onFaceID:  (() -> Void)? = nil   // called after successful Face ID
+    var onFaceID:  (() -> Void)? = nil
 
-    @State private var logoOpacity:    CGFloat = 0
-    @State private var logoOff:        CGFloat = 18
-    @State private var textOpacity:    CGFloat = 0
-    @State private var btnOpacity:     CGFloat = 0
-    @State private var btnOff:         CGFloat = 14
+    @State private var logoScale:   CGFloat = 0.7
+    @State private var logoOpacity: CGFloat = 0
+    @State private var textOpacity: CGFloat = 0
+    @State private var btnOpacity:  CGFloat = 0
+    @State private var btnOffset:   CGFloat = 20
     @State private var faceIDAvailable = false
-    @State private var faceIDError     = false
+
+    private let brand = Color(hex: "AF1C47")
 
     var body: some View {
         ZStack {
-            // ── Background: warm cream ──
-            LinearGradient(
-                colors: [Color(hex: "FAF7F2"), Color(hex: "F0E9DF")],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
-            // ── Subtle decorative arch – top right ──
+            // Decorative soft circles
             Circle()
-                .stroke(Color(hex: "C4A882").opacity(0.13), lineWidth: 56)
-                .frame(width: 400, height: 400)
-                .offset(x: 170, y: -210)
+                .fill(Color(hex: "AF1C47").opacity(0.05))
+                .frame(width: 360, height: 360)
+                .offset(x: 160, y: -220)
 
-            // ── Subtle arc – bottom left ──
             Circle()
-                .stroke(Color(hex: "C4A882").opacity(0.09), lineWidth: 40)
-                .frame(width: 280, height: 280)
-                .offset(x: -155, y: 330)
+                .fill(Color(hex: "AF1C47").opacity(0.04))
+                .frame(width: 260, height: 260)
+                .offset(x: -140, y: 340)
 
-            // ── Main content ──
             VStack(spacing: 0) {
                 Spacer()
 
-                // ── G Logo ──
+                // ── Logo mark ──
                 ZStack {
-                    // Thin outer ring
+                    // Outer glow ring
                     Circle()
-                        .stroke(Color(hex: "C4A882").opacity(0.3), lineWidth: 1)
-                        .frame(width: 136, height: 136)
+                        .fill(brand.opacity(0.08))
+                        .frame(width: 140, height: 140)
 
-                    // Warm inner fill
                     Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color(hex: "F7F0E6"), Color(hex: "EDE0CE")],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 120, height: 120)
-                        .shadow(
-                            color: Color(hex: "B8956A").opacity(0.18),
-                            radius: 22, x: 0, y: 8
-                        )
+                        .fill(brand.opacity(0.12))
+                        .frame(width: 116, height: 116)
 
-                    // Letter G
+                    Circle()
+                        .fill(brand)
+                        .frame(width: 92, height: 92)
+                        .shadow(color: brand.opacity(0.35), radius: 20, x: 0, y: 8)
+
                     Text("G")
-                        .font(.system(size: 68, weight: .ultraLight, design: .serif))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color(hex: "B8956A"), Color(hex: "7A5A3A")],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
+                        .font(.system(size: 52, weight: .light, design: .serif))
+                        .foregroundColor(.white)
                 }
+                .scaleEffect(logoScale)
                 .opacity(logoOpacity)
-                .offset(y: logoOff)
 
-                Spacer().frame(height: 34)
+                Spacer().frame(height: 32)
 
-                // ── Brand name ──
-                VStack(spacing: 10) {
+                // ── Brand text ──
+                VStack(spacing: 8) {
                     Text("GLOWZA")
-                        .font(.system(size: 36, weight: .ultraLight))
-                        .tracking(11)
-                        .foregroundColor(Color(hex: "2C2420"))
-
-                    Rectangle()
-                        .fill(Color(hex: "C4A882").opacity(0.5))
-                        .frame(width: 42, height: 1)
+                        .font(.system(size: 32, weight: .bold))
+                        .tracking(8)
+                        .foregroundColor(Color(hex: "1A1A1A"))
 
                     Text("Premium Beauty & Wellness")
-                        .font(.system(size: 13, weight: .light))
-                        .tracking(1.2)
-                        .foregroundColor(Color(hex: "8C7B6E"))
+                        .font(.system(size: 13, weight: .regular))
+                        .tracking(1.0)
+                        .foregroundColor(Color(hex: "8A8A8A"))
                 }
                 .opacity(textOpacity)
 
-                Spacer().frame(height: 60)
+                Spacer()
 
-                // ── CTA Buttons ──
-                VStack(spacing: 13) {
-
-                    // Face ID (primary — shown only when available)
+                // ── Action buttons ──
+                VStack(spacing: 12) {
+                    // Face ID button (shown if biometrics available)
                     if faceIDAvailable {
-                        Button(action: authenticateWithFaceID) {
-                            HStack(spacing: 12) {
+                        Button(action: { onFaceID?() }) {
+                            HStack(spacing: 10) {
                                 Image(systemName: "faceid")
-                                    .font(.system(size: 20))
+                                    .font(.system(size: 18, weight: .medium))
                                 Text("Continue with Face ID")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .tracking(0.3)
+                                    .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(hex: "C4A882"), Color(hex: "9A6E4A")],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                            .background(brand)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .shadow(
-                                color: Color(hex: "B8956A").opacity(0.28),
-                                radius: 14, x: 0, y: 6
-                            )
-                        }
-
-                        // Divider
-                        HStack(spacing: 14) {
-                            Rectangle().fill(Color(hex: "D8CCBF")).frame(height: 1)
-                            Text("or")
-                                .font(.system(size: 12, weight: .light))
-                                .foregroundColor(Color(hex: "A09080"))
-                            Rectangle().fill(Color(hex: "D8CCBF")).frame(height: 1)
+                            .shadow(color: brand.opacity(0.30), radius: 12, x: 0, y: 6)
                         }
                     }
 
-                    // Create Account
+                    // Sign In button
+                    Button(action: { onLogin?() }) {
+                        Text(faceIDAvailable ? "Sign In with Password" : "Sign In")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(faceIDAvailable ? brand : .white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(faceIDAvailable ? Color(hex: "FFF0F4") : brand)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(faceIDAvailable ? brand.opacity(0.2) : Color.clear, lineWidth: 1)
+                            )
+                            .shadow(
+                                color: faceIDAvailable ? Color.clear : brand.opacity(0.30),
+                                radius: 12, x: 0, y: 6
+                            )
+                    }
+
+                    // Create account
                     Button(action: { onCreate?() }) {
                         Text("Create Account")
-                            .font(.system(size: 16, weight: .medium))
-                            .tracking(0.4)
-                            .foregroundColor(faceIDAvailable ? Color(hex: "7A5A3A") : .white)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "1A1A1A"))
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(
-                                faceIDAvailable
-                                    ? AnyShapeStyle(Color.white.opacity(0.75))
-                                    : AnyShapeStyle(LinearGradient(
-                                        colors: [Color(hex: "C4A882"), Color(hex: "9A6E4A")],
-                                        startPoint: .leading, endPoint: .trailing
-                                      ))
-                            )
+                            .background(Color(hex: "F5F5F5"))
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(
-                                        faceIDAvailable
-                                            ? Color(hex: "C4A882").opacity(0.5)
-                                            : Color.clear,
-                                        lineWidth: 1
-                                    )
-                            )
-                            .shadow(
-                                color: faceIDAvailable ? .clear : Color(hex: "B8956A").opacity(0.28),
-                                radius: 14, x: 0, y: 6
-                            )
                     }
 
-                    // Sign In
-                    Button(action: { onLogin?() }) {
-                        Text("Sign In")
-                            .font(.system(size: 16, weight: .medium))
-                            .tracking(0.4)
-                            .foregroundColor(Color(hex: "7A5A3A"))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(Color.white.opacity(0.75))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Color(hex: "C4A882").opacity(0.5), lineWidth: 1)
-                            )
+                    // Privacy note
+                    HStack(spacing: 5) {
+                        Image(systemName: "lock.shield")
+                            .font(.system(size: 11))
+                            .foregroundColor(brand.opacity(0.7))
+                        Text("Your data is private & secure")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "ABABAB"))
                     }
-
-                    if faceIDError {
-                        Text("Face ID failed. Please sign in manually.")
-                            .font(.system(size: 12, weight: .light))
-                            .foregroundColor(Color(hex: "C0392B").opacity(0.8))
-                            .transition(.opacity)
-                    }
+                    .padding(.top, 4)
                 }
-                .padding(.horizontal, 32)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 48)
                 .opacity(btnOpacity)
-                .offset(y: btnOff)
-
-                Spacer().frame(height: 24)
-
-                Text("Sri Lanka's Finest Clinical Beauty")
-                    .font(.system(size: 11, weight: .light))
-                    .tracking(1.2)
-                    .foregroundColor(Color(hex: "8C7B6E").opacity(0.55))
-                    .opacity(textOpacity)
-                    .padding(.bottom, 44)
-
-                Spacer()
+                .offset(y: btnOffset)
             }
         }
         .onAppear {
             checkFaceID()
-            withAnimation(.easeOut(duration: 0.8).delay(0.25)) {
-                logoOpacity = 1; logoOff = 0
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.75)) {
+                logoScale = 1; logoOpacity = 1
             }
-            withAnimation(.easeOut(duration: 0.6).delay(0.75)) {
-                textOpacity = 1
-            }
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.82).delay(1.05)) {
-                btnOpacity = 1; btnOff = 0
+            withAnimation(.easeOut(duration: 0.5).delay(0.35)) { textOpacity = 1 }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.55)) {
+                btnOpacity = 1; btnOffset = 0
             }
         }
-        .animation(.spring(response: 0.3), value: faceIDAvailable)
-        .animation(.spring(response: 0.3), value: faceIDError)
     }
 
-    // MARK: - Face ID
     private func checkFaceID() {
         let ctx = LAContext()
         var err: NSError?
-        faceIDAvailable = ctx.canEvaluatePolicy(
-            .deviceOwnerAuthenticationWithBiometrics, error: &err
-        )
-    }
-
-    private func authenticateWithFaceID() {
-        let ctx = LAContext()
-        ctx.localizedCancelTitle = "Use Another Method"
-        ctx.evaluatePolicy(
-            .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Sign in to Glowza"
-        ) { success, _ in
-            DispatchQueue.main.async {
-                if success {
-                    onFaceID?()
-                } else {
-                    withAnimation { faceIDError = true }
-                }
-            }
-        }
+        faceIDAvailable = ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &err)
     }
 }
 

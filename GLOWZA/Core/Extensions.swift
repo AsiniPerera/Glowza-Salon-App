@@ -13,9 +13,9 @@ extension View {
             .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
 
-    /// Applies the standard Glowza screen background
+    /// Applies the standard Glowza screen background (white)
     func glowzaBackground() -> some View {
-        self.background(Color.glowzaBackground.ignoresSafeArea())
+        self.background(Color.white.ignoresSafeArea())
     }
 }
 

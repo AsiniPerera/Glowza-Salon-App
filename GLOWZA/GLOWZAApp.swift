@@ -16,6 +16,11 @@ struct GLOWZAApp: App {
     }
 }
 
+// MARK: - Notification Names
+extension Notification.Name {
+    static let glowzaSignOut = Notification.Name("GlowzaSignOut")
+}
+
 // MARK: - Screen enum
 private enum Screen {
     case splash, onboarding, login, createAccount, main
@@ -50,7 +55,7 @@ struct RootView: View {
 
             case .login:
                 SignInView(
-                    isAuthenticated: $isAuthenticated,
+                    onSignIn:        { withAnimation { isAuthenticated = true } },
                     onCreateAccount: { withAnimation { screen = .createAccount } }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -58,8 +63,8 @@ struct RootView: View {
 
             case .createAccount:
                 CreateAccountView(
-                    isAuthenticated: $isAuthenticated,
-                    onSignIn: { withAnimation { screen = .login } }
+                    onCreateAccount: { withAnimation { isAuthenticated = true } },
+                    onSignIn:        { withAnimation { screen = .login } }
                 )
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .zIndex(3)
@@ -95,7 +100,7 @@ struct PlaceholderDashboardView: View {
             VStack(spacing: 16) {
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 56))
-                    .foregroundColor(Color.glowzaGold)
+                    .foregroundColor(Color(hex: "AF1C47"))
                 Text("You're In! 🎉")
                     .font(.system(size: 28, weight: .bold))
                 Text("Dashboard — share Figma design to build")
