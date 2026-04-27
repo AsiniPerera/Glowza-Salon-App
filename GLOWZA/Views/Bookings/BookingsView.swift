@@ -1,6 +1,6 @@
 import SwiftUI
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "962043")
 
 // MARK: - Add Review View
 struct AddReviewView: View {
@@ -93,16 +93,16 @@ struct AddReviewView: View {
                                 if isSubmitting {
                                     ProgressView().tint(.white)
                                 } else {
-                                    Text("Submit Review").font(.system(size: 16, weight: .semibold))
+                                    Text("Submit Review").font(.system(size: 15, weight: .semibold))
                                 }
                             }
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity).frame(height: 52)
-                            .background(rating > 0 ? brand : Color(hex: "CCCCCC"))
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .shadow(color: rating > 0 ? brand.opacity(0.28) : Color.clear, radius: 10, y: 4)
+                            .frame(width: 330, height: 55)
+                            .background(rating > 0 ? Color(hex: "962043") : Color(hex: "D4829E"))
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
                         .disabled(rating == 0 || isSubmitting)
+                        .frame(maxWidth: .infinity)
                     }
                     .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 40)
                 }
@@ -143,79 +143,359 @@ struct AddReviewView: View {
     }
 }
 
-// MARK: - BookingsView
-struct BookingsView: View {
+// MARK: - Shared Booking Card
 
+private struct BookingCardImage: View {
+    let salonName: String
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(hex: "F0EBE8"))
+                .frame(width: 80, height: 80)
+            if UIImage(named: "Salon1") != nil {
+                Image("Salon1")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            } else {
+                Image(systemName: "building.2.fill")
+                    .font(.system(size: 28))
+                    .foregroundColor(brand.opacity(0.4))
+            }
+        }
+    }
+}
+
+private func bookingDateLabel(_ booking: Booking) -> String {
+    let df = DateFormatter()
+    df.dateFormat = "MMM d, yyyy"
+    return "\(df.string(from: booking.date)) · \(booking.timeSlot)"
+}
+
+// MARK: - Upcoming Bookings View
+
+struct UpcomingBookingsView: View {
     @State private var store = BookingStore.shared
-    @State private var selectedTab = 0
-    @State private var reviewBooking: Booking? = nil
-    @State private var receiptBooking: Booking? = nil
-    @State private var rebookBooking: Booking? = nil
-    @State private var rescheduleBooking: Booking? = nil
-
-    private let tabs = ["Upcoming", "Completed", "Reviews"]
+    @Binding var receiptBooking: Booking?
+    @State private var cancelTarget: Booking? = nil
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("My Bookings")
-                            .font(.system(size: 22, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                        Text("\(store.upcoming.count) upcoming")
-                            .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                    }
-                    Spacer()
-                    ZStack {
-                        Circle().fill(brand.opacity(0.10)).frame(width: 40, height: 40)
-                        Image(systemName: "bell.fill").font(.system(size: 16)).foregroundColor(brand)
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 14) {
+                if store.upcoming.isEmpty {
+                    BookingEmptyState(icon: "calendar.badge.clock", label: "No upcoming bookings",
+                                      subtitle: "Your upcoming bookings will appear here.")
+                } else {
+                    ForEach(store.upcoming) { booking in
+                        upcomingCard(booking)
                     }
                 }
-                .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 16)
-                .background(Color.white)
-
-                // Tab bar
-                HStack(spacing: 0) {
-                    ForEach(tabs.indices, id: \.self) { i in
-                        Button(action: { withAnimation(.easeInOut(duration: 0.2)) { selectedTab = i } }) {
-                            VStack(spacing: 6) {
-                                Text(tabs[i])
-                                    .font(.system(size: 13, weight: selectedTab == i ? .bold : .regular))
-                                    .foregroundColor(selectedTab == i ? brand : Color(hex: "8A8A8A"))
-                                    .lineLimit(1)
-                                Rectangle()
-                                    .fill(selectedTab == i ? brand : Color.clear)
-                                    .frame(height: 2)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .background(Color.white)
-
-                Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1)
-
-                // Content
-                ScrollView(showsIndicators: false) {
-                    LazyVStack(spacing: 14) {
-                        switch selectedTab {
-                        case 0:
-                            if store.upcoming.isEmpty { emptyState(tab: "upcoming") }
-                            else { ForEach(store.upcoming) { bookingCard($0, isCompleted: false) } }
-                        case 1:
-                            if store.completed.isEmpty { emptyState(tab: "completed") }
-                            else { ForEach(store.completed) { bookingCard($0, isCompleted: true) } }
-                        default:
-                            reviewsList
-                        }
-                    }
-                    .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 40)
-                }
-                .background(Color(hex: "F7F7F7"))
             }
-            .background(Color.white.ignoresSafeArea())
-            .navigationBarHidden(true)
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
+        }
+        .background(Color.white)
+        .alert("Cancel Booking", isPresented: Binding(
+            get: { cancelTarget != nil },
+            set: { if !$0 { cancelTarget = nil } }
+        )) {
+            Button("Cancel Booking", role: .destructive) {
+                if let b = cancelTarget { store.cancelBooking(id: b.id) }
+                cancelTarget = nil
+            }
+            Button("Keep", role: .cancel) { cancelTarget = nil }
+        } message: {
+            Text("Are you sure you want to cancel this booking? This action cannot be undone.")
+        }
+    }
+
+    private func upcomingCard(_ booking: Booking) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Date header
+            Text(bookingDateLabel(booking))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(hex: "8A8A8A"))
+                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+
+            Divider().padding(.horizontal, 16)
+
+            // Salon info
+            HStack(alignment: .top, spacing: 14) {
+                BookingCardImage(salonName: booking.salon.name)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(booking.salon.name)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                    Text(booking.salon.location)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A"))
+                    Text("Services: \(booking.service.name)")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A"))
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+
+            // Action buttons
+            HStack(spacing: 12) {
+                Button(action: { cancelTarget = booking }) {
+                    Text("Cancel")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(hex: "962043"))
+                        .frame(maxWidth: .infinity).frame(height: 36)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color(hex: "962043"), lineWidth: 1.5))
+                }
+                Button(action: { receiptBooking = booking }) {
+                    Text("View Receipt")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity).frame(height: 36)
+                        .background(Color(hex: "962043"))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 4)
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - Completed Bookings View
+
+struct CompletedBookingsView: View {
+    @State private var store = BookingStore.shared
+    @Binding var receiptBooking: Booking?
+    @Binding var reviewBooking: Booking?
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 14) {
+                if store.completed.isEmpty {
+                    BookingEmptyState(icon: "checkmark.circle", label: "No completed bookings",
+                                      subtitle: "Your completed bookings will appear here.")
+                } else {
+                    ForEach(store.completed) { booking in
+                        completedCard(booking)
+                    }
+                }
+            }
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
+        }
+        .background(Color.white)
+    }
+
+    private func completedCard(_ booking: Booking) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Date header
+            Text(bookingDateLabel(booking))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(hex: "8A8A8A"))
+                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+
+            Divider().padding(.horizontal, 16)
+
+            // Salon info
+            HStack(alignment: .top, spacing: 14) {
+                BookingCardImage(salonName: booking.salon.name)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(booking.salon.name)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                    Text(booking.salon.location)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A"))
+                    Text("Services: \(booking.service.name)")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A"))
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+
+            // Action buttons — same layout as upcomingCard
+            HStack(spacing: 12) {
+                Button(action: { reviewBooking = booking }) {
+                    Text(booking.review != nil ? "Reviewed" : "Leave Review")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(booking.review != nil ? Color(hex: "8E8E93") : Color(hex: "962043"))
+                        .frame(maxWidth: .infinity).frame(height: 36)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(booking.review != nil ? Color(hex: "E5E5EA") : Color(hex: "962043"), lineWidth: 1.5))
+                }
+                .disabled(booking.review != nil)
+                Button(action: { receiptBooking = booking }) {
+                    Text("View Receipt")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity).frame(height: 36)
+                        .background(Color(hex: "962043"))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+            .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 4)
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+// MARK: - Cancelled Bookings View
+
+struct CancelledBookingsView: View {
+    @State private var store = BookingStore.shared
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            LazyVStack(spacing: 14) {
+                if store.cancelled.isEmpty {
+                    BookingEmptyState(icon: "xmark.circle", label: "No cancelled bookings",
+                                      subtitle: "Your cancelled bookings will appear here.")
+                } else {
+                    ForEach(store.cancelled) { booking in
+                        cancelledCard(booking)
+                    }
+                }
+            }
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
+        }
+        .background(Color.white)
+    }
+
+    private func cancelledCard(_ booking: Booking) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Date header
+            Text(bookingDateLabel(booking))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(Color(hex: "8A8A8A"))
+                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+
+            Divider().padding(.horizontal, 16)
+
+            // Salon info
+            HStack(alignment: .top, spacing: 14) {
+                BookingCardImage(salonName: booking.salon.name)
+                    .opacity(0.55)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(booking.salon.name)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(hex: "1A1A1A").opacity(0.55))
+                    Text(booking.salon.location)
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A").opacity(0.7))
+                    Text("Services: \(booking.service.name)")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "8A8A8A").opacity(0.7))
+                    Text("Cancelled")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10).padding(.vertical, 3)
+                        .background(Color(hex: "8A8A8A"))
+                        .clipShape(Capsule())
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+    }
+}
+
+// MARK: - Shared Empty State
+
+struct BookingEmptyState: View {
+    let icon: String
+    let label: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(spacing: 14) {
+            ZStack {
+                Circle().fill(brand.opacity(0.08)).frame(width: 80, height: 80)
+                Image(systemName: icon)
+                    .font(.system(size: 34)).foregroundColor(brand.opacity(0.45))
+            }
+            Text(label)
+                .font(.system(size: 16, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A"))
+            Text(subtitle)
+                .font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity).padding(.top, 60)
+    }
+}
+
+// MARK: - BookingsView
+
+struct BookingsView: View {
+    @State private var selectedTab = 0
+    @State private var receiptBooking: Booking? = nil
+    @State private var reviewBooking: Booking? = nil
+    @Environment(AppSettings.self) private var appSettings
+
+    private let tabs = ["Upcoming", "Completed", "Cancelled"]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Navigation header
+            HStack {
+                Text("Bookings")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
+            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+
+            // Segmented tab bar
+            HStack(spacing: 0) {
+                ForEach(tabs.indices, id: \.self) { i in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.22)) { selectedTab = i }
+                    } label: {
+                        VStack(spacing: 0) {
+                            Text(tabs[i])
+                                .font(.system(size: 14, weight: selectedTab == i ? .semibold : .regular))
+                                .foregroundColor(selectedTab == i ? Color(hex: "962043") : (appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93")))
+                                .padding(.bottom, 10)
+                            Rectangle()
+                                .fill(selectedTab == i ? Color(hex: "962043") : Color.clear)
+                                .frame(height: 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+
+            Divider()
+
+            // Tab content using TabView for swipe support
+            TabView(selection: $selectedTab) {
+                UpcomingBookingsView(receiptBooking: $receiptBooking)
+                    .tag(0)
+                CompletedBookingsView(receiptBooking: $receiptBooking, reviewBooking: $reviewBooking)
+                    .tag(1)
+                CancelledBookingsView()
+                    .tag(2)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(.easeInOut(duration: 0.22), value: selectedTab)
+        }
+        .background(Color.white.ignoresSafeArea())
+        .sheet(item: $receiptBooking) { booking in
+            ReceiptView(booking: booking) { receiptBooking = nil }
         }
         .sheet(item: $reviewBooking) { booking in
             AddReviewView(
@@ -224,196 +504,5 @@ struct BookingsView: View {
                 serviceName: booking.service.name
             ) { reviewBooking = nil }
         }
-        .sheet(item: $receiptBooking) { booking in
-            ReceiptView(booking: booking) { receiptBooking = nil }
-        }
-        .sheet(item: $rebookBooking) { booking in
-            BookingFlowView(draft: BookingDraft(salon: booking.salon, service: booking.service))
-        }
-        .sheet(item: $rescheduleBooking) { booking in
-            BookingFlowView(draft: BookingDraft(salon: booking.salon, service: booking.service))
-        }
-    }
-
-    // MARK: - Booking Card
-    private func bookingCard(_ booking: Booking, isCompleted: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Status + date row
-            HStack {
-                Text(booking.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().year()))
-                    .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                Spacer()
-                statusBadge(isCompleted: isCompleted)
-            }
-            .padding(.horizontal, 14).padding(.top, 14).padding(.bottom, 10)
-
-            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 14)
-
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(brand.opacity(0.08)).frame(width: 64, height: 64)
-                    Image(systemName: "building.2.fill")
-                        .font(.system(size: 24)).foregroundColor(brand.opacity(0.5))
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(booking.salon.name)
-                        .font(.system(size: 15, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                    Text(booking.salon.location)
-                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                    HStack(spacing: 4) {
-                        Image(systemName: booking.service.icon)
-                            .font(.system(size: 10)).foregroundColor(brand)
-                        Text(booking.service.name)
-                            .font(.system(size: 12)).foregroundColor(Color(hex: "6B6B6B"))
-                    }
-                    Text(booking.timeSlot)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(brand)
-                        .clipShape(Capsule())
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 14).padding(.vertical, 12)
-
-            Rectangle().fill(Color(hex: "F0F0F0")).frame(height: 1).padding(.horizontal, 14)
-
-            // Action buttons
-            if isCompleted {
-                VStack(spacing: 8) {
-                    HStack(spacing: 10) {
-                        Button(action: { reviewBooking = booking }) {
-                            Text(booking.review == nil ? "Add Review" : "Edit Review")
-                                .font(.system(size: 13, weight: .semibold)).foregroundColor(brand)
-                                .frame(maxWidth: .infinity).frame(height: 38)
-                                .background(brand.opacity(0.08))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .stroke(brand.opacity(0.25), lineWidth: 1))
-                        }
-                        Button(action: { receiptBooking = booking }) {
-                            Text("View Receipt")
-                                .font(.system(size: 13, weight: .semibold)).foregroundColor(.white)
-                                .frame(maxWidth: .infinity).frame(height: 38)
-                                .background(brand)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-                    Button(action: { rebookBooking = booking }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: 12, weight: .semibold))
-                            Text("Book Again")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .foregroundColor(Color(hex: "00A878"))
-                        .frame(maxWidth: .infinity).frame(height: 38)
-                        .background(Color(hex: "00A878").opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color(hex: "00A878").opacity(0.3), lineWidth: 1))
-                    }
-                }
-                .padding(.horizontal, 14).padding(.bottom, 14).padding(.top, 10)
-            } else {
-                HStack(spacing: 10) {
-                    Button(action: { rescheduleBooking = booking }) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "calendar.badge.clock")
-                                .font(.system(size: 12, weight: .semibold))
-                            Text("Reschedule")
-                                .font(.system(size: 13, weight: .semibold))
-                        }
-                        .foregroundColor(brand)
-                        .frame(maxWidth: .infinity).frame(height: 38)
-                        .background(brand.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(brand.opacity(0.25), lineWidth: 1))
-                    }
-                    Button(action: {}) {
-                        Text("Cancel")
-                            .font(.system(size: 13, weight: .semibold)).foregroundColor(Color(hex: "D9534F"))
-                            .frame(maxWidth: .infinity).frame(height: 38)
-                            .background(Color(hex: "D9534F").opacity(0.07))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    }
-                }
-                .padding(.horizontal, 14).padding(.bottom, 14).padding(.top, 10)
-            }
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
-    }
-
-    private func statusBadge(isCompleted: Bool) -> some View {
-        Text(isCompleted ? "Completed" : "Upcoming")
-            .font(.system(size: 10, weight: .bold))
-            .foregroundColor(isCompleted ? Color(hex: "00A878") : brand)
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(isCompleted ? Color(hex: "00A878").opacity(0.10) : brand.opacity(0.10))
-            .clipShape(Capsule())
-    }
-
-    // MARK: - Reviews List
-    private var reviewsList: some View {
-        VStack(spacing: 14) {
-            let reviewed = BookingStore.shared.bookings.filter { $0.review != nil }
-            if reviewed.isEmpty {
-                emptyState(tab: "reviews")
-            } else {
-                ForEach(reviewed) { booking in
-                    if let review = booking.review { reviewCard(booking: booking, review: review) }
-                }
-            }
-        }
-    }
-
-    private func reviewCard(booking: Booking, review: BookingReview) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(booking.salon.name)
-                        .font(.system(size: 14, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
-                    Text(booking.service.name)
-                        .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
-                }
-                Spacer()
-                HStack(spacing: 2) {
-                    ForEach(1...5, id: \.self) { i in
-                        Image(systemName: i <= review.rating ? "star.fill" : "star")
-                            .font(.system(size: 13))
-                            .foregroundColor(i <= review.rating ? Color(hex: "F59E0B") : Color(hex: "CCCCCC"))
-                    }
-                }
-            }
-            Text(review.comment)
-                .font(.system(size: 13)).foregroundColor(Color(hex: "1A1A1A").opacity(0.8)).lineSpacing(4)
-            Text(review.date.formatted(date: .abbreviated, time: .omitted))
-                .font(.system(size: 11)).foregroundColor(Color(hex: "8A8A8A"))
-        }
-        .padding(14)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
-    }
-
-    // MARK: - Empty State
-    private func emptyState(tab: String) -> some View {
-        VStack(spacing: 14) {
-            ZStack {
-                Circle().fill(brand.opacity(0.08)).frame(width: 80, height: 80)
-                Image(systemName: tab == "reviews" ? "star.bubble" : "calendar.badge.clock")
-                    .font(.system(size: 34)).foregroundColor(brand.opacity(0.4))
-            }
-            Text("No \(tab) bookings")
-                .font(.system(size: 16, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A"))
-            Text("Your \(tab) bookings will appear here.")
-                .font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
-        }
-        .frame(maxWidth: .infinity).padding(.top, 60)
     }
 }

@@ -1,0 +1,135 @@
+import SwiftUI
+
+// MARK: - Security & Privacy View
+struct SecurityPrivacyView: View {
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var twoFactorEnabled      = UserDefaults.standard.bool(forKey: "sec_2fa")
+    @State private var loginNotifications    = UserDefaults.standard.bool(forKey: "sec_loginNotif")
+    @State private var biometricLogin        = UserDefaults.standard.bool(forKey: "sec_biometric")
+    @State private var dataSharing           = UserDefaults.standard.bool(forKey: "sec_dataSharing")
+    @State private var showDataDeleteAlert   = false
+
+    private let accent = Color(hex: "962043")
+    private let dark   = Color(hex: "1F2126")
+
+    var body: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+
+                    // Security section
+                    settingsSection(title: "Security") {
+                        toggleRow(icon: "key.horizontal",   label: "Two-Factor Authentication",
+                                  subtitle: "Require a code on each login",
+                                  value: $twoFactorEnabled) { UserDefaults.standard.set($0, forKey: "sec_2fa") }
+                        toggleRow(icon: "bell.badge",       label: "Login Notifications",
+                                  subtitle: "Alert when your account is accessed",
+                                  value: $loginNotifications) { UserDefaults.standard.set($0, forKey: "sec_loginNotif") }
+                        toggleRow(icon: "faceid",           label: "Biometric Login",
+                                  subtitle: "Use Face ID or Touch ID",
+                                  value: $biometricLogin) { UserDefaults.standard.set($0, forKey: "sec_biometric") }
+                    }
+
+                    // Privacy section
+                    settingsSection(title: "Privacy") {
+                        toggleRow(icon: "hand.raised",      label: "Data Sharing",
+                                  subtitle: "Allow anonymised data to improve the app",
+                                  value: $dataSharing) { UserDefaults.standard.set($0, forKey: "sec_dataSharing") }
+                    }
+
+                    // Danger zone
+                    settingsSection(title: "Account") {
+                        Button(action: { showDataDeleteAlert = true }) {
+                            HStack(spacing: 14) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 17))
+                                    .foregroundColor(.red)
+                                    .frame(width: 28)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Delete My Account")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.red)
+                                    Text("This action cannot be undone")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "ABABAB"))
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color(hex: "C7C7CC"))
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 60)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 48)
+            }
+            .background(Color(hex: "F2F2F7").ignoresSafeArea())
+            .navigationTitle("Security & Privacy")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }.foregroundColor(accent)
+                }
+            }
+            .alert("Delete Account", isPresented: $showDataDeleteAlert) {
+                Button("Delete", role: .destructive) {}
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Are you sure you want to permanently delete your account and all data? This cannot be undone.")
+            }
+        }
+    }
+
+    // MARK: - Section Container
+    private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(Color(hex: "8A8D94"))
+                .padding(.horizontal, 4)
+                .padding(.bottom, 8)
+
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+    }
+
+    // MARK: - Toggle Row (with subtitle and save callback)
+    private func toggleRow(icon: String, label: String, subtitle: String,
+                            value: Binding<Bool>, onChange: @escaping (Bool) -> Void) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 17))
+                .foregroundColor(Color(hex: "6B6E77"))
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "1F2126"))
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "ABABAB"))
+            }
+            Spacer()
+            Toggle("", isOn: value)
+                .tint(accent)
+                .labelsHidden()
+                .onChange(of: value.wrappedValue) { onChange($0) }
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 60)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Color(hex: "E8E8EC")).frame(height: 0.5).padding(.leading, 58)
+        }
+    }
+}

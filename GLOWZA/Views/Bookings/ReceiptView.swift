@@ -1,8 +1,6 @@
 import SwiftUI
 import MapKit
 
-private let brand = Color(hex: "FF006E")
-
 // MARK: - Receipt View
 struct ReceiptView: View {
 
@@ -15,33 +13,80 @@ struct ReceiptView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "F1F1F1").ignoresSafeArea()
+            Color(hex: "F8F9FB").ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Thank You")
-                        .font(.system(size: 42, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color(hex: "1F2126"))
-                        .padding(.top, 18)
+                VStack(alignment: .center, spacing: 24) {
+                    // Success animation
+                    VStack(spacing: 16) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "962043").opacity(0.1))
+                                .frame(width: 100, height: 100)
+                            
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 54, weight: .bold))
+                                .foregroundColor(Color(hex: "962043"))
+                        }
+                        .scaleEffect(1.0)
 
-                    Text("Your booking is confirmed.")
-                        .font(.system(size: 17))
-                        .foregroundColor(Color(hex: "62656C"))
+                        VStack(spacing: 8) {
+                            Text("Booking Confirmed!")
+                                .font(.system(size: 32, weight: .bold, design: .default))
+                                .foregroundColor(Color(hex: "1F2126"))
+                            Text("Your appointment is booked and confirmed")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color(hex: "7A7D85"))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .padding(.top, 32)
 
+                    // Receipt details card
                     detailCard
+                        .padding(.horizontal, 20)
 
+                    // Next steps section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("WHAT'S NEXT")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "9A9DA5"))
+                            .tracking(1.5)
+                            .padding(.horizontal, 20)
+
+                        VStack(spacing: 10) {
+                            nextStepItem(
+                                icon: "calendar",
+                                title: "Save the Date",
+                                subtitle: booking.date.formatted(.dateTime.day().month().year()) + " at " + booking.timeSlot
+                            )
+                            nextStepItem(
+                                icon: "location.fill",
+                                title: "Visit Our Salon",
+                                subtitle: booking.salon.name
+                            )
+                            nextStepItem(
+                                icon: "bell.fill",
+                                title: "Reminders Set",
+                                subtitle: "We'll notify you 24 hours before"
+                            )
+                        }
+                        .padding(.horizontal, 20)
+                    }
+
+                    // Action buttons
                     VStack(spacing: 12) {
-                        actionButton(
-                            title: "Download Receipt",
-                            icon: "arrow.down.doc.fill",
-                            style: .secondary,
-                            action: prepareReceiptFile
-                        )
                         actionButton(
                             title: "Get Directions",
                             icon: "map.fill",
                             style: .secondary,
                             action: openDirections
+                        )
+                        actionButton(
+                            title: "Download Receipt",
+                            icon: "arrow.down.doc.fill",
+                            style: .secondary,
+                            action: prepareReceiptFile
                         )
                         actionButton(
                             title: "Back to Home",
@@ -50,10 +95,11 @@ struct ReceiptView: View {
                             action: onDone
                         )
                     }
+                    .padding(.horizontal, 20)
 
-                    Spacer().frame(height: 100)
+                    Spacer().frame(height: 20)
                 }
-                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
         }
         .sheet(isPresented: $showShareSheet) {
@@ -63,37 +109,87 @@ struct ReceiptView: View {
         }
     }
 
-    private var detailCard: some View {
-        VStack(spacing: 0) {
-            Text("Booking Summary")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(Color(hex: "1F2126"))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 12)
+    private func nextStepItem(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color(hex: "962043"))
+                .frame(width: 36, height: 36)
+                .background(Color(hex: "962043").opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "1F2126"))
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(hex: "9A9DA5"))
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var detailCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Booking Details")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Color(hex: "1F2126"))
+                    Text("Receipt: \(booking.receiptNumber)")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "9A9DA5"))
+                }
+                Spacer()
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(Color(hex: "00A878"))
+            }
+            .padding(16)
+            .background(Color(hex: "F8F9FB"))
+            .overlay(
+                Divider()
+                    .offset(y: 0),
+                alignment: .bottom
+            )
+
+            // Details
             VStack(spacing: 12) {
                 detailRow(icon: "building.2.fill", label: "Salon", value: booking.salon.name)
                 detailRow(icon: "sparkles", label: "Service", value: booking.service.name)
                 detailRow(icon: "calendar", label: "Date", value: booking.date.formatted(.dateTime.day().month().year()))
                 detailRow(icon: "clock.fill", label: "Time", value: booking.timeSlot)
-                detailRow(icon: "creditcard.fill", label: "Paid", value: "LKR \(Int(booking.amountPaid))")
-                detailRow(icon: "doc.text.fill", label: "Receipt", value: booking.receiptNumber)
+                Divider().padding(.vertical, 4)
+                detailRow(icon: "creditcard.fill", label: "Amount Paid", value: "LKR \(Int(booking.amountPaid))", isHighlight: true)
             }
+            .padding(16)
         }
-        .padding(16)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
 
-    private func detailRow(icon: String, label: String, value: String) -> some View {
+    private func detailRow(icon: String, label: String, value: String, isHighlight: Bool = false) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14)).foregroundColor(Color(hex: "6D7077"))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(hex: "962043"))
                 .frame(width: 28)
-            Text(label).font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
+            
+            Text(label)
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "8A8A8A"))
+            
             Spacer()
+            
             Text(value)
-                .font(.system(size: 13, weight: .semibold)).foregroundColor(Color(hex: "1F2126"))
+                .font(.system(size: 13, weight: isHighlight ? .bold : .semibold))
+                .foregroundColor(isHighlight ? Color(hex: "962043") : Color(hex: "1F2126"))
         }
     }
 
@@ -104,20 +200,41 @@ struct ReceiptView: View {
 
     private func actionButton(title: String, icon: String, style: ActionStyle, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
                 Text(title)
+                    .font(.system(size: 15, weight: .semibold))
             }
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(style == .primary ? .white : Color(hex: "2A2C32"))
             .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(style == .primary ? brand : Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(style == .primary ? Color.clear : Color(hex: "E2E3E7"), lineWidth: 1)
+            .frame(height: 54)
+            .foregroundColor(style == .primary ? .white : Color(hex: "962043"))
+            .background(
+                Group {
+                    if style == .primary {
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(hex: "962043"), Color(hex: "962043").opacity(0.85)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    } else {
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white.opacity(0.95), Color.white]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    }
+                }
             )
+            .overlay(
+                Group {
+                    if style == .secondary {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .strokeBorder(Color(hex: "962043"), lineWidth: 1.5)
+                    }
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 
@@ -185,4 +302,4 @@ struct ShareSheet: UIViewControllerRepresentable {
     )
     return ReceiptView(booking: booking, onDone: {})
     }
-}
+

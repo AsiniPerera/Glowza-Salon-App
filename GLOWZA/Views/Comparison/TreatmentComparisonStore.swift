@@ -9,7 +9,7 @@ struct SelectedTreatment: Identifiable {
     let salonName: String
 }
 
-// MARK: - Treatment Comparison Store  (max 4 treatments)
+// MARK: - Treatment Comparison Store  (max 10 treatments)
 
 @Observable
 final class TreatmentComparisonStore {
@@ -18,7 +18,7 @@ final class TreatmentComparisonStore {
 
     var items: [SelectedTreatment] = []
 
-    var canAddMore: Bool { items.count < 4 }
+    var canAddMore: Bool { items.count < 10 }
 
     func add(service: SalonService, salonName: String) {
         guard canAddMore, !isAdded(service, from: salonName) else { return }

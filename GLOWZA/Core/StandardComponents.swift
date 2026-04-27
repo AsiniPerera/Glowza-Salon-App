@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Brand Colors (quick access)
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "962043")
 private let brandDark = Color(hex: "8A1538")
 private let brandTint = Color(hex: "FFF0F4")
 
@@ -22,12 +22,14 @@ struct StandardCard<Content: View>: View {
     }
 }
 
-// MARK: - Primary Button (rose fill)
+// MARK: - Primary Button (hot pink)
 struct PrimaryButton: View {
     let title: String
     let action: () -> Void
     var isLoading: Bool = false
     var isDisabled: Bool = false
+
+    private let hotPink = Color(hex: "962043")
 
     var body: some View {
         Button(action: action) {
@@ -37,38 +39,38 @@ struct PrimaryButton: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Text(title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(width: 330, height: 55)
             .foregroundColor(.white)
             .background(
-                (isDisabled || isLoading) ? Color(hex: "BEBEBE") : brand
+                (isDisabled || isLoading) ? Color(hex: "D4829E") : hotPink
             )
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .disabled(isLoading || isDisabled)
     }
 }
 
-// MARK: - Secondary Button (rose outline)
+// MARK: - Secondary Button (hot pink outline)
 struct SecondaryButton: View {
     let title: String
     let action: () -> Void
 
+    private let hotPink = Color(hex: "962043")
+
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(brand)
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(brandTint)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(hotPink)
+                .frame(width: 330, height: 55)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(brand.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(hotPink, lineWidth: 1.5)
                 )
         }
     }
@@ -109,7 +111,7 @@ struct StandardSearchBar: View {
 // MARK: - Standard Badge
 struct StandardBadge: View {
     let title: String
-    var backgroundColor: Color = .glowzaPrimary
+    var backgroundColor: Color = Color(hex: "962043")
     var textColor: Color = .white
 
     var body: some View {

@@ -2,22 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CLIENT_ID</key>
-	<string>884329236087-j72112g2o13s9ltkj1rc1jompif8b0c0.apps.googleusercontent.com</string>
-	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.884329236087-j72112g2o13s9ltkj1rc1jompif8b0c0</string>
 	<key>API_KEY</key>
-	<string>AIzaSyDYcHA-no5cmjL2bZhIGY1s1vl8bs463GQ</string>
+	<string>AIzaSyA-V0O-0y9ieD5m0kC8tCFhfPIV3BxC9L8</string>
 	<key>GCM_SENDER_ID</key>
-	<string>884329236087</string>
+	<string>70440014796</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.-24.GLOWZA</string>
+	<string>com.asini.glowza</string>
 	<key>PROJECT_ID</key>
-	<string>glowa-844ab</string>
+	<string>glowzasalon</string>
 	<key>STORAGE_BUCKET</key>
-	<string>glowa-844ab.firebasestorage.app</string>
+	<string>glowzasalon.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:884329236087:ios:c50dadbeb4f77613e16872</string>
+	<string>1:70440014796:ios:a0423879decf9642054369</string>
 </dict>
 </plist>

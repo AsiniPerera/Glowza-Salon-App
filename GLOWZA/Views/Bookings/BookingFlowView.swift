@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Booking Flow Steps
 enum BookingFlowStep {
-    case dateTime, consent, payment, receipt
+    case dateTime, consent, summary, payment, receipt
 }
 
 // MARK: - BookingFlowView (Container)
@@ -23,12 +23,30 @@ struct BookingFlowView: View {
             }
         case .consent:
             ConsentFormView(draft: $draft) {
-                step = .payment
+                step = .summary
             } onBack: {
                 step = .dateTime
             }
+        case .summary:
+            BookingSummaryView(draft: $draft) {
+                step = .payment
+            } onBack: {
+                step = .consent
+            }
         case .payment:
             PaymentView(draft: $draft) { booking in
+                Task {
+                    await BookingStore.shared.createBooking(
+                        salonName: booking.salon.name,
+                        salonLocation: booking.salon.location,
+                        serviceName: booking.service.name,
+                        servicePrice: booking.service.price,
+                        date: booking.date,
+                        timeSlot: booking.timeSlot,
+                        paymentMethod: booking.paymentMethod.rawValue,
+                        amountPaid: booking.amountPaid
+                    )
+                }
                 completedBooking = booking
                 step = .receipt
             } onBack: {
@@ -54,7 +72,7 @@ struct BookAppointmentView: View {
     @State private var selectedDateOffset: Int = 0
     @State private var selectedTime: String = ""
 
-    private let accent = Color(hex: "FF006E")
+    private let accent = Color(hex: "962043")
     private let dark = Color(hex: "2A2C32")
 
     private var days: [(label: String, num: Int, date: Date)] {
@@ -74,7 +92,7 @@ struct BookAppointmentView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "F1F1F1").ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -230,17 +248,16 @@ struct BookAppointmentView: View {
                 if canProceed { onNext() }
             }) {
                 Text("Confirm")
-                    .font(.system(size: 36, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 70)
-                    .background(canProceed ? accent : Color(hex: "BFC2C8"))
-                    .clipShape(Capsule())
+                    .frame(width: 330, height: 55)
+                    .background(canProceed ? accent : Color(hex: "D4829E"))
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .disabled(!canProceed)
-            .padding(.horizontal, 24)
+            .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(Color(hex: "F1F1F1"))
+            .background(Color.white)
         }
     }
 }

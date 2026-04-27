@@ -1,7 +1,7 @@
 import SwiftUI
 import LocalAuthentication
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "962043")
 
 // MARK: - Auth Gate View (Face ID)
 struct AuthGateView: View {
@@ -98,24 +98,23 @@ struct AuthGateView: View {
 
                     // Face ID button
                     Button(action: authenticate) {
-                        HStack(spacing: 10) {
+                        HStack(spacing: 8) {
                             if isAuthenticating {
                                 ProgressView().tint(.white).scaleEffect(0.85)
                             } else {
                                 Image(systemName: "faceid")
-                                    .font(.system(size: 18, weight: .medium))
+                                    .font(.system(size: 14, weight: .medium))
                             }
                             Text(isAuthenticating ? "Authenticating…" : "Sign in with Face ID")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold))
                         }
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(isAuthenticating ? Color(hex: "BEBEBE") : brand)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: isAuthenticating ? .clear : brand.opacity(0.30), radius: 12, x: 0, y: 5)
+                        .frame(width: 330, height: 55)
+                        .background(isAuthenticating ? Color(hex: "D4829E") : brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     .disabled(isAuthenticating)
+                    .frame(maxWidth: .infinity)
 
                     HStack(spacing: 5) {
                         Image(systemName: "lock.shield")

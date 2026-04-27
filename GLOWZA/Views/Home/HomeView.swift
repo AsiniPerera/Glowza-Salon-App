@@ -1,7 +1,7 @@
 import SwiftUI
 import MapKit
 
-private let brand = Color(hex: "FF006E")
+private let brand = Color(hex: "962043")
 
 // MARK: - Models
 struct ServiceCategory: Identifiable, Hashable {
@@ -68,7 +68,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "F1F1F1").ignoresSafeArea()
+                Color(hex: "FFFFFF").ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 0) {
                         topBar
@@ -116,10 +116,10 @@ struct HomeView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Welcome")
-                    .font(.system(size: 30, weight: .regular, design: .rounded))
+                    .font(.system(size: 14, weight: .regular, design: .rounded))
                     .foregroundColor(Color(hex: "1D1F24"))
-                Text("Alexandra")
-                    .font(.system(size: 34, weight: .medium, design: .rounded))
+                Text("Asini")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
                     .foregroundColor(Color(hex: "1D1F24"))
             }
 
@@ -127,7 +127,7 @@ struct HomeView: View {
 
             Button(action: {}) {
                 Circle()
-                    .fill(Color(hex: "FFC4D8"))
+                    .fill(Color(hex: "FAF3F4"))
                     .frame(width: 42, height: 42)
                     .overlay {
                         Image(systemName: "bell")
@@ -154,9 +154,9 @@ struct HomeView: View {
     }
 
     private var servicesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Premium Services")
-                .font(.system(size: 36, weight: .medium, design: .serif))
+                .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundColor(Color(hex: "1B1D21"))
 
             HStack(alignment: .top, spacing: 20) {
@@ -172,7 +172,7 @@ struct HomeView: View {
                             }
                         Text(service.name)
                             .font(.system(size: 11, weight: .regular))
-                            .foregroundColor(Color(hex: "42444A"))
+                            .foregroundColor(Color(hex: "962043"))
                             .multilineTextAlignment(.center)
                             .frame(width: 70)
                     }
@@ -184,16 +184,16 @@ struct HomeView: View {
     private var nearbySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Nearby Salons")
-                    .font(.system(size: 34, weight: .medium, design: .rounded))
+                Text(" Nearby Salons")
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
                     .foregroundColor(Color(hex: "1B1D21"))
                 Spacer()
                 Button(action: { showMapSheet = true }) {
                     HStack(spacing: 6) {
                         Image(systemName: "mappin")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                         Text("Map View")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: 14, weight: .medium))
                     }
                     .foregroundColor(brand)
                 }
@@ -224,11 +224,11 @@ private struct SalonRowCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top) {
                     Text(salon.name)
-                        .font(.system(size: 32, weight: .medium, design: .rounded))
+                        .font(.system(size: 18, weight: .medium, design: .rounded))
                         .foregroundColor(Color(hex: "1F2126"))
                     Spacer()
                     Text(salon.distance)
-                        .font(.system(size: 22, weight: .regular, design: .rounded))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundColor(Color(hex: "8E9198"))
                 }
 
@@ -237,7 +237,7 @@ private struct SalonRowCard: View {
                         .font(.system(size: 16))
                         .foregroundColor(Color(hex: "A3A6AE"))
                     Text(salon.location)
-                        .font(.system(size: 24, weight: .regular, design: .rounded))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundColor(Color(hex: "8A8E95"))
                 }
 
@@ -246,10 +246,10 @@ private struct SalonRowCard: View {
                         .font(.system(size: 14))
                         .foregroundColor(Color(hex: "E4B234"))
                     Text(String(format: "%.1f", salon.rating))
-                        .font(.system(size: 26, weight: .medium, design: .rounded))
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(Color(hex: "2E3036"))
                     Text("(\(salon.reviews))")
-                        .font(.system(size: 24, weight: .regular, design: .rounded))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundColor(Color(hex: "8A8E95"))
                 }
             }
@@ -268,11 +268,11 @@ struct ReputationRing: View {
         ZStack {
             Circle().stroke(Color(hex: "F0F0F0"), lineWidth: 4)
             Circle().trim(from: 0, to: score)
-                .stroke(Color(hex: "AF1C47"), style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .stroke(Color(hex: "962043"), style: StrokeStyle(lineWidth: 4, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text("\(Int(score * 100))%")
                 .font(.system(size: 9, weight: .bold))
-                .foregroundColor(Color(hex: "AF1C47"))
+                .foregroundColor(Color(hex: "962043"))
         }
         .frame(width: 38, height: 38)
     }

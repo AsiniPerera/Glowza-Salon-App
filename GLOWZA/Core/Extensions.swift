@@ -13,10 +13,15 @@ extension View {
             .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
 
-    /// Applies the standard Glowza screen background (white)
+    /// Applies the standard Glowza screen background
     func glowzaBackground() -> some View {
-        self.background(Color.white.ignoresSafeArea())
+        self.background(Color.glowzaBackground.ignoresSafeArea())
     }
+}
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let glowzaSignOut = Notification.Name("glowzaSignOut")
 }
 
 // MARK: - Double Formatting

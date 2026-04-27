@@ -7,8 +7,13 @@ final class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
     @Published var isAuthenticating = false
     @Published var authenticationError: String?
+    @Published var email = ""
+    @Published var password = ""
+    @Published var fullName = ""
+    @Published var phone = ""
 
     private let contextProvider: () -> LAContext
+    private let authService = AuthService.shared
 
     init(contextProvider: @escaping () -> LAContext = LAContext.init) {
         self.contextProvider = contextProvider
@@ -26,6 +31,72 @@ final class AuthViewModel: ObservableObject {
         let context = contextProvider()
         _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
         return context.biometryType == .faceID
+    }
+    
+    // MARK: - Sign Up
+    func signUp() async {
+        guard !email.isEmpty, !password.isEmpty, !fullName.isEmpty, !phone.isEmpty else {
+            authenticationError = "All fields are required"
+            return
+        }
+        
+        isAuthenticating = true
+        authenticationError = nil
+        
+        do {
+            try await authService.signUp(
+                fullName: fullName,
+                email: email,
+                phone: phone,
+                password: password
+            )
+            
+            isAuthenticated = true
+            isAuthenticating = false
+            clearFields()
+        } catch {
+            authenticationError = error.localizedDescription
+            isAuthenticating = false
+        }
+    }
+    
+    // MARK: - Sign In
+    func signIn() async {
+        guard !email.isEmpty, !password.isEmpty else {
+            authenticationError = "Email and password are required"
+            return
+        }
+        
+        isAuthenticating = true
+        authenticationError = nil
+        
+        do {
+            try await authService.signIn(email: email, password: password)
+            isAuthenticated = true
+            isAuthenticating = false
+            clearFields()
+        } catch {
+            authenticationError = error.localizedDescription
+            isAuthenticating = false
+        }
+    }
+    
+    // MARK: - Sign Out
+    func signOut() {
+        do {
+            try authService.signOut()
+            isAuthenticated = false
+            clearFields()
+        } catch {
+            authenticationError = error.localizedDescription
+        }
+    }
+    
+    private func clearFields() {
+        email = ""
+        password = ""
+        fullName = ""
+        phone = ""
     }
 
     func authenticate() {

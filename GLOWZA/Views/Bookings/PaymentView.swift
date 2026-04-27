@@ -1,284 +1,794 @@
 import SwiftUI
 
-private let brand = Color(hex: "FF006E")
-
-private enum PaymentStage {
-    case summary
-    case method
-}
-
 struct PaymentView: View {
-
     @Binding var draft: BookingDraft
     let onPay: (Booking) -> Void
     let onBack: () -> Void
 
-    @State private var stage: PaymentStage = .summary
-    @State private var isPaying = false
-    @State private var selectedSavedCard = "**** 2345"
+    @State private var showCardEntry = false
+    @State private var selectedCardIndex: Int? = nil
 
     private var service: SalonService { draft.service ?? draft.salon.services[0] }
-    private var subtotal: Double { service.price }
-    private var tax: Double { subtotal * 0.10 }
-    private var total: Double { subtotal + tax }
+    private var total: Double { service.price }
+
+    private var canConfirm: Bool {
+        switch draft.paymentMethod {
+        case .card: return selectedCardIndex != nil
+        case .cash, .online: return true
+        }
+    }
 
     var body: some View {
+        if showCardEntry {
+            CardEntryView(
+                draft: $draft,
+                selectedCardIndex: $selectedCardIndex,
+                onBack: { showCardEntry = false }
+            )
+        } else {
+            mainPaymentView
+        }
+    }
+
+    private var mainPaymentView: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "F1F1F1").ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    header
-                    if stage == .summary {
-                        bookingSummaryContent
-                    } else {
-                        paymentMethodContent
-                    }
-                    Spacer().frame(height: 110)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-            }
+                VStack(alignment: .leading, spacing: 0) {
 
-            bottomButton
-        }
-    }
-
-    private var header: some View {
-        HStack {
-            Button(action: {
-                if stage == .summary {
-                    onBack()
-                } else {
-                    withAnimation(.easeInOut(duration: 0.2)) { stage = .summary }
-                }
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Color(hex: "5C5E65"))
-            }
-            Spacer()
-        }
-    }
-
-    private var bookingSummaryContent: some View {
-        VStack(spacing: 18) {
-            Text("Booking Summary")
-                .font(.system(size: 48, weight: .medium, design: .serif))
-                .foregroundColor(Color(hex: "1F2126"))
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(spacing: 10) {
-                Image("SplashLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 82, height: 62)
-                Text("GLOWZA")
-                    .font(.system(size: 20, weight: .medium, design: .serif))
-                    .tracking(2)
-                    .foregroundColor(Color(hex: "7B7D84"))
-            }
-
-            Text("THANK YOU FOR YOUR BOOKING.")
-                .font(.system(size: 27, weight: .medium))
-                .tracking(1)
-                .foregroundColor(brand)
-
-            Text("YOUR APPOINTMENT HAS BEEN\nSUCCESSFULLY SCHEDULED.")
-                .font(.system(size: 16, weight: .medium))
-                .tracking(1.3)
-                .multilineTextAlignment(.center)
-                .foregroundColor(Color(hex: "3C3F45"))
-                .frame(maxWidth: .infinity)
-
-            Text(summaryMultiline)
-                .font(.system(size: 14, weight: .medium))
-                .tracking(1)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .foregroundColor(Color(hex: "2D2F35"))
-
-            Text("PLEASE ARRIVE 10–15 MINUTES EARLY. CONTACT THE\nSALON FOR ANY CHANGES OR CANCELLATIONS. WE\nLOOK FORWARD TO SERVING YOU.")
-                .font(.system(size: 11, weight: .medium))
-                .tracking(1.3)
-                .multilineTextAlignment(.center)
-                .foregroundColor(Color(hex: "4B4E55"))
-                .frame(maxWidth: .infinity)
-                .padding(.top, 8)
-        }
-    }
-
-    private var paymentMethodContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text("Selected Payment Method")
-                .font(.system(size: 36, weight: .semibold, design: .rounded))
-                .foregroundColor(Color(hex: "1F2126"))
-
-            paymentOptionRow(
-                title: "Credit/ Debit Card",
-                selected: draft.paymentMethod == .card,
-                action: { draft.paymentMethod = .card }
-            )
-
-            if draft.paymentMethod == .card {
-                VStack(spacing: 14) {
-                    savedCardRow(label: "**** 2345", iconText: "◉", iconColor: .orange)
-                    savedCardRow(label: "**** 3456", iconText: "VISA", iconColor: Color(hex: "1554D1"))
-                    Button(action: {}) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .medium))
-                            Text("Add Card")
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .foregroundColor(Color(hex: "0E58E8"))
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-
-            paymentOptionRow(
-                title: "Apple Pay",
-                selected: draft.paymentMethod == .online,
-                trailingText: "Pay",
-                action: { draft.paymentMethod = .online }
-            )
-
-            paymentOptionRow(
-                title: "Google Pay",
-                selected: draft.paymentMethod == .cash,
-                trailingText: "GPay",
-                action: { draft.paymentMethod = .cash }
-            )
-        }
-    }
-
-    private func paymentOptionRow(
-        title: String,
-        selected: Bool,
-        trailingText: String? = nil,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                Circle()
-                    .stroke(selected ? brand : Color(hex: "D1D2D7"), lineWidth: 2)
-                    .frame(width: 22, height: 22)
-                    .overlay {
-                        if selected {
-                            Circle().fill(brand).frame(width: 10, height: 10)
+                    // MARK: Back button
+                    Button(action: onBack) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "F2F2F7"))
+                                .frame(width: 36, height: 36)
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "1C1C1E"))
                         }
                     }
-                Text(title)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "2A2C32"))
+                    .padding(.top, 24)
+                    .padding(.horizontal, 24)
+
+                    Spacer().frame(height: 24)
+
+                    // MARK: Header
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Payment")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(Color(hex: "1C1C1E"))
+                        Text("Select payment method")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "8E8E93"))
+                    }
+                    .padding(.horizontal, 24)
+
+                    Spacer().frame(height: 24)
+
+                    // MARK: Amount summary
+                    HStack(alignment: .center, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("TOTAL DUE")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                                .tracking(0.5)
+                            Text("LKR \(Int(total))")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundColor(.glowzaPrimary)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 3) {
+                            Text(service.name)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "1C1C1E"))
+                            Text(service.duration)
+                                .font(.system(size: 13))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color(hex: "F2F2F7"))
+                    .cornerRadius(14)
+                    .padding(.horizontal, 24)
+
+                    Spacer().frame(height: 28)
+
+                    // MARK: Payment method selection
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("PAYMENT METHOD")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "8E8E93"))
+                            .tracking(0.5)
+                            .padding(.horizontal, 24)
+
+                        VStack(spacing: 10) {
+                            // Card button
+                            Button(action: {
+                                draft.paymentMethod = .card
+                                showCardEntry = true
+                            }) {
+                                HStack(spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                                            .frame(width: 48, height: 48)
+                                        Image(systemName: "creditcard.fill")
+                                            .font(.system(size: 20, weight: .semibold))
+                                            .foregroundColor(draft.paymentMethod == .card ? .white : Color.glowzaPrimary)
+                                    }
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text("Credit / Debit Card")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(Color(hex: "1C1C1E"))
+                                        Text("Visa, Mastercard, AMEX")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(Color(hex: "8E8E93"))
+                                    }
+                                    Spacer()
+                                    ZStack {
+                                        Circle()
+                                            .strokeBorder(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "D1D1D6"), lineWidth: 2)
+                                            .frame(width: 22, height: 22)
+                                        if draft.paymentMethod == .card {
+                                            Circle()
+                                                .fill(Color.glowzaPrimary)
+                                                .frame(width: 12, height: 12)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+                                .background(draft.paymentMethod == .card ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+                                .cornerRadius(14)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
+                                                lineWidth: draft.paymentMethod == .card ? 1.5 : 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .animation(.easeInOut(duration: 0.15), value: draft.paymentMethod)
+
+                            // Cash button
+                            methodButton(.cash)
+
+                            // Online banking button
+                            methodButton(.online)
+                        }
+                        .padding(.horizontal, 24)
+                    }
+
+                    // MARK: Online banking info
+                    if draft.paymentMethod == .online {
+                        Spacer().frame(height: 24)
+                        infoMessage(
+                            icon: "building.columns.fill",
+                            title: "Online Banking Redirect",
+                            text: "You'll be securely redirected to your bank's payment gateway to complete the transaction.",
+                            color: Color(hex: "007AFF")
+                        )
+                        .padding(.horizontal, 24)
+                    }
+
+                    // MARK: Cash info
+                    if draft.paymentMethod == .cash {
+                        Spacer().frame(height: 24)
+                        infoMessage(
+                            icon: "banknote.fill",
+                            title: "Pay at Salon",
+                            text: "Please bring the exact amount (LKR \(Int(total))). Payment is due before your treatment begins.",
+                            color: Color(hex: "34C759")
+                        )
+                        .padding(.horizontal, 24)
+                    }
+
+                    Spacer().frame(height: 120)
+                }
+            }
+
+            // MARK: Confirm button pinned to bottom
+            VStack(spacing: 0) {
+                Divider().opacity(0.5)
+                Button(action: confirmPayment) {
+                    Text(confirmButtonText)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(width: 330, height: 55)
+                .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                .cornerRadius(14)
+                .disabled(!canConfirm)
+                .padding(.top, 16)
+                .padding(.bottom, 32)
+            }
+            .background(Color.white)
+        }
+        .navigationBarHidden(true)
+    }
+
+    private func methodButton(_ method: PaymentMethodType) -> some View {
+        let isSelected = draft.paymentMethod == method
+
+        return Button(action: { draft.paymentMethod = method }) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: method.icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(method.rawValue)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color(hex: "1C1C1E"))
+                    Text(methodSubtitle(method))
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "8E8E93"))
+                }
+
                 Spacer()
-                if let trailingText {
-                    Text(trailingText)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "2A2C32"))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(hex: "F6F6F8"))
-                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+
+                ZStack {
+                    Circle()
+                        .strokeBorder(isSelected ? Color.glowzaPrimary : Color(hex: "D1D1D6"), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+                    if isSelected {
+                        Circle()
+                            .fill(Color.glowzaPrimary)
+                            .frame(width: 12, height: 12)
+                    }
                 }
             }
-            .contentShape(Rectangle())
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
         }
         .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 
-    private func savedCardRow(label: String, iconText: String, iconColor: Color) -> some View {
-        Button(action: { selectedSavedCard = label }) {
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.white)
-                    .frame(width: 44, height: 30)
-                    .overlay {
-                        Text(iconText)
-                            .font(.system(size: iconText == "VISA" ? 12 : 14, weight: .bold))
-                            .foregroundColor(iconColor)
-                    }
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(hex: "D9DADE"), lineWidth: 1))
-                Text(label)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color(hex: "2A2C32"))
-            Spacer()
+    private func infoMessage(icon: String, title: String, text: String, color: Color = .glowzaPrimary) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
                 Circle()
-                    .stroke(selectedSavedCard == label ? brand : Color(hex: "D0D1D5"), lineWidth: 2)
-                    .frame(width: 22, height: 22)
-                    .overlay {
-                        if selectedSavedCard == label {
-                            Circle().fill(brand).frame(width: 10, height: 10)
+                    .fill(color.opacity(0.12))
+                    .frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(color)
+            }
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "1C1C1E"))
+                Text(text)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "8E8E93"))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+        }
+        .padding(14)
+        .background(color.opacity(0.06))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private var confirmButtonText: String {
+        switch draft.paymentMethod {
+        case .card:   return "Pay LKR \(Int(total))"
+        case .cash:   return "Confirm Booking"
+        case .online: return "Continue to Bank"
+        }
+    }
+
+    private func methodSubtitle(_ method: PaymentMethodType) -> String {
+        switch method {
+        case .card:   return "Visa, Mastercard, AMEX"
+        case .cash:   return "Pay at salon"
+        case .online: return "All major banks"
+        }
+    }
+
+    private func confirmPayment() {
+        let booking = Booking(
+            id: UUID(),
+            salon: draft.salon,
+            service: service,
+            date: draft.date,
+            timeSlot: draft.timeSlot,
+            receiptNumber: Booking.generateReceiptNumber(),
+            paymentMethod: draft.paymentMethod,
+            amountPaid: total,
+            signatureImage: draft.signatureImage,
+            status: .upcoming,
+            review: nil
+        )
+        
+        // Show booking confirmation notification
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, yyyy"
+        let dateString = dateFormatter.string(from: booking.date)
+        
+        NotificationManager.shared.notifyBookingSuccess(
+            serviceName: booking.service.name,
+            salonName: booking.salon.name,
+            time: booking.timeSlot,
+            date: dateString
+        )
+        
+        onPay(booking)
+    }
+}
+
+// MARK: - Card Entry View
+struct CardEntryView: View {
+    @Binding var draft: BookingDraft
+    @Binding var selectedCardIndex: Int?
+    let onBack: () -> Void
+    
+    @State private var showAddCard = false
+    @State private var savedCards: [(last4: String, brand: String)] = [
+        (last4: "4242", brand: "Visa"),
+        (last4: "5555", brand: "Mastercard")
+    ]
+    
+    private var total: Double { (draft.service ?? draft.salon.services[0]).price }
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.white.ignoresSafeArea()
+            
+            if showAddCard {
+                AddCardFormView(
+                    draft: $draft,
+                    isShowing: $showAddCard,
+                    onCardAdded: { newCard in
+                        savedCards.append((last4: newCard, brand: "Card"))
+                        selectedCardIndex = savedCards.count - 1
+                    }
+                )
+            } else {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        
+                        // Back button
+                        Button(action: onBack) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(hex: "F2F2F7"))
+                                    .frame(width: 36, height: 36)
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(hex: "1C1C1E"))
+                            }
+                        }
+                        .padding(.top, 24)
+                        .padding(.horizontal, 24)
+                        
+                        Spacer().frame(height: 24)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Select Card")
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundColor(Color(hex: "1C1C1E"))
+                            Text("Choose how to pay LKR \(Int(total))")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                        }
+                        .padding(.horizontal, 24)
+                        
+                        Spacer().frame(height: 24)
+                        
+                        // Apple Pay
+                        Button(action: {}) {
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color.black)
+                                        .frame(width: 48, height: 48)
+                                    Image(systemName: "apple.logo")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Apple Pay")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "1C1C1E"))
+                                    Text("Fast and secure")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "8E8E93"))
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(hex: "C7C7CC"))
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.white)
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 24)
+                        
+                        Spacer().frame(height: 20)
+                        
+                        // Saved cards section
+                        if !savedCards.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("SAVED CARDS")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(Color(hex: "8E8E93"))
+                                    .tracking(0.5)
+                                    .padding(.horizontal, 24)
+                                
+                                VStack(spacing: 10) {
+                                    ForEach(savedCards.indices, id: \.self) { index in
+                                        cardSelectionButton(index: index, card: savedCards[index])
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                            }
+                            
+                            Spacer().frame(height: 20)
+                        }
+                        
+                        // Add new card button
+                        Button(action: { showAddCard = true }) {
+                            HStack(spacing: 12) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .fill(Color(hex: "F2F2F7"))
+                                        .frame(width: 48, height: 48)
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.glowzaPrimary)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("Add New Card")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(Color(hex: "1C1C1E"))
+                                    Text("Visa, Mastercard, AMEX")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: "8E8E93"))
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(hex: "C7C7CC"))
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color(hex: "F9F9F9"))
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 24)
+                        
+                        Spacer().frame(height: 120)
+                    }
+                }
+            }
+            
+            // Confirm button
+            if !showAddCard {
+                VStack(spacing: 0) {
+                    Divider().opacity(0.5)
+                    Button(action: onBack) {
+                        Text(selectedCardIndex != nil ? "Continue" : "Select a Card")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 330, height: 55)
+                    .background(selectedCardIndex != nil ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                    .cornerRadius(14)
+                    .disabled(selectedCardIndex == nil)
+                    .padding(.top, 16)
+                    .padding(.bottom, 32)
+                }
+                .background(Color.white)
+            }
+        }
+        .navigationBarHidden(true)
+    }
+    
+    private func cardSelectionButton(index: Int, card: (last4: String, brand: String)) -> some View {
+        let isSelected = selectedCardIndex == index
+        
+        return Button(action: { selectedCardIndex = index }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                        .frame(width: 48, height: 48)
+                    Image(systemName: "creditcard.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                }
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(card.brand)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(Color(hex: "1C1C1E"))
+                    Text("•••• •••• •••• \(card.last4)")
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundColor(Color(hex: "8E8E93"))
+                }
+                
+                Spacer()
+                
+                ZStack {
+                    Circle()
+                        .strokeBorder(isSelected ? Color.glowzaPrimary : Color(hex: "D1D1D6"), lineWidth: 2)
+                        .frame(width: 22, height: 22)
+                    if isSelected {
+                        Circle()
+                            .fill(Color.glowzaPrimary)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(isSelected ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
+                            lineWidth: isSelected ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
+    }
+}
+
+// MARK: - Add Card Form View
+struct AddCardFormView: View {
+    @Binding var draft: BookingDraft
+    @Binding var isShowing: Bool
+    let onCardAdded: (String) -> Void
+    
+    @State private var cardNumber = ""
+    @State private var cardHolder = ""
+    @State private var expiryDate = ""
+    @State private var cvv = ""
+    @State private var isSaving = false
+    @FocusState private var focusedField: CardField?
+    
+    enum CardField { case name, number, expiry, cvv }
+    
+    private var isFormValid: Bool {
+        cardNumber.count == 16
+            && !cardHolder.trimmingCharacters(in: .whitespaces).isEmpty
+            && expiryDate.count == 5
+            && cvv.count == 3
+    }
+    
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            Color.white.ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    
+                    // Back button
+                    Button(action: { isShowing = false }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(hex: "F2F2F7"))
+                                .frame(width: 36, height: 36)
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(Color(hex: "1C1C1E"))
                         }
                     }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var bottomButton: some View {
-        VStack(spacing: 0) {
-            Button(action: {
-                if stage == .summary {
-                    withAnimation(.easeInOut(duration: 0.2)) { stage = .method }
-                } else {
-                    processPayment()
+                    .padding(.top, 24)
+                    .padding(.horizontal, 24)
+                    
+                    Spacer().frame(height: 24)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Add Card")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(Color(hex: "1C1C1E"))
+                        Text("Enter your card details")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "8E8E93"))
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    Spacer().frame(height: 28)
+                    
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("CARD INFORMATION")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(Color(hex: "8E8E93"))
+                            .tracking(0.5)
+                        
+                        // Cardholder
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Cardholder Name")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                            TextField("As it appears on card", text: $cardHolder)
+                                .font(.system(size: 16))
+                                .focused($focusedField, equals: .name)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 14)
+                                .background(Color(hex: "F2F2F7"))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(focusedField == .name ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
+                                )
+                        }
+                        
+                        // Card number
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Card Number")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                            HStack {
+                                TextField("0000  0000  0000  0000", text: $cardNumber)
+                                    .keyboardType(.numberPad)
+                                    .font(.system(size: 16, design: .monospaced))
+                                    .focused($focusedField, equals: .number)
+                                    .onChange(of: cardNumber) { val in
+                                        cardNumber = String(val.filter { $0.isNumber }.prefix(16))
+                                    }
+                                Spacer()
+                                Image(systemName: "creditcard")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(cardNumber.isEmpty ? Color(hex: "C7C7CC") : .glowzaPrimary)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 14)
+                            .background(Color(hex: "F2F2F7"))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(focusedField == .number ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
+                            )
+                        }
+                        
+                        // Expiry + CVV
+                        HStack(spacing: 14) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Expiry Date")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color(hex: "8E8E93"))
+                                TextField("MM / YY", text: $expiryDate)
+                                    .keyboardType(.numberPad)
+                                    .font(.system(size: 16, design: .monospaced))
+                                    .focused($focusedField, equals: .expiry)
+                                    .onChange(of: expiryDate) { val in
+                                        let d = String(val.filter { $0.isNumber }.prefix(4))
+                                        if d.count <= 2 {
+                                            expiryDate = d
+                                        } else {
+                                            expiryDate = "\(d.prefix(2)) / \(d.dropFirst(2))"
+                                        }
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 14)
+                                    .background(Color(hex: "F2F2F7"))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(focusedField == .expiry ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
+                                    )
+                            }
+                            
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("CVV")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(Color(hex: "8E8E93"))
+                                HStack {
+                                    TextField("CVV", text: $cvv)
+                                        .keyboardType(.numberPad)
+                                        .font(.system(size: 16, design: .monospaced))
+                                        .focused($focusedField, equals: .cvv)
+                                        .onChange(of: cvv) { val in
+                                            cvv = String(val.filter { $0.isNumber }.prefix(3))
+                                        }
+                                    Spacer()
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(cvv.isEmpty ? Color(hex: "C7C7CC") : .glowzaPrimary)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 14)
+                                .background(Color(hex: "F2F2F7"))
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(focusedField == .cvv ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
+                                )
+                            }
+                        }
+                        
+                        // Security
+                        HStack(spacing: 8) {
+                            Image(systemName: "lock.shield.fill")
+                                .font(.system(size: 13))
+                                .foregroundColor(.glowzaPrimary)
+                            Text("Your card details are encrypted")
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                        }
+                        .padding(.top, 4)
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    Spacer().frame(height: 120)
                 }
-            }) {
-                HStack(spacing: 8) {
-                    if isPaying {
-                        ProgressView().tint(.white)
+            }
+            
+            // Save button
+            VStack(spacing: 0) {
+                Divider().opacity(0.5)
+                Button(action: saveCard) {
+                    if isSaving {
+                        HStack(spacing: 10) {
+                            ProgressView().tint(.white)
+                            Text("Saving…")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
                     } else {
-                        Text(stage == .summary ? "Pay Securely" : "Pay Now")
-                            .font(.system(size: 36, weight: .semibold, design: .rounded))
+                        Text("Save & Continue")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
                     }
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 70)
-                .background(brand)
-                .clipShape(Capsule())
+                .frame(width: 330, height: 55)
+                .background(isFormValid ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                .cornerRadius(14)
+                .disabled(!isFormValid || isSaving)
+                .padding(.top, 16)
+                .padding(.bottom, 32)
             }
-            .disabled(isPaying)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-            .background(Color(hex: "F1F1F1"))
+            .background(Color.white)
         }
+        .navigationBarHidden(true)
     }
-
-    private var summaryMultiline: String {
-        let date = draft.date.formatted(.dateTime.day().month(.wide).year())
-        let time = draft.timeSlot.isEmpty ? "09:30 AM" : draft.timeSlot
-        return """
-        CLIENT NAME: ASINI PERERA
-        SERVICE/TREATMENT: \(service.name.uppercased())
-        SALON: \(draft.salon.name.uppercased())
-        DATE & TIME: \(date.uppercased()), \(time)
-        SPECIALIST: NADEESHA SILVA
-        TOTAL COST: LKR \(Int(total))
-        """
-    }
-
-    private func processPayment() {
-        isPaying = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            let booking = Booking(
-                id: UUID(),
-                salon: draft.salon,
-                service: service,
-                date: draft.date,
-                timeSlot: draft.timeSlot,
-                receiptNumber: Booking.generateReceiptNumber(),
-                paymentMethod: draft.paymentMethod,
-                amountPaid: total,
-                signatureImage: draft.signatureImage,
-                status: .upcoming,
-                review: nil
-            )
-            isPaying = false
-            onPay(booking)
+    
+    private func saveCard() {
+        isSaving = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            onCardAdded(cardNumber.suffix(4).uppercased())
+            isSaving = false
+            isShowing = false
         }
     }
 }

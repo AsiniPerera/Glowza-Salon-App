@@ -1,16 +1,50 @@
 import SwiftUI
 import LocalAuthentication
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "962043")
 
 // MARK: - Face ID Auth View
 struct FaceIDAuthView: View {
     @StateObject private var viewModel = AuthViewModel()
+    @State private var isDetecting = false
+    @State private var showDetectionUI = false
+    @State private var successAnimation = false
+    @State private var rotationAngle: Double = 0
+    @State private var pulseScale: CGFloat = 1.0
+    let onAuthSuccess: () -> Void
 
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
 
+            if showDetectionUI && viewModel.isAuthenticating {
+                // Creative Face ID Detection UI
+                detectionScreen
+                    .transition(.opacity)
+            } else {
+                // Initial Sign In Screen
+                initialScreen
+                    .transition(.opacity)
+            }
+        }
+        .navigationBarHidden(true)
+        .alert("Authentication Issue", isPresented: errorBinding) {
+            Button("OK", role: .cancel) { viewModel.resetError() }
+        } message: {
+            Text(viewModel.authenticationError ?? "")
+        }
+        .onChange(of: viewModel.isAuthenticated) { _, newValue in
+            if newValue {
+                successAnimation = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                    onAuthSuccess()
+                }
+            }
+        }
+    }
+
+    private var initialScreen: some View {
+        ZStack {
             Circle().fill(brand.opacity(0.06)).frame(width: 360).offset(x: 160, y: -200)
             Circle().fill(brand.opacity(0.04)).frame(width: 280).offset(x: -130, y: 320)
 
@@ -44,32 +78,25 @@ struct FaceIDAuthView: View {
                 Spacer().frame(height: 44)
 
                 VStack(spacing: 16) {
-                    Button(action: viewModel.authenticate) {
-                        HStack(spacing: 10) {
-                            if viewModel.isAuthenticating {
-                                ProgressView().tint(.white)
-                            } else {
-                                Image(systemName: viewModel.biometricIconName)
-                                    .font(.system(size: 18, weight: .medium))
-                            }
-                            Text(viewModel.isAuthenticating ? "Checking Face ID…" : viewModel.biometricButtonTitle)
-                                .font(.system(size: 16, weight: .semibold))
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showDetectionUI = true
+                        }
+                        viewModel.authenticate()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: viewModel.biometricIconName)
+                                .font(.system(size: 14, weight: .medium))
+                            Text(viewModel.biometricButtonTitle)
+                                .font(.system(size: 15, weight: .semibold))
                         }
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 54)
-                        .background(viewModel.isAuthenticating ? Color(hex: "BEBEBE") : brand)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .shadow(color: viewModel.isAuthenticating ? .clear : brand.opacity(0.28), radius: 12, x: 0, y: 5)
+                        .frame(width: 330, height: 55)
+                        .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     }
                     .disabled(viewModel.isAuthenticating)
-
-                    if viewModel.isAuthenticated {
-                        Label("Face ID verified — you're signed in", systemImage: "checkmark.seal.fill")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "00A878"))
-                            .transition(.scale.combined(with: .opacity))
-                    }
+                    .frame(maxWidth: .infinity)
 
                     HStack(spacing: 5) {
                         Image(systemName: "lock.shield")
@@ -94,12 +121,138 @@ struct FaceIDAuthView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 32)
         }
-        .navigationTitle("Face ID")
-        .navigationBarTitleDisplayMode(.inline)
-        .alert("Authentication Issue", isPresented: errorBinding) {
-            Button("OK", role: .cancel) { viewModel.resetError() }
-        } message: {
-            Text(viewModel.authenticationError ?? "")
+    }
+
+    private var detectionScreen: some View {
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    brand.opacity(0.05),
+                    Color.white
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // Status indicator
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Detecting Face ID")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "1C1C1E"))
+                        Text(successAnimation ? "Face ID Verified" : "Position your face in frame")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color(hex: "8E8E93"))
+                    }
+                    Spacer()
+                    ZStack {
+                        Circle()
+                            .fill(successAnimation ? Color.green.opacity(0.1) : brand.opacity(0.1))
+                            .frame(width: 32, height: 32)
+                        Image(systemName: successAnimation ? "checkmark" : "faceid")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(successAnimation ? .green : brand)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 32)
+
+                Spacer()
+
+                // Creative detection animation
+                ZStack {
+                    // Outer scanning ring
+                    Circle()
+                        .stroke(brand.opacity(0.15), lineWidth: 1.5)
+                        .frame(width: 280, height: 280)
+
+                    // Pulsing circles
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .stroke(brand.opacity(0.08), lineWidth: 1)
+                            .frame(width: 280 - CGFloat(index) * 40, height: 280 - CGFloat(index) * 40)
+                            .scaleEffect(successAnimation ? 1.2 : 0.9)
+                            .opacity(successAnimation ? 0 : 0.8 - Double(index) * 0.2)
+                            .animation(
+                                Animation.easeInOut(duration: 1.5)
+                                    .repeatForever(autoreverses: true)
+                                    .delay(Double(index) * 0.2),
+                                value: successAnimation
+                            )
+                    }
+
+                    // Center face icon with rotation
+                    ZStack {
+                        Circle()
+                            .fill(brand.opacity(0.08))
+                            .frame(width: 200, height: 200)
+
+                        if successAnimation {
+                            // Success checkmark
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 80, weight: .semibold))
+                                .foregroundColor(.green)
+                                .scaleEffect(1.0)
+                                .transition(.scale)
+                        } else {
+                            // Scanning face
+                            VStack(spacing: 16) {
+                                Image(systemName: "faceid")
+                                    .font(.system(size: 60, weight: .light))
+                                    .foregroundColor(brand)
+                                    .rotationEffect(.degrees(rotationAngle))
+
+                                // Scanning line
+                                VStack(spacing: 0) {
+                                    ForEach(0..<3, id: \.self) { _ in
+                                        Rectangle()
+                                            .fill(brand.opacity(0.2))
+                                            .frame(height: 8)
+                                            .padding(.vertical, 4)
+                                    }
+                                }
+                                .frame(width: 60, height: 40)
+                            }
+                        }
+                    }
+                }
+                .onAppear {
+                    withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
+                        rotationAngle = 360
+                    }
+                }
+
+                Spacer()
+
+                // Status text
+                VStack(spacing: 12) {
+                    if successAnimation {
+                        VStack(spacing: 4) {
+                            Text("Authentication Successful!")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Color(hex: "1C1C1E"))
+                            Text("Welcome back to GLOWZA")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                        }
+                        .transition(.opacity.combined(with: .scale))
+                    } else {
+                        VStack(spacing: 4) {
+                            Text("Scanning Your Face")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Color(hex: "1C1C1E"))
+                            Text("Please remain still")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                        }
+                    }
+                }
+                .padding(.bottom, 40)
+            }
         }
     }
 
@@ -112,5 +265,5 @@ struct FaceIDAuthView: View {
 }
 
 #Preview {
-    NavigationStack { FaceIDAuthView() }
+    FaceIDAuthView(onAuthSuccess: {})
 }

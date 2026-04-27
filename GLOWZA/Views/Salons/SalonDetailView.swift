@@ -1,407 +1,475 @@
 import SwiftUI
-import MapKit
 
-private let brand = Color(hex: "FF006E")
+private let brand = Color(hex: "962043")
 
-private enum DetailTab: String, CaseIterable {
-    case about = "About"
-    case services = "Services"
-    case reviews = "Reviews & Ratings"
-}
-
+// MARK: - Salon Detail View
 struct SalonDetailView: View {
+
     let salonName: String
 
+    @Environment(TreatmentComparisonStore.self) private var comparisonStore
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
-    @State private var selectedTab: DetailTab = .about
-    @State private var galleryIndex = 0
+
+    @State private var showBookingFlow = false
+    @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0])
+    @State private var isFavourited    = false
+    @State private var photoIndex      = 0
+    @State private var selectedTab     = 0
+    @State private var selectedService: SalonService? = nil
 
     private var salon: Salon {
         SalonCatalog.shared.salon(named: salonName)
     }
 
-    private var salonCoordinate: CLLocationCoordinate2D {
-        switch salon.name {
-        case "Haley Avenue":
-            return CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820)
-        case "Glow Studio":
-            return CLLocationCoordinate2D(latitude: 6.7713, longitude: 79.8783)
-        case "Luxe Aesthetics":
-            return CLLocationCoordinate2D(latitude: 6.8490, longitude: 79.8684)
-        default:
-            return CLLocationCoordinate2D(latitude: 6.8920, longitude: 79.8560)
-        }
-    }
-
     private var reviews: [BookingReview] {
         let real = BookingStore.shared.reviews(forSalon: salonName)
-        if !real.isEmpty { return real }
-        return [
-            BookingReview(rating: 5, comment: "Very clean place and friendly staff. Great facial results.", date: Date(), reviewerName: "Alexandra K."),
-            BookingReview(rating: 4, comment: "Nice ambience and professional service. Will book again.", date: Date(), reviewerName: "Madhavi S.")
-        ]
+        return real.isEmpty ? sampleReviews : real
     }
+
+    private let sampleReviews: [BookingReview] = [
+        BookingReview(rating: 5, comment: "Absolutely loved the facial treatment! Skin is glowing.", date: Date(), reviewerName: "Dilnoza R."),
+        BookingReview(rating: 4, comment: "Professional staff, clean environment. Will return.", date: Date(), reviewerName: "Amara S."),
+    ]
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                heroSection
-                headerSection
-                tabBar
-                tabContent
+        ZStack(alignment: .bottom) {
+            Color.white.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    heroSection
+                    infoSheet
+                }
             }
+            .ignoresSafeArea(edges: .top)
+
+            bookNowBar
+                .opacity(showBookNow ? 1 : 0)
+                .animation(.easeInOut(duration: 0.2), value: showBookNow)
         }
-        .background(Color(hex: "F1F1F1").ignoresSafeArea())
         .navigationBarHidden(true)
+        .onAppear {
+            bookingDraft = BookingDraft(salon: salon)
+        }
+        .fullScreenCover(isPresented: $showBookingFlow) {
+            BookingFlowView(draft: bookingDraft)
+        }
     }
 
+    // MARK: - Hero
     private var heroSection: some View {
-        ZStack(alignment: .topLeading) {
-            Image("Salon1")
-                .resizable()
-                .scaledToFill()
-                .frame(height: 250)
-                .frame(maxWidth: .infinity)
-                .clipped()
+        ZStack(alignment: .bottom) {
+            Rectangle()
+                .fill(Color(hex: "C0BBB7"))
+                .frame(height: 260)
+                .overlay(
+                    Image(systemName: "photo")
+                        .font(.system(size: 36))
+                        .foregroundColor(.white.opacity(0.3))
+                )
 
             LinearGradient(
-                colors: [Color.black.opacity(0.45), Color.black.opacity(0.10)],
+                colors: [Color.black.opacity(0.65), Color.clear],
                 startPoint: .bottom,
                 endPoint: .top
             )
-            .frame(height: 250)
+            .frame(height: 260)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Spacer()
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "F59E0B"))
+                    Text(String(format: "%.1f", salon.rating))
+                        .font(.system(size: 13))
                         .foregroundColor(.white)
-                    Text("\(String(format: "%.1f", salon.rating)) (\(salon.reviewCount) reviews)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white)
+                    Text("(\(salon.reviewCount) reviews)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.85))
                 }
-
                 Text(salon.name)
-                    .font(.system(size: 42, weight: .medium, design: .rounded))
+                    .font(.system(size: 26))
                     .foregroundColor(.white)
-
-                HStack(spacing: 6) {
-                    Image(systemName: "mappin.circle")
-                        .foregroundColor(.white.opacity(0.95))
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.85))
                     Text(salon.location)
-                        .font(.system(size: 15))
-                        .foregroundColor(.white.opacity(0.95))
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.9))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-            .frame(maxHeight: .infinity, alignment: .bottomLeading)
-
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+        .frame(height: 260)
+        .overlay(alignment: .topLeading) {
             Button(action: { dismiss() }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "2D2F33"))
-                    .frame(width: 34, height: 34)
-                    .background(Color.white.opacity(0.95))
+                    .font(.system(size: 15))
+                    .foregroundColor(Color(hex: "1A1A1A"))
+                    .frame(width: 36, height: 36)
+                    .background(Color.white)
                     .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.12), radius: 5)
             }
-            .padding(.top, 50)
-            .padding(.leading, 14)
+            .padding(.leading, 20)
+            .padding(.top, 56)
+        }
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 10) {
+                Button(action: { isFavourited.toggle() }) {
+                    Image(systemName: isFavourited ? "heart.fill" : "heart")
+                        .font(.system(size: 15))
+                        .foregroundColor(isFavourited ? brand : Color(hex: "1A1A1A"))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.12), radius: 5)
+                }
+                Button(action: {}) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .frame(width: 36, height: 36)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.12), radius: 5)
+                }
+            }
+            .padding(.trailing, 20)
+            .padding(.top, 56)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            HStack(spacing: 10) {
+                heroContactBtn(color: Color(hex: "34C759"), symbol: "phone.fill")
+                heroContactBtn(color: Color(hex: "1877F2"), letter: "f")
+                heroContactBtn(color: Color(hex: "25D366"), symbol: "message.fill")
+            }
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
         }
     }
 
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("A premium beauty studio offering expert hair, skin & nail services in a luxurious and relaxing setting")
-                .font(.system(size: 17))
-                .foregroundColor(Color(hex: "4A4C52"))
-                .lineSpacing(4)
+    // MARK: - Info Sheet
+    private var infoSheet: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(salon.about)
+                .italic()
+                .font(.system(size: 14))
+                .foregroundColor(Color(hex: "3A3A3A"))
+                .multilineTextAlignment(.center)
+                .lineSpacing(5)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
 
-            Divider().overlay(Color(hex: "E3E3E6"))
+            tabBar
+            Divider()
+
+            if selectedTab == 1 {
+                servicesContent
+            } else if selectedTab == 2 {
+                reviewsContent
+            } else {
+                aboutContent
+            }
+
+            Spacer().frame(height: 100)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .padding(.bottom, 8)
+        .background(Color.white)
     }
+
+    
+
+    // MARK: - Helpers
 
     private var tabBar: some View {
         HStack(spacing: 0) {
-            ForEach(DetailTab.allCases, id: \.self) { tab in
-                Button(action: { selectedTab = tab }) {
-                    VStack(spacing: 8) {
-                        Text(tab.rawValue)
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(selectedTab == tab ? brand : Color(hex: "787A80"))
+            ForEach([("About", 0), ("Services", 1), ("Reviews & Ratings", 2)], id: \.1) { label, idx in
+                Button(action: { selectedTab = idx }) {
+                    VStack(spacing: 0) {
+                        Text(label)
+                            .font(.system(size: 13))
+                            .foregroundColor(selectedTab == idx ? brand : Color(hex: "8A8A8A"))
+                            .padding(.vertical, 14)
                         Rectangle()
-                            .fill(selectedTab == tab ? brand : .clear)
-                            .frame(height: 2.2)
+                            .fill(selectedTab == idx ? brand : Color.clear)
+                            .frame(height: 2)
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-    }
-
-    @ViewBuilder
-    private var tabContent: some View {
-        Group {
-            switch selectedTab {
-            case .about:
-                aboutContent
-            case .services:
-                servicesContent
-            case .reviews:
-                reviewsContent
-            }
-        }
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 30)
-                .onEnded { value in
-                    if value.translation.width < -50 {
-                        moveToNextTab()
-                    } else if value.translation.width > 50 {
-                        moveToPreviousTab()
-                    }
-                }
-        )
     }
 
     private var aboutContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 16) {
-                detailInfoCard(
-                    icon: "clock",
-                    title: "AVAILABILITY",
-                    main: "Open Today",
-                    sub: salon.openHours.replacingOccurrences(of: "Mon–Sat: ", with: "")
-                )
-                detailInfoCard(
-                    icon: "paperplane",
-                    title: "LOCATION",
-                    main: "\(salon.distance) · 12 min",
-                    sub: "Get Direction",
-                    isAction: true,
-                    action: openDirections
-                )
+        VStack(alignment: .leading, spacing: 24) {
+            HStack(alignment: .top, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "5A5A5A"))
+                        Text("AVAILABILITY")
+                            .font(.system(size: 9))
+                            .foregroundColor(Color(hex: "9A9A9A"))
+                            .tracking(1.2)
+                    }
+                    Text("Open Today")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                    Text(salon.openHours)
+                        .font(.system(size: 12))
+                        .foregroundColor(Color(hex: "8A8A8A"))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                Divider().padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "location")
+                            .font(.system(size: 15))
+                            .foregroundColor(Color(hex: "5A5A5A"))
+                        Text("LOCATION")
+                            .font(.system(size: 9))
+                            .foregroundColor(Color(hex: "9A9A9A"))
+                            .tracking(1.2)
+                    }
+                    Text("\(salon.distance) · 12 min")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "1A1A1A"))
+                    Button(action: {}) {
+                        Text("Get Direction")
+                            .font(.system(size: 12))
+                            .foregroundColor(brand)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
 
             Text(salon.about)
-                .font(.system(size: 14))
-                .foregroundColor(Color(hex: "777A82"))
-                .lineSpacing(3)
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "4A4A4A"))
+                .lineSpacing(5)
+                .padding(.horizontal, 24)
 
-            HStack(spacing: 26) {
-                Text("Contact Us")
-                    .font(.system(size: 30, weight: .regular, design: .rounded))
-                    .foregroundColor(Color(hex: "666870"))
-
-                Button(action: callSalon) {
-                    Image(systemName: "phone.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(Color(hex: "23C167"))
-                }
-                Button(action: openFacebook) {
-                    Image(systemName: "f.cursive.circle.fill")
-                        .font(.system(size: 34))
-                        .foregroundColor(Color(hex: "1C63D7"))
-                }
-                Button(action: openWhatsApp) {
-                    Image(systemName: "message.circle.fill")
-                        .font(.system(size: 34))
-                        .foregroundColor(Color(hex: "13B15E"))
-                }
-            }
-
-            Text("Gallery")
-                .font(.system(size: 32, weight: .regular, design: .rounded))
-                .foregroundColor(Color(hex: "5E6067"))
-
-            TabView(selection: $galleryIndex) {
-                ForEach(0..<3, id: \.self) { idx in
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                        ForEach(0..<4, id: \.self) { cell in
-                            Image((idx + cell).isMultiple(of: 2) ? "Salon1" : "salon2")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 92)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        }
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Gallery")
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "8A8A8A"))
+                LazyVGrid(
+                    columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                    spacing: 8
+                ) {
+                    ForEach(0..<4, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(hex: "D5CFC9"))
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.white.opacity(0.5))
+                            )
                     }
-                    .tag(idx)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 200)
+            .padding(.horizontal, 24)
 
-            HStack(spacing: 10) {
-                ForEach(0..<3, id: \.self) { idx in
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { i in
                     Circle()
-                        .fill(idx == galleryIndex ? brand : Color(hex: "CDCFD4"))
-                        .frame(width: 12, height: 12)
+                        .fill(i == 0 ? brand : Color(hex: "D0D0D0"))
+                        .frame(width: i == 0 ? 10 : 8, height: i == 0 ? 10 : 8)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, 8)
+            .padding(.bottom, 10)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 24)
     }
 
     private var servicesContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(salon.services) { service in
-                HStack(spacing: 12) {
-                    Circle()
-                        .fill(brand.opacity(0.12))
-                        .frame(width: 44, height: 44)
-                        .overlay {
-                            Image(systemName: service.icon)
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(brand)
-                        }
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(service.name)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "1F2125"))
-                        Text(service.duration)
-                            .font(.system(size: 13))
-                            .foregroundColor(Color(hex: "7A7E86"))
+                Button(action: {
+                    if selectedService?.id == service.id {
+                        selectedService = nil  // deselect
+                    } else {
+                        selectedService = service
+                        bookingDraft.service = service
                     }
-                    Spacer()
-                    Text("LKR \(Int(service.price))")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(brand)
+                }) {
+                    HStack(spacing: 14) {
+                        // Checkbox
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .stroke(selectedService?.id == service.id ? brand : Color(hex: "C7C7CC"), lineWidth: 1.5)
+                                .frame(width: 22, height: 22)
+                            if selectedService?.id == service.id {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(brand)
+                                    .frame(width: 22, height: 22)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(service.name)
+                                .font(.system(size: 14))
+                                .foregroundColor(Color(hex: "1A1A1A"))
+                            Text(service.duration)
+                                .font(.system(size: 12))
+                                .foregroundColor(Color(hex: "8A8A8A"))
+                        }
+                        Spacer()
+                        Text("LKR \(Int(service.price))")
+                            .font(.system(size: 14))
+                            .foregroundColor(brand)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(
+                        selectedService?.id == service.id
+                            ? brand.opacity(0.05)
+                            : Color.clear
+                    )
                 }
-                .padding(12)
-                .background(Color(hex: "F8F8FA"))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .buttonStyle(.plain)
+                Divider().padding(.horizontal, 20)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 24)
+        .padding(.top, 4)
     }
 
     private var reviewsContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            ForEach(reviews) { review in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text(review.reviewerName)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "222429"))
-                        Spacer()
-                        Text(review.date, style: .date)
-                            .font(.system(size: 11))
-                            .foregroundColor(Color(hex: "9A9DA4"))
-                    }
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(reviews.prefix(3)) { review in
+                reviewRow(review)
+                Divider().padding(.horizontal, 20)
+            }
+        }
+        .padding(.top, 8)
+    }
 
+    private func reviewRow(_ review: BookingReview) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle().fill(brand.opacity(0.10)).frame(width: 36, height: 36)
+                    Text(String(review.reviewerName.prefix(1)))
+                        .font(.system(size: 14))
+                        .foregroundColor(brand)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(review.reviewerName)
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hex: "1A1A1A"))
                     HStack(spacing: 3) {
                         ForEach(1...5, id: \.self) { i in
                             Image(systemName: i <= review.rating ? "star.fill" : "star")
-                                .font(.system(size: 11))
-                                .foregroundColor(i <= review.rating ? Color(hex: "E5AF32") : Color(hex: "D2D4D9"))
+                                .font(.system(size: 10))
+                                .foregroundColor(i <= review.rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
                         }
                     }
-
-                    Text(review.comment)
-                        .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "6A6D74"))
-                        .lineSpacing(3)
                 }
-                .padding(12)
-                .background(Color(hex: "F8F8FA"))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                Spacer()
+                Text(review.date, style: .date)
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(hex: "ABABAB"))
             }
+            Text(review.comment)
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "6B6B6B"))
+                .lineSpacing(3)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 14)
-        .padding(.bottom, 24)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 
-    private func detailInfoCard(
-        icon: String,
-        title: String,
-        main: String,
-        sub: String,
-        isAction: Bool = false,
-        action: (() -> Void)? = nil
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "5A5D63"))
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color(hex: "60636A"))
-            }
-            Text(main)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "1D1F24"))
-            if let action, isAction {
-                Button(action: action) {
-                    Text(sub)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "9A6D3D"))
+    private var showBookNow: Bool {
+        switch selectedTab {
+        case 0: return true                        // About tab — always show
+        case 1: return selectedService != nil      // Services tab — only when selection made
+        default: return false                      // Reviews tab — hidden
+        }
+    }
+
+    // Book Now Bar
+    private var bookNowBar: some View {
+        VStack(spacing: 0) {
+            Rectangle().fill(Color(hex: "962043")).frame(height: 1)
+            Button(action: {
+                if let svc = selectedService {
+                    bookingDraft.service = svc
                 }
-                .buttonStyle(.plain)
-            } else {
-                Text(sub)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Color(hex: "6A6D74"))
+                showBookingFlow = true
+            }) {
+                HStack(spacing: 10) {
+                    if let svc = selectedService, selectedTab == 1 {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(svc.name)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                            Text("LKR \(Int(svc.price))")
+                                .font(.system(size: 11))
+                                .foregroundColor(.white.opacity(0.85))
+                        }
+                        Spacer()
+                    } else if selectedTab != 1 {
+                        Spacer()
+                    }
+                    Text("Book Now")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                    if selectedService == nil || selectedTab != 1 {
+                        Spacer()
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .padding(.horizontal, 20)
+                .background(brand)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func moveToNextTab() {
-        guard let idx = DetailTab.allCases.firstIndex(of: selectedTab),
-              idx < DetailTab.allCases.count - 1 else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            selectedTab = DetailTab.allCases[idx + 1]
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .padding(.bottom, 8)
+            .background(Color.white)
         }
     }
 
-    private func moveToPreviousTab() {
-        guard let idx = DetailTab.allCases.firstIndex(of: selectedTab), idx > 0 else { return }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            selectedTab = DetailTab.allCases[idx - 1]
+    // MARK: - Hero Contact Buttons
+    private func heroContactBtn(color: Color, symbol: String) -> some View {
+        Button(action: {}) {
+            Circle()
+                .fill(color)
+                .frame(width: 28, height: 28)
+                .overlay(
+                    Image(systemName: symbol)
+                        .font(.system(size: 11))
+                        .foregroundColor(.white)
+                )
+                .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
         }
+        .buttonStyle(.plain)
     }
 
-    private func callSalon() {
-        let digits = salon.phone.filter(\.isNumber)
-        if let url = URL(string: "tel://\(digits)") {
-            openURL(url)
+    private func heroContactBtn(color: Color, letter: String) -> some View {
+        Button(action: {}) {
+            Circle()
+                .fill(color)
+                .frame(width: 28, height: 28)
+                .overlay(
+                    Text(letter)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                )
+                .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
         }
-    }
-
-    private func openWhatsApp() {
-        let digits = salon.phone.filter(\.isNumber)
-        if let url = URL(string: "https://wa.me/\(digits)") {
-            openURL(url)
-        }
-    }
-
-    private func openFacebook() {
-        if let url = URL(string: "https://facebook.com") {
-            openURL(url)
-        }
-    }
-
-    private func openDirections() {
-        let destination = MKMapItem(placemark: MKPlacemark(coordinate: salonCoordinate))
-        destination.name = salon.name
-        destination.openInMaps(launchOptions: [
-            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-        ])
+        .buttonStyle(.plain)
     }
 }
 

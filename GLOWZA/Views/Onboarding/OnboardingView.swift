@@ -1,7 +1,7 @@
 import SwiftUI
 
-private let brand = Color(hex: "AF1C47")
-private let brandDark = Color(hex: "8A1538")
+private let brand = Color(hex: "962043")
+private let hotPink = Color(hex: "962043")
 
 // MARK: - Onboarding Data Model
 struct OnboardingPage: Identifiable {
@@ -72,7 +72,7 @@ struct OnboardingView: View {
             HStack(spacing: 8) {
                 ForEach(0..<pages.count, id: \.self) { i in
                     Capsule()
-                        .fill(i == currentIndex ? brand : Color(hex: "DCDCDC"))
+                        .fill(i == currentIndex ? hotPink : Color(hex: "E5E5EA"))
                         .frame(width: i == currentIndex ? 24 : 8, height: 8)
                         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: currentIndex)
                 }
@@ -103,7 +103,7 @@ struct OnboardingPageView: View {
                 ZStack {
                     // Background shape
                     RoundedRectangle(cornerRadius: 0)
-                        .fill(brand.opacity(0.06))
+                        .fill(Color(hex: "F2F2F7"))
                         .frame(maxWidth: .infinity)
                         .frame(height: UIScreen.main.bounds.height * 0.46)
 
@@ -114,7 +114,7 @@ struct OnboardingPageView: View {
                                 .fill(brand.opacity(0.10))
                                 .frame(width: 130, height: 130)
                             Circle()
-                                .fill(brand.opacity(0.15))
+                                .fill(brand.opacity(0.16))
                                 .frame(width: 100, height: 100)
                             Circle()
                                 .fill(brand)
@@ -144,7 +144,7 @@ struct OnboardingPageView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(page.titleLine1)
                             .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .foregroundColor(Color(hex: "1C1C1E"))
 
                         Text(page.titleLine2)
                             .font(.system(size: 34, weight: .bold))
@@ -153,7 +153,7 @@ struct OnboardingPageView: View {
 
                     Text(page.subtitle)
                         .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "6B6B6B"))
+                        .foregroundColor(Color(hex: "8E8E93"))
                         .lineSpacing(5)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -166,22 +166,18 @@ struct OnboardingPageView: View {
 
                 // ── CTA button ──
                 Button(action: onNext) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Text(isLast ? "Get Started" : "Continue")
-                            .font(.system(size: 17, weight: .semibold))
-                        Spacer()
-                        Image(systemName: isLast ? "sparkles" : "arrow.right")
                             .font(.system(size: 15, weight: .semibold))
+                        Image(systemName: isLast ? "sparkles" : "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(brand)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: brand.opacity(0.30), radius: 12, x: 0, y: 5)
+                    .frame(width: 330, height: 55)
+                    .background(hotPink)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .padding(.horizontal, 28)
+                .frame(maxWidth: .infinity)
                 .padding(.bottom, 52)
                 .offset(y: txtOffset)
                 .opacity(txtOpacity)

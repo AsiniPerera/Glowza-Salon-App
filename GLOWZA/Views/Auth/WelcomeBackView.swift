@@ -1,6 +1,7 @@
 import SwiftUI
 
-private let brand = Color(hex: "AF1C47")
+private let brand = Color(hex: "962043")
+private let hotPink = Color(hex: "962043")
 
 // MARK: - Welcome Back View
 struct WelcomeBackView: View {
@@ -26,22 +27,17 @@ struct WelcomeBackView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // ── Avatar + greeting ──
+                // ── Logo + greeting ──
                 VStack(spacing: 20) {
-                    ZStack {
-                        Circle().fill(brand.opacity(0.10)).frame(width: 110, height: 110)
-                        Circle().fill(brand.opacity(0.15)).frame(width: 86, height: 86)
-                        Circle().fill(brand).frame(width: 68, height: 68)
-                            .shadow(color: brand.opacity(0.30), radius: 14, x: 0, y: 6)
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 30, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                    .scaleEffect(avatarScale)
-                    .opacity(avatarOpacity)
+                    Image("logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 140, height: 112)
+                        .scaleEffect(avatarScale)
+                        .opacity(avatarOpacity)
 
                     VStack(spacing: 6) {
-                        Text("Hello, Welcome Back 👋")
+                        Text("Hello, Welcome Back ")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(Color(hex: "4A4A4A"))
                         Text(userName)
@@ -111,22 +107,18 @@ struct WelcomeBackView: View {
 
                 // ── CTA ──
                 Button(action: onContinue) {
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         Text("Go to Dashboard")
-                            .font(.system(size: 17, weight: .semibold))
-                        Spacer()
+                            .font(.system(size: 15, weight: .semibold))
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: 13, weight: .bold))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(brand)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .shadow(color: brand.opacity(0.30), radius: 12, x: 0, y: 6)
+                    .frame(width: 330, height: 55)
+                    .background(hotPink)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity)
                 .padding(.bottom, 52)
                 .opacity(contentOpacity)
             }

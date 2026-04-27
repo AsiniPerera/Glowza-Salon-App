@@ -1,166 +1,206 @@
 import SwiftUI
 
-private let brand = Color(hex: "FF006E")
-
 // MARK: - Create Account View
 struct CreateAccountView: View {
 
+    @StateObject private var viewModel = AuthViewModel()
     var onCreateAccount: (() -> Void)? = nil
     var onSignIn: (() -> Void)? = nil
     var onBack: (() -> Void)? = nil
 
-    @State private var username = ""
-    @State private var email = ""
-    @State private var password = ""
+    @State private var showPassword = false
+    @State private var showConfirm = false
     @State private var confirmPassword = ""
-    @State private var isLoading = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
+
+                // Back button
                 Button(action: { onBack?() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Color(hex: "606269"))
+                    ZStack {
+                        Circle()
+                            .fill(Color(hex: "F2F2F7"))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(Color(hex: "1C1C1E"))
+                    }
                 }
                 .padding(.top, 24)
-                .padding(.horizontal, 28)
+                .padding(.horizontal, 24)
 
-                Spacer().frame(height: 24)
+                Spacer().frame(height: 32)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Hello!")
-                        .font(.system(size: 50, weight: .bold, design: .rounded))
-                        .foregroundColor(brand)
-                    Text("Register to get started")
-                        .font(.system(size: 53, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(hex: "55575E"))
-                        .lineLimit(2)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Create Account")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(Color(hex: "1C1C1E"))
+                    Text("Fill in your details to get started.")
+                        .font(.system(size: 17))
+                        .foregroundColor(Color(hex: "8E8E93"))
                 }
-                .padding(.horizontal, 28)
-                Spacer().frame(height: 26)
+                .padding(.horizontal, 24)
 
-                VStack(spacing: 16) {
-                    authInput(placeholder: "Username", text: $username, isSecure: false)
-                    authInput(placeholder: "Email", text: $email, isSecure: false)
-                    authInput(placeholder: "Password", text: $password, isSecure: true)
-                    authInput(placeholder: "Confirm password", text: $confirmPassword, isSecure: true)
+                Spacer().frame(height: 36)
+                
+                // Error message
+                if let error = viewModel.authenticationError {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.red)
+                            Text(error)
+                                .font(.system(size: 13))
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(hex: "FFE5E5"))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
                 }
-                .padding(.horizontal, 28)
 
-                Spacer().frame(height: 28)
+                VStack(spacing: 12) {
+                    authInput(placeholder: "Full Name", text: $viewModel.fullName, isSecure: false, keyboard: false)
+                    authInput(placeholder: "Email", text: $viewModel.email, isSecure: false, keyboard: true)
+                    authInput(placeholder: "Phone", text: $viewModel.phone, isSecure: false, keyboard: false)
+                    ZStack(alignment: .trailing) {
+                        authInput(placeholder: "Password", text: $viewModel.password, isSecure: !showPassword, keyboard: false)
+                        Button(action: { showPassword.toggle() }) {
+                            Image(systemName: showPassword ? "eye.slash" : "eye")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                                .padding(.trailing, 18)
+                        }
+                    }
+                    ZStack(alignment: .trailing) {
+                        authInput(placeholder: "Confirm password", text: $confirmPassword, isSecure: !showConfirm, keyboard: false)
+                        Button(action: { showConfirm.toggle() }) {
+                            Image(systemName: showConfirm ? "eye.slash" : "eye")
+                                .font(.system(size: 15))
+                                .foregroundColor(Color(hex: "8E8E93"))
+                                .padding(.trailing, 18)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
 
-                Button(action: createAccount) {
+                Spacer().frame(height: 32)
+
+                Button(action: {
+                    Task {
+                        await viewModel.signUp()
+                        if viewModel.isAuthenticated {
+                            onCreateAccount?()
+                        }
+                    }
+                }) {
                     Group {
-                        if isLoading {
+                        if viewModel.isAuthenticating {
                             ProgressView().tint(.white)
                         } else {
-                            Text("Register")
-                                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                            Text("Create Account")
+                                .font(.system(size: 17, weight: .semibold))
                         }
                     }
                     .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 72)
-                    .background(canCreate ? brand : Color(hex: "C9CBD0"))
-                    .clipShape(Capsule())
+                    .frame(width: 330, height: 55)
+                    .background(canCreate ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .disabled(!canCreate || isLoading)
-                .padding(.horizontal, 28)
+                .disabled(!canCreate || viewModel.isAuthenticating)
+                .frame(maxWidth: .infinity)
 
-                Spacer().frame(height: 24)
+                Spacer().frame(height: 28)
 
-                dividerText("Or Register with")
-                    .padding(.horizontal, 28)
+                dividerRow
+                    .padding(.horizontal, 24)
 
-                Spacer().frame(height: 24)
+                Spacer().frame(height: 20)
 
                 HStack(spacing: 12) {
-                    socialIcon(text: "f", color: Color(hex: "1877F2"))
-                    socialIcon(text: "G", color: Color(hex: "4285F4"))
-                    socialIcon(text: "", color: .black)
+                    socialIcon(label: "f", labelColor: Color(hex: "1877F2"))
+                    socialIcon(label: "G", labelColor: Color(hex: "DB4437"))
+                    socialIcon(sfSymbol: "apple.logo", labelColor: .black)
                 }
-                .padding(.horizontal, 28)
+                .padding(.horizontal, 24)
 
-                Spacer().frame(height: 56)
+                Spacer().frame(height: 36)
 
                 HStack(spacing: 4) {
                     Text("Already have an account?")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(hex: "5D5F66"))
+                        .font(.system(size: 15))
+                        .foregroundColor(Color(hex: "8E8E93"))
                     Button(action: { onSignIn?() }) {
-                        Text("Login Now")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(brand)
+                        Text("Sign In")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.glowzaPrimary)
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 24)
+                .padding(.bottom, 40)
             }
         }
-        .background(Color(hex: "F1F1F1").ignoresSafeArea())
+        .background(Color.white.ignoresSafeArea())
     }
 
     private var canCreate: Bool {
-        !username.isEmpty && !email.isEmpty && !password.isEmpty
-        && password == confirmPassword
+        !viewModel.fullName.isEmpty && !viewModel.email.isEmpty && !viewModel.password.isEmpty
+        && viewModel.password == confirmPassword && !viewModel.phone.isEmpty
     }
 
-    private func createAccount() {
-        guard canCreate else { return }
-        isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            isLoading = false
-            onCreateAccount?()
-        }
-    }
-
-    private func authInput(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {
-        HStack(spacing: 8) {
+    private func authInput(placeholder: String, text: Binding<String>, isSecure: Bool, keyboard: Bool = false) -> some View {
+        Group {
             if isSecure {
                 SecureField(placeholder, text: text)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "4F5158"))
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "1C1C1E"))
             } else {
                 TextField(placeholder, text: text)
-                    .keyboardType(placeholder == "Email" ? .emailAddress : .default)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "4F5158"))
+                    .keyboardType(keyboard ? .emailAddress : .default)
+                    .autocapitalization(keyboard ? .none : .words)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color(hex: "1C1C1E"))
             }
         }
-        .padding(.horizontal, 22)
-        .frame(height: 70)
-        .background(Color(hex: "F1F1F1"))
-        .overlay(
-            RoundedRectangle(cornerRadius: 35, style: .continuous)
-                .stroke(Color(hex: "D1D3D8"), lineWidth: 1.1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
+        .padding(.horizontal, 16)
+        .frame(height: 54)
+        .background(Color(hex: "F2F2F7"))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func dividerText(_ text: String) -> some View {
-        HStack(spacing: 14) {
-            Rectangle().fill(Color(hex: "DCDDDF")).frame(height: 1)
-            Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(hex: "64666D"))
-            Rectangle().fill(Color(hex: "DCDDDF")).frame(height: 1)
+    private var dividerRow: some View {
+        HStack(spacing: 12) {
+            Rectangle().fill(Color(hex: "E5E5EA")).frame(height: 1)
+            Text("or continue with")
+                .font(.system(size: 13))
+                .foregroundColor(Color(hex: "8E8E93"))
+                .fixedSize()
+            Rectangle().fill(Color(hex: "E5E5EA")).frame(height: 1)
         }
     }
 
-    private func socialIcon(text: String, color: Color) -> some View {
+    @ViewBuilder
+    private func socialIcon(label: String? = nil, sfSymbol: String? = nil, labelColor: Color) -> some View {
         Button(action: {}) {
-            Text(text)
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundColor(color)
-                .frame(maxWidth: .infinity)
-                .frame(height: 68)
-                .background(Color(hex: "F1F1F1"))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color(hex: "DCDDE0"), lineWidth: 1)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            Group {
+                if let symbol = sfSymbol {
+                    Image(systemName: symbol)
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(labelColor)
+                } else {
+                    Text(label ?? "")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(labelColor)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(Color(hex: "F2F2F7"))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 }

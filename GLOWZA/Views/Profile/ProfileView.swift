@@ -1,318 +1,236 @@
 import SwiftUI
 import PhotosUI
 
-private let brand = Color(hex: "FF006E")
+private let brand = Color(hex: "962043")
 
+// MARK: - Profile View
 struct ProfileView: View {
-    @State private var viewModel = ProfileViewModel()
 
-    @State private var showEditProfileSheet = false
-    @State private var showChangePasswordSheet = false
-    @State private var showSecurityPrivacySheet = false
-    @State private var showTermsSheet = false
-    @State private var showUpdatesAlert = false
+    // App-wide settings
+    @Environment(AppSettings.self) private var appSettings
 
-    @AppStorage("faceIDEnabled") private var isFaceIDEnabled = true
-    @AppStorage("pushNotifications") private var pushNotificationsOn = true
-    @AppStorage("voiceOverEnabled") private var voiceOverEnabled = true
-    @AppStorage("highContrastEnabled") private var highContrastEnabled = true
-    @AppStorage("darkModeEnabled") private var darkModeEnabled = true
+    // Toggles
+    @State private var isFaceIDEnabled      = true
+    @State private var pushNotifications    = true
+    @State private var voiceOverSupport     = true
 
-    @State private var currentPassword = ""
-    @State private var newPassword = ""
-    @State private var confirmPassword = ""
-    @State private var passwordError: String? = nil
+    // Sheet navigation
+    @State private var showEditProfile      = false
+    @State private var showChangePassword   = false
+    @State private var showTreatmentHistory = false
+    @State private var showSecurity         = false
+    @State private var showAppUpdates       = false
+    @State private var showTerms            = false
+    @State private var showSignOutAlert     = false
+
+    // Avatar / name
+    @State private var avatarData: Data?    = UserDefaults.standard.data(forKey: "profile_avatarData")
+    @State private var showPhotoPicker      = false
+    @State private var selectedPhoto: PhotosPickerItem? = nil
+    @State private var displayName: String  = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini Perera"
+
+    private var avatarImage: UIImage? {
+        guard let data = avatarData else { return nil }
+        return UIImage(data: data)
+    }
+
+    private var initials: String {
+        displayName.split(separator: " ").prefix(2).compactMap { $0.first?.uppercased() }.joined()
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    headerSection
-                    sectionTitle("Account Settings")
-                    actionRow(icon: "person", title: "Edit Profile", hasChevron: true) {
-                        showEditProfileSheet = true
-                    }
-                    actionRow(icon: "lock", title: "Change Password", hasChevron: true) {
-                        showChangePasswordSheet = true
-                    }
-                    NavigationLink(destination: TreatmentTrackingView()) {
-                        rowView(icon: "clock.arrow.circlepath", title: "Treatment History", hasChevron: true)
-                    }
-                    .buttonStyle(.plain)
+                VStack(spacing: 0) {
+                    profileCard
 
-                    sectionTitle("Security & Privacy")
-                    actionRow(icon: "shield", title: "Security & Privacy", hasChevron: true) {
-                        showSecurityPrivacySheet = true
+                    sectionBlock(title: "Account Settings") {
+                        navRow(icon: "person",               label: "Edit Profile")       { showEditProfile      = true }
+                        navRow(icon: "lock",                 label: "Change Password")    { showChangePassword   = true }
+                        navRow(icon: "clock.arrow.circlepath", label: "Treatment History") { showTreatmentHistory = true }
                     }
-                    toggleRow(icon: "faceid", title: "Face ID", isOn: $isFaceIDEnabled)
-
-                    sectionTitle("Notifications")
-                    toggleRow(icon: "bell", title: "Push Notifications", isOn: $pushNotificationsOn)
-
-                    sectionTitle("Accessibility")
-                    toggleRow(icon: "mic", title: "VoiceOver Support", isOn: $voiceOverEnabled)
-                    toggleRow(icon: "eye", title: "High Contrast Mode", isOn: $highContrastEnabled)
-                    toggleRow(icon: "moon", title: "Dark Mode", isOn: $darkModeEnabled)
-
-                    sectionTitle("General")
-                    actionRow(icon: "gearshape", title: "App Updates", hasChevron: true) {
-                        showUpdatesAlert = true
+                    sectionBlock(title: "Security & Privacy") {
+                        navRow(icon: "checkmark.shield",     label: "Security & Privacy") { showSecurity         = true }
+                        toggleRow(icon: "faceid",            label: "Face ID",             value: $isFaceIDEnabled)
                     }
-                    actionRow(icon: "doc.text", title: "Terms & Conditions", hasChevron: true) {
-                        showTermsSheet = true
+                    sectionBlock(title: "Notifications") {
+                        toggleRow(icon: "bell",              label: "Push Notifications",  value: $pushNotifications)
                     }
+                    sectionBlock(title: "Accessibility") {
+                        toggleRow(icon: "mic",               label: "VoiceOver Support",   value: $voiceOverSupport)
+                        toggleRow(icon: "eye",  label: "High Contrast Mode", value: Binding(get: { appSettings.isHighContrast }, set: { appSettings.isHighContrast = $0 }))
+                        toggleRow(icon: "moon", label: "Dark Mode",           value: Binding(get: { appSettings.isDarkMode },      set: { appSettings.isDarkMode = $0 }))
+                    }
+                    sectionBlock(title: "General") {
+                        navRow(icon: "gearshape",            label: "App Updates")        { showAppUpdates       = true }
+                        navRow(icon: "doc.text",             label: "Terms & Conditions") { showTerms            = true }
+                    }
+
+                    Button(action: { showSignOutAlert = true }) {
+                        Text("Sign Out")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 330, height: 55)
+                            .background(brand)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 28)
+                    .padding(.bottom, 48)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
             }
-            .background(Color(hex: "F1F1F1").ignoresSafeArea())
+            .background({
+                if appSettings.isDarkMode {
+                    Color(hex: "0A0A0A").ignoresSafeArea()
+                } else {
+                    Color.white.ignoresSafeArea()
+                }
+            }())
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showEditProfileSheet) {
-            NavigationStack {
-                editProfileSheet
-                    .navigationTitle("Edit Profile")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("Close") { showEditProfileSheet = false }
-                        }
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Save") {
-                                viewModel.saveProfile()
-                                showEditProfileSheet = false
-                            }
-                        }
-                    }
-            }
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileView(displayName: $displayName, avatarData: $avatarData)
         }
-        .sheet(isPresented: $showChangePasswordSheet) {
-            NavigationStack {
-                changePasswordSheet
-                    .navigationTitle("Change Password")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button("Close") { showChangePasswordSheet = false }
-                        }
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Update") { updatePassword() }
-                        }
-                    }
-            }
+        .sheet(isPresented: $showChangePassword) {
+            ChangePasswordView()
         }
-        .sheet(isPresented: $showSecurityPrivacySheet) {
-            NavigationStack {
-                SettingsView()
-            }
+        .sheet(isPresented: $showTreatmentHistory) {
+            TreatmentTrackingView()
         }
-        .sheet(isPresented: $showTermsSheet) {
-            NavigationStack {
-                termsSheet
-                    .navigationTitle("Terms & Conditions")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Done") { showTermsSheet = false }
-                        }
-                    }
-            }
+        .sheet(isPresented: $showSecurity) {
+            SecurityPrivacyView()
         }
-        .alert("App is up to date", isPresented: $showUpdatesAlert) {
-            Button("OK", role: .cancel) {}
+        .sheet(isPresented: $showAppUpdates) {
+            AppUpdatesView()
+        }
+        .sheet(isPresented: $showTerms) {
+            TermsConditionsView()
+        }
+        .alert("Sign Out", isPresented: $showSignOutAlert) {
+            Button("Sign Out", role: .destructive) {
+                NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
+            }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("You are using the latest version of GLOWZA.")
-        }
-        .onChange(of: viewModel.selectedPhotoItem) { _, _ in
-            viewModel.loadPhotoFromPicker()
+            Text("Are you sure you want to sign out?")
         }
     }
 
-    private var headerSection: some View {
-        VStack(spacing: 10) {
-            Text("My profile")
-                .font(.system(size: 38, weight: .bold, design: .rounded))
-                .foregroundColor(brand)
-                .frame(maxWidth: .infinity, alignment: .center)
+    // MARK: - Profile Card
+    private var profileCard: some View {
+        VStack(spacing: 12) {
+            Text("Profile")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
                 .padding(.top, 24)
 
-            PhotosPicker(selection: $viewModel.selectedPhotoItem, matching: .images) {
-                Circle()
-                    .stroke(brand, lineWidth: 2)
-                    .frame(width: 132, height: 132)
-                    .overlay {
-                        if let avatar = viewModel.avatarImage {
-                            avatar
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 120, height: 120)
-                                .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .fill(Color(hex: "F7D4E1"))
-                                .frame(width: 120, height: 120)
-                                .overlay {
-                                    Text(initials(viewModel.fullName))
-                                        .font(.system(size: 38, weight: .bold, design: .rounded))
-                                        .foregroundColor(brand)
-                                }
+            Button(action: { showPhotoPicker = true }) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(brand, lineWidth: 3)
+                        .frame(width: 100, height: 100)
+                    if let ui = avatarImage {
+                        Image(uiImage: ui)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 94, height: 94)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color(hex: appSettings.isDarkMode ? "2A2A2A" : "F2F2F7"))
+                            .frame(width: 94, height: 94)
+                        Text(initials)
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundColor(brand)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhoto, matching: .images)
+            .onChange(of: selectedPhoto) { item in
+                Task {
+                    if let data = try? await item?.loadTransferable(type: Data.self) {
+                        await MainActor.run {
+                            avatarData = data
+                            UserDefaults.standard.set(data, forKey: "profile_avatarData")
                         }
                     }
-                    .overlay(alignment: .bottomTrailing) {
-                        Circle()
-                            .fill(brand)
-                            .frame(width: 30, height: 30)
-                            .overlay {
-                                Image(systemName: "camera.fill")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                    }
-                    .padding(.top, 4)
+                }
             }
-            .buttonStyle(.plain)
 
-            Text(viewModel.fullName)
-                .font(.system(size: 24, weight: .medium, design: .rounded))
-                .foregroundColor(Color(hex: "4B4E54"))
+            Text(displayName)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                .padding(.bottom, 20)
+        }
+        .frame(maxWidth: .infinity)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+    }
+
+    // MARK: - Section Block
+    private func sectionBlock<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93"))
+                .textCase(.uppercase)
+                .padding(.horizontal, 20)
+                .padding(.top, 28)
                 .padding(.bottom, 8)
+            VStack(spacing: 0) {
+                content()
+            }
+            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
         }
     }
 
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 36, weight: .semibold, design: .rounded))
-            .foregroundColor(brand)
-            .padding(.top, 18)
-            .padding(.bottom, 4)
-    }
-
-    private func actionRow(icon: String, title: String, hasChevron: Bool, action: @escaping () -> Void) -> some View {
+    // MARK: - Nav Row
+    private func navRow(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            rowView(icon: icon, title: title, hasChevron: hasChevron)
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93"))
+                    .frame(width: 28)
+                Text(label)
+                    .font(.system(size: 16))
+                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.3) : Color(hex: "C7C7CC"))
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 52)
         }
         .buttonStyle(.plain)
-    }
-
-    private func toggleRow(icon: String, title: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(Color(hex: "585A61"))
-                .frame(width: 24)
-            Text(title)
-                .font(.system(size: 30, weight: .regular, design: .rounded))
-                .foregroundColor(Color(hex: "4D5057"))
-            Spacer()
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(brand)
-        }
-        .frame(height: 56)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Color(hex: "E7E7EA")).frame(height: 1)
+            Rectangle().fill(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "E5E5EA")).frame(height: 0.5).padding(.leading, 62)
         }
     }
 
-    private func rowView(icon: String, title: String, hasChevron: Bool) -> some View {
-        HStack(spacing: 12) {
+    // MARK: - Toggle Row
+    private func toggleRow(icon: String, label: String, value: Binding<Bool>) -> some View {
+        HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundColor(Color(hex: "585A61"))
-                .frame(width: 24)
-            Text(title)
-                .font(.system(size: 30, weight: .regular, design: .rounded))
-                .foregroundColor(Color(hex: "4D5057"))
+                .font(.system(size: 16))
+                .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93"))
+                .frame(width: 28)
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
             Spacer()
-            if hasChevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(hex: "A2A5AC"))
-            }
+            Toggle("", isOn: value).tint(brand).labelsHidden()
         }
-        .frame(height: 56)
+        .padding(.horizontal, 20)
+        .frame(height: 52)
         .overlay(alignment: .bottom) {
-            Rectangle().fill(Color(hex: "E7E7EA")).frame(height: 1)
+            Rectangle().fill(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "E5E5EA")).frame(height: 0.5).padding(.leading, 62)
         }
-    }
-
-    private var editProfileSheet: some View {
-        Form {
-            Section("Profile Photo") {
-                PhotosPicker(selection: $viewModel.selectedPhotoItem, matching: .images) {
-                    Label("Choose from Photos", systemImage: "photo.on.rectangle")
-                }
-            }
-            Section("Profile Information") {
-                TextField("Full Name", text: $viewModel.fullName)
-                TextField("Email", text: $viewModel.email)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                TextField("Phone", text: $viewModel.phone)
-                    .keyboardType(.phonePad)
-            }
-            Section("Skin Type") {
-                Picker("Skin Type", selection: $viewModel.skinType) {
-                    ForEach(viewModel.skinTypes, id: \.self) { type in
-                        Text(type).tag(type)
-                    }
-                }
-            }
-        }
-    }
-
-    private var changePasswordSheet: some View {
-        Form {
-            Section("Security") {
-                SecureField("Current Password", text: $currentPassword)
-                SecureField("New Password", text: $newPassword)
-                SecureField("Confirm Password", text: $confirmPassword)
-            }
-            if let passwordError {
-                Section {
-                    Text(passwordError)
-                        .foregroundColor(.red)
-                }
-            }
-        }
-    }
-
-    private var termsSheet: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("By using GLOWZA, you agree to book responsibly, provide accurate details, and follow salon policies.")
-                Text("Cancellations and rescheduling may be subject to salon terms. Payment information is handled securely.")
-                Text("Treatment outcomes vary by individual. Please consult professionals before any procedure.")
-                Text("For support, contact our in-app help center.")
-            }
-            .font(.system(size: 15))
-            .padding(20)
-        }
-    }
-
-    private func updatePassword() {
-        guard !currentPassword.isEmpty, !newPassword.isEmpty, !confirmPassword.isEmpty else {
-            passwordError = "Please fill all password fields."
-            return
-        }
-        guard newPassword == confirmPassword else {
-            passwordError = "New password and confirmation do not match."
-            return
-        }
-        guard newPassword.count >= 6 else {
-            passwordError = "Password must be at least 6 characters."
-            return
-        }
-        passwordError = nil
-        currentPassword = ""
-        newPassword = ""
-        confirmPassword = ""
-        showChangePasswordSheet = false
-    }
-
-    private func initials(_ name: String) -> String {
-        name.split(separator: " ").prefix(2).compactMap { $0.first }.map(String.init).joined()
     }
 }
 
 #Preview { ProfileView() }
+

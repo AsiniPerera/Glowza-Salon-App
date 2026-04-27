@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 
 // MARK: - Salon Service
 struct SalonService: Identifiable, Equatable {
@@ -9,6 +10,13 @@ struct SalonService: Identifiable, Equatable {
     let duration: String
     let price: Double
     let category: String
+    let benefits: [String]
+
+    init(name: String, icon: String, duration: String, price: Double,
+         category: String, benefits: [String] = []) {
+        self.name = name; self.icon = icon; self.duration = duration
+        self.price = price; self.category = category; self.benefits = benefits
+    }
 }
 
 // MARK: - Salon (full model)
@@ -108,11 +116,11 @@ struct SalonCatalog {
             distance: "2 km",
             rating: 4.7, reviewCount: 312, score: 0.95,
             services: [
-                SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3500,  category: "Skin"),
-                SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5500,  category: "Skin"),
-                SalonService(name: "Laser Hair Removal",  icon: "sun.max.fill",     duration: "30 min", price: 8000,  category: "Hair"),
-                SalonService(name: "Hair Treatment",      icon: "leaf.fill",        duration: "90 min", price: 4500,  category: "Hair"),
-                SalonService(name: "Manicure & Pedicure", icon: "hand.raised.fill", duration: "60 min", price: 2500,  category: "Nails"),
+                SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3500,  category: "Skin",      benefits: ["Hydration", "Glow", "Anti-aging"]),
+                SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5500,  category: "Skin",      benefits: ["Exfoliation", "Brightening", "Acne care"]),
+                SalonService(name: "Laser Hair Removal",  icon: "sun.max.fill",     duration: "30 min", price: 8000,  category: "Hair",      benefits: ["Smooth skin", "Permanent", "Fast"]),
+                SalonService(name: "Hair Treatment",      icon: "leaf.fill",        duration: "90 min", price: 4500,  category: "Hair",      benefits: ["Repair", "Shine", "Nourishment"]),
+                SalonService(name: "Manicure & Pedicure", icon: "hand.raised.fill", duration: "60 min", price: 2500,  category: "Nails",     benefits: ["Clean nails", "Relaxing", "Polish"]),
             ],
             about: "Haley Avenue is a premier aesthetic salon offering sophisticated beauty treatments in a serene, luxurious environment. Our certified specialists are committed to delivering transformative results tailored to every client.",
             phone: "+94 11 234 5678",
@@ -124,10 +132,10 @@ struct SalonCatalog {
             distance: "3.5 km",
             rating: 4.7, reviewCount: 312, score: 0.88,
             services: [
-                SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3000,  category: "Skin"),
-                SalonService(name: "Botox / Anti-Aging",  icon: "cross.case.fill",  duration: "45 min", price: 25000, category: "Aesthetic"),
-                SalonService(name: "Dermal Fillers",      icon: "syringe.fill",     duration: "60 min", price: 35000, category: "Aesthetic"),
-                SalonService(name: "Manicure & Pedicure", icon: "hand.raised.fill", duration: "60 min", price: 2200,  category: "Nails"),
+                SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3000,  category: "Skin",      benefits: ["Deep cleanse", "Moisture", "Radiance"]),
+                SalonService(name: "Botox / Anti-Aging",  icon: "cross.case.fill",  duration: "45 min", price: 25000, category: "Aesthetic", benefits: ["Wrinkle-free", "Lift", "Youthful"]),
+                SalonService(name: "Dermal Fillers",      icon: "syringe.fill",     duration: "60 min", price: 35000, category: "Aesthetic", benefits: ["Volume", "Contouring", "Plumpness"]),
+                SalonService(name: "Manicure & Pedicure", icon: "hand.raised.fill", duration: "60 min", price: 2200,  category: "Nails",     benefits: ["Soft skin", "Colour", "Relaxation"]),
             ],
             about: "Glow Studio specialises in non-invasive aesthetic treatments and advanced skincare. We combine modern technology with holistic beauty principles for visible, lasting results.",
             phone: "+94 11 345 6789",
@@ -139,10 +147,10 @@ struct SalonCatalog {
             distance: "5 km",
             rating: 4.5, reviewCount: 198, score: 0.82,
             services: [
-                SalonService(name: "Chemical Peel",         icon: "sparkles",       duration: "45 min", price: 6000,  category: "Skin"),
-                SalonService(name: "Laser Hair Removal",    icon: "sun.max.fill",   duration: "30 min", price: 9000,  category: "Hair"),
-                SalonService(name: "Fairness Injections",   icon: "syringe.fill",   duration: "30 min", price: 12000, category: "Aesthetic"),
-                SalonService(name: "Dark Circle Treatment", icon: "eye.fill",       duration: "45 min", price: 8500,  category: "Aesthetic"),
+                SalonService(name: "Chemical Peel",         icon: "sparkles",       duration: "45 min", price: 6000,  category: "Skin",      benefits: ["Resurfacing", "Even tone", "Clarity"]),
+                SalonService(name: "Laser Hair Removal",    icon: "sun.max.fill",   duration: "30 min", price: 9000,  category: "Hair",      benefits: ["Precision", "Long-lasting", "Safe"]),
+                SalonService(name: "Fairness Injections",   icon: "syringe.fill",   duration: "30 min", price: 12000, category: "Aesthetic", benefits: ["Skin glow", "Even skin", "Brightening"]),
+                SalonService(name: "Dark Circle Treatment", icon: "eye.fill",       duration: "45 min", price: 8500,  category: "Aesthetic", benefits: ["Refreshed eyes", "Lightening", "Hydration"]),
             ],
             about: "Luxe Aesthetics is a boutique clinic focusing on premium aesthetic medicine and personalised beauty transformations. Every treatment is precisely crafted for your unique skin needs.",
             phone: "+94 11 456 7890",

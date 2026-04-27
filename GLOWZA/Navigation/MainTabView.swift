@@ -37,7 +37,7 @@ struct MainTabView: View {
                 }
                 .tag(4)
         }
-        .tint(Color(hex: "AF1C47"))
+        .tint(Color(hex: "962043"))
         .onAppear { styleTabBar() }
     }
 
@@ -50,12 +50,12 @@ struct MainTabView: View {
             .foregroundColor: UIColor(Color(hex: "BEBEBE"))
         ]
         let selectedAttr: [NSAttributedString.Key: Any] = [
-            .foregroundColor: UIColor(Color(hex: "AF1C47"))
+            .foregroundColor: UIColor(Color(hex: "962043"))
         ]
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = normalAttr
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = selectedAttr
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor(Color(hex: "BEBEBE"))
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Color(hex: "AF1C47"))
+        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Color(hex: "962043"))
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
@@ -92,7 +92,7 @@ struct PlaceholderScreen: View {
             VStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.system(size: 52))
-                    .foregroundColor(Color(hex: "AF1C47").opacity(0.4))
+                    .foregroundColor(Color(hex: "962043").opacity(0.4))
                 Text(title)
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(Color(hex: "1A1A1A"))

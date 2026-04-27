@@ -4,14 +4,24 @@ import PencilKit
 // MARK: - Signature Canvas (UIViewRepresentable - must keep)
 struct SignatureCanvasView: UIViewRepresentable {
     @Binding var canvasView: PKCanvasView
+    var onDrawingChanged: () -> Void
 
     func makeUIView(context: Context) -> PKCanvasView {
         canvasView.drawingPolicy = .anyInput
         canvasView.tool          = PKInkingTool(.pen, color: .black, width: 2)
         canvasView.backgroundColor = .clear
+        canvasView.delegate = context.coordinator
         return canvasView
     }
     func updateUIView(_ uiView: PKCanvasView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDrawingChanged: onDrawingChanged) }
+
+    class Coordinator: NSObject, PKCanvasViewDelegate {
+        var onDrawingChanged: () -> Void
+        init(onDrawingChanged: @escaping () -> Void) { self.onDrawingChanged = onDrawingChanged }
+        func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) { onDrawingChanged() }
+    }
 }
 
 // MARK: - Consent Form View
@@ -22,20 +32,21 @@ struct ConsentFormView: View {
     let onBack: () -> Void
 
     @State private var canvasView = PKCanvasView()
+    @State private var isAgreed = false
+    @State private var hasSignature = false
 
     private let dark = Color(hex: "1F2126")
-    private let accent = Color(hex: "FF006E")
-    private var hasSignature: Bool { !canvasView.drawing.strokes.isEmpty }
+    private let accent = Color(hex: "962043")
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "F1F1F1").ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     Text("Final Consent Form")
-                        .font(.system(size: 52, weight: .medium, design: .serif))
+                        .font(.system(size: 38))
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
                     signatureSection
@@ -74,10 +85,36 @@ struct ConsentFormView: View {
                     .foregroundColor(Color(hex: "666A72"))
                     .tracking(1.6)
                 Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
-                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .font(.system(size: 14))
                     .foregroundColor(Color(hex: "4A4C52"))
                     .lineSpacing(6)
             }
+            .padding(.bottom, 4)
+
+            // Checkbox agreement
+            Button(action: { isAgreed.toggle() }) {
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .strokeBorder(isAgreed ? accent : Color(hex: "CCCCCC"), lineWidth: 2)
+                            .frame(width: 22, height: 22)
+                        if isAgreed {
+                            RoundedRectangle(cornerRadius: 5)
+                                .fill(accent)
+                                .frame(width: 22, height: 22)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    Text("I have read and agree to the treatment consent terms above, and confirm that this signature is my own.")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color(hex: "4A4C52"))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                }
+            }
+            .buttonStyle(.plain)
             .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 10) {
@@ -88,10 +125,10 @@ struct ConsentFormView: View {
                         .tracking(2.2)
                     Spacer()
                     Button(action: { canvasView.drawing = PKDrawing() }) {
-                        Text("Clear")
-                            .font(.system(size: 12, weight: .medium))
+                        Text("CLEAR")
+                            .font(.system(size: 11))
                             .foregroundColor(Color(hex: "777A81"))
-                            .tracking(1)
+                            .tracking(2)
                     }
                 }
 
@@ -103,46 +140,51 @@ struct ConsentFormView: View {
 
                     if !hasSignature {
                         VStack(spacing: 12) {
-                            Text("Sign here")
-                                .font(.system(size: 48, weight: .regular, design: .serif))
+                            Text("Sign here (optional)")
+                                .font(.system(size: 20))
                                 .foregroundColor(Color(hex: "D0D0D3"))
-                            .italic()
+                                .italic()
                             Rectangle()
                                 .fill(Color(hex: "D6D6D9"))
                                 .frame(width: 220, height: 1)
                         }
                     }
 
-                    SignatureCanvasView(canvasView: $canvasView)
-                        .frame(height: 160)
+                    SignatureCanvasView(canvasView: $canvasView) {
+                        hasSignature = !canvasView.drawing.strokes.isEmpty
+                    }
+                    .frame(height: 160)
                 }
             }
         }
         .padding(18)
-        .background(Color(hex: "E5E2E2"))
+        .background(Color(hex: "EEEAE5"))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .padding(.horizontal, 20)
     }
 
     private var bottomBar: some View {
         VStack(spacing: 0) {
-            Button(action: {
-                guard hasSignature else { return }
-                draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
-                onConfirm()
-            }) {
-                Text("Next")
-                    .font(.system(size: 38, weight: .semibold, design: .rounded))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 70)
-                    .background(hasSignature ? accent : Color(hex: "BFC2C8"))
-                    .clipShape(Capsule())
+            if isAgreed {
+                Button(action: {
+                    if hasSignature {
+                        draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
+                    }
+                    onConfirm()
+                }) {
+                    Text("Next")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 330, height: 55)
+                        .background(accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.white)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .disabled(!hasSignature)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 14)
-            .background(Color(hex: "F1F1F1"))
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isAgreed)
     }
 }
