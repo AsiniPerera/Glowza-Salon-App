@@ -7,16 +7,77 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		457CE5452FA9F9F90002B0FC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 457CE5442FA9F9F90002B0FC /* WidgetKit.framework */; };
+		457CE5472FA9F9F90002B0FC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 457CE5462FA9F9F90002B0FC /* SwiftUI.framework */; };
+		457CE5562FA9F9FB0002B0FC /* GLOWZAWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 457CE5422FA9F9F90002B0FC /* GLOWZAWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		45B8A0602F9F8E5B0062AB06 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 45B8A05F2F9F8E5B0062AB06 /* FirebaseAnalytics */; };
 		45B8A0622F9F8E5B0062AB06 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 45B8A0612F9F8E5B0062AB06 /* FirebaseAuth */; };
 		45B8A0642F9F8E5B0062AB06 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 45B8A0632F9F8E5B0062AB06 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		457CE5542FA9F9FB0002B0FC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 45F0706C2F91E8D000505233 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 457CE5412FA9F9F90002B0FC;
+			remoteInfo = GLOWZAWidgetsExtension;
+		};
+		457CE7352FAA390F0002B0FC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 45F0706C2F91E8D000505233 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 45F070732F91E8D000505233;
+			remoteInfo = GLOWZA;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		457CE5572FA9F9FB0002B0FC /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				457CE5562FA9F9FB0002B0FC /* GLOWZAWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		457CE5422FA9F9F90002B0FC /* GLOWZAWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GLOWZAWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		457CE5442FA9F9F90002B0FC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		457CE5462FA9F9F90002B0FC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		457CE7312FAA390F0002B0FC /* GLOWZATests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GLOWZATests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		45F070742F91E8D000505233 /* GLOWZA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GLOWZA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		457CE55A2FA9F9FB0002B0FC /* Exceptions for "GLOWZAWidgets" folder in "GLOWZAWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 457CE5412FA9F9F90002B0FC /* GLOWZAWidgetsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		457CE5482FA9F9F90002B0FC /* GLOWZAWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				457CE55A2FA9F9FB0002B0FC /* Exceptions for "GLOWZAWidgets" folder in "GLOWZAWidgetsExtension" target */,
+			);
+			path = GLOWZAWidgets;
+			sourceTree = "<group>";
+		};
+		457CE7322FAA390F0002B0FC /* GLOWZATests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = GLOWZATests;
+			sourceTree = "<group>";
+		};
 		45F070762F91E8D000505233 /* GLOWZA */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = GLOWZA;
@@ -25,6 +86,22 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		457CE53F2FA9F9F90002B0FC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				457CE5472FA9F9F90002B0FC /* SwiftUI.framework in Frameworks */,
+				457CE5452FA9F9F90002B0FC /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		457CE72E2FAA390F0002B0FC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		45F070712F91E8D000505233 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -38,10 +115,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		457CE5432FA9F9F90002B0FC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				457CE5442FA9F9F90002B0FC /* WidgetKit.framework */,
+				457CE5462FA9F9F90002B0FC /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		45F0706B2F91E8D000505233 = {
 			isa = PBXGroup;
 			children = (
 				45F070762F91E8D000505233 /* GLOWZA */,
+				457CE5482FA9F9F90002B0FC /* GLOWZAWidgets */,
+				457CE7322FAA390F0002B0FC /* GLOWZATests */,
+				457CE5432FA9F9F90002B0FC /* Frameworks */,
 				45F070752F91E8D000505233 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -50,6 +139,8 @@
 			isa = PBXGroup;
 			children = (
 				45F070742F91E8D000505233 /* GLOWZA.app */,
+				457CE5422FA9F9F90002B0FC /* GLOWZAWidgetsExtension.appex */,
+				457CE7312FAA390F0002B0FC /* GLOWZATests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -57,6 +148,51 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		457CE5412FA9F9F90002B0FC /* GLOWZAWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 457CE55B2FA9F9FB0002B0FC /* Build configuration list for PBXNativeTarget "GLOWZAWidgetsExtension" */;
+			buildPhases = (
+				457CE53E2FA9F9F90002B0FC /* Sources */,
+				457CE53F2FA9F9F90002B0FC /* Frameworks */,
+				457CE5402FA9F9F90002B0FC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				457CE5482FA9F9F90002B0FC /* GLOWZAWidgets */,
+			);
+			name = GLOWZAWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = GLOWZAWidgetsExtension;
+			productReference = 457CE5422FA9F9F90002B0FC /* GLOWZAWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		457CE7302FAA390F0002B0FC /* GLOWZATests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 457CE7392FAA390F0002B0FC /* Build configuration list for PBXNativeTarget "GLOWZATests" */;
+			buildPhases = (
+				457CE72D2FAA390F0002B0FC /* Sources */,
+				457CE72E2FAA390F0002B0FC /* Frameworks */,
+				457CE72F2FAA390F0002B0FC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				457CE7362FAA390F0002B0FC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				457CE7322FAA390F0002B0FC /* GLOWZATests */,
+			);
+			name = GLOWZATests;
+			packageProductDependencies = (
+			);
+			productName = GLOWZATests;
+			productReference = 457CE7312FAA390F0002B0FC /* GLOWZATests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		45F070732F91E8D000505233 /* GLOWZA */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 45F0707F2F91E8D100505233 /* Build configuration list for PBXNativeTarget "GLOWZA" */;
@@ -64,10 +200,12 @@
 				45F070702F91E8D000505233 /* Sources */,
 				45F070712F91E8D000505233 /* Frameworks */,
 				45F070722F91E8D000505233 /* Resources */,
+				457CE5572FA9F9FB0002B0FC /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				457CE5552FA9F9FB0002B0FC /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				45F070762F91E8D000505233 /* GLOWZA */,
@@ -92,6 +230,13 @@
 				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
+					457CE5412FA9F9F90002B0FC = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					457CE7302FAA390F0002B0FC = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 45F070732F91E8D000505233;
+					};
 					45F070732F91E8D000505233 = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -115,11 +260,27 @@
 			projectRoot = "";
 			targets = (
 				45F070732F91E8D000505233 /* GLOWZA */,
+				457CE5412FA9F9F90002B0FC /* GLOWZAWidgetsExtension */,
+				457CE7302FAA390F0002B0FC /* GLOWZATests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		457CE5402FA9F9F90002B0FC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		457CE72F2FAA390F0002B0FC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		45F070722F91E8D000505233 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -130,6 +291,20 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		457CE53E2FA9F9F90002B0FC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		457CE72D2FAA390F0002B0FC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		45F070702F91E8D000505233 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -139,7 +314,118 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		457CE5552FA9F9FB0002B0FC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 457CE5412FA9F9F90002B0FC /* GLOWZAWidgetsExtension */;
+			targetProxy = 457CE5542FA9F9FB0002B0FC /* PBXContainerItemProxy */;
+		};
+		457CE7362FAA390F0002B0FC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 45F070732F91E8D000505233 /* GLOWZA */;
+			targetProxy = 457CE7352FAA390F0002B0FC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		457CE5582FA9F9FB0002B0FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GLOWZAWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GLOWZAWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asini.glowza.GLOWZAWidgetsExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		457CE5592FA9F9FB0002B0FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GLOWZAWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = GLOWZAWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asini.glowza.GLOWZAWidgetsExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		457CE7372FAA390F0002B0FC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asini.glowza.GLOWZATests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GLOWZA.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GLOWZA";
+			};
+			name = Debug;
+		};
+		457CE7382FAA390F0002B0FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.asini.glowza.GLOWZATests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GLOWZA.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GLOWZA";
+			};
+			name = Release;
+		};
 		45F0707D2F91E8D100505233 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -268,6 +554,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleURLTypes = "[{CFBundleTypeRole=Editor;CFBundleURLName=com.asini.glowza;CFBundleURLSchemes=(glowza);} ]";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "GLOWZA uses your Calendar to add salon appointment bookings automatically.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "GLOWZA uses your Calendar to add salon appointment bookings automatically.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "GLOWZA uses Reminders to help manage upcoming beauty appointments.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "GLOWZA uses Reminders to help manage upcoming beauty appointments.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -278,7 +569,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "-24.GLOWZA";
+				PRODUCT_BUNDLE_IDENTIFIER = com.asini.glowza;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -299,6 +590,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleURLTypes = "[{CFBundleTypeRole=Editor;CFBundleURLName=com.asini.glowza;CFBundleURLSchemes=(glowza);} ]";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "GLOWZA uses your Calendar to add salon appointment bookings automatically.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "GLOWZA uses your Calendar to add salon appointment bookings automatically.";
+				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "GLOWZA uses Reminders to help manage upcoming beauty appointments.";
+				INFOPLIST_KEY_NSRemindersUsageDescription = "GLOWZA uses Reminders to help manage upcoming beauty appointments.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -324,6 +620,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		457CE55B2FA9F9FB0002B0FC /* Build configuration list for PBXNativeTarget "GLOWZAWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				457CE5582FA9F9FB0002B0FC /* Debug */,
+				457CE5592FA9F9FB0002B0FC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		457CE7392FAA390F0002B0FC /* Build configuration list for PBXNativeTarget "GLOWZATests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				457CE7372FAA390F0002B0FC /* Debug */,
+				457CE7382FAA390F0002B0FC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		45F0706F2F91E8D000505233 /* Build configuration list for PBXProject "GLOWZA" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

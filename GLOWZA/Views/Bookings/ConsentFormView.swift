@@ -34,19 +34,23 @@ struct ConsentFormView: View {
     @State private var canvasView = PKCanvasView()
     @State private var isAgreed = false
     @State private var hasSignature = false
+    @Environment(AppSettings.self) private var appSettings
 
-    private let dark = Color(hex: "1F2126")
     private let accent = Color(hex: "962043")
+    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color(hex: "EEEAE5") }
+    private var bottomBarBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            pageBackground.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     Text("Final Consent Form")
-                        .font(.system(size: 38))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
                     signatureSection
@@ -66,7 +70,7 @@ struct ConsentFormView: View {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(hex: "5F6168"))
+                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "5F6168"))
             }
             Spacer()
         }
@@ -76,17 +80,17 @@ struct ConsentFormView: View {
     private var signatureSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("TREATMENT CONSENT FORM")
+                Text("Treatment Consent Form")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(dark)
                     .tracking(3)
                 Text("REF: GZ-2024-089")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(hex: "666A72"))
+                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "666A72"))
                     .tracking(1.6)
                 Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
                     .font(.system(size: 14))
-                    .foregroundColor(Color(hex: "4A4C52"))
+                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52"))
                     .lineSpacing(6)
             }
             .padding(.bottom, 4)
@@ -109,7 +113,7 @@ struct ConsentFormView: View {
                     }
                     Text("I have read and agree to the treatment consent terms above, and confirm that this signature is my own.")
                         .font(.system(size: 13))
-                        .foregroundColor(Color(hex: "4A4C52"))
+                        .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "4A4C52"))
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
                 }
@@ -119,22 +123,22 @@ struct ConsentFormView: View {
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("ELECTRONIC SIGNATURE")
-                        .font(.system(size: 14, weight: .bold))
+                    Text("Electronic Signature")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(dark)
                         .tracking(2.2)
                     Spacer()
                     Button(action: { canvasView.drawing = PKDrawing() }) {
                         Text("CLEAR")
                             .font(.system(size: 11))
-                            .foregroundColor(Color(hex: "777A81"))
+                            .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "777A81"))
                             .tracking(2)
                     }
                 }
 
                 ZStack {
                     Rectangle()
-                        .fill(Color(hex: "F7F7F7"))
+                        .fill(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "F7F7F7"))
                         .overlay(Rectangle().stroke(Color(hex: "C4C4C7"), lineWidth: 1))
                         .frame(height: 160)
 
@@ -158,7 +162,7 @@ struct ConsentFormView: View {
             }
         }
         .padding(18)
-        .background(Color(hex: "EEEAE5"))
+        .background(surfaceBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .padding(.horizontal, 20)
     }
@@ -181,7 +185,7 @@ struct ConsentFormView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color.white)
+                .background(bottomBarBackground)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }

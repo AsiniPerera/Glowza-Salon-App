@@ -4,6 +4,7 @@ import SwiftUI
 struct ChangePasswordView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
 
     @State private var currentPassword  = ""
     @State private var newPassword      = ""
@@ -15,7 +16,9 @@ struct ChangePasswordView: View {
     @State private var showSuccess      = false
 
     private let accent = Color(hex: "962043")
-    private let dark   = Color(hex: "1F2126")
+    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
 
     private var passwordsMatch: Bool   { newPassword == confirmPassword }
     private var newIsStrong: Bool      { newPassword.count >= 8 }
@@ -24,7 +27,7 @@ struct ChangePasswordView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                pageBackground.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
@@ -47,8 +50,8 @@ struct ChangePasswordView: View {
                             passwordField(label: "New Password",         text: $newPassword,     show: $showNew)
                             passwordField(label: "Confirm New Password", text: $confirmPassword, show: $showConfirm, isLast: true)
                         }
-                        .background(Color.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .background(surfaceBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
 
                         // Strength indicators
                         VStack(alignment: .leading, spacing: 8) {
@@ -83,7 +86,7 @@ struct ChangePasswordView: View {
                     .disabled(!canSubmit)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color.white)
+                    .background(surfaceBackground)
                 }
             }
             .navigationTitle("Change Password")

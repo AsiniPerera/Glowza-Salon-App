@@ -4,7 +4,11 @@ import SwiftUI
 struct AppUpdatesView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
     private let accent = Color(hex: "962043")
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
 
     private let changes: [(version: String, date: String, notes: [String])] = [
         (
@@ -55,14 +59,14 @@ struct AppUpdatesView: View {
                             .tracking(4)
                         Text("Version 2.1.0")
                             .font(.system(size: 22, weight: .bold))
-                            .foregroundColor(Color(hex: "1F2126"))
+                            .foregroundColor(primaryText)
                         Text("You're on the latest version")
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "00A878"))
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
-                    .background(Color.white)
+                    .background(surfaceBackground)
 
                     VStack(spacing: 20) {
                         ForEach(changes, id: \.version) { release in
@@ -70,7 +74,7 @@ struct AppUpdatesView: View {
                                 HStack {
                                     Text(release.version)
                                         .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Color(hex: "1F2126"))
+                                        .foregroundColor(primaryText)
                                     Spacer()
                                     Text(release.date)
                                         .font(.system(size: 12))
@@ -92,7 +96,7 @@ struct AppUpdatesView: View {
                                 }
                             }
                             .padding(16)
-                            .background(Color.white)
+                            .background(surfaceBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
                     }
@@ -101,7 +105,7 @@ struct AppUpdatesView: View {
                     .padding(.bottom, 48)
                 }
             }
-            .background(Color(hex: "F2F2F7").ignoresSafeArea())
+            .background(pageBackground.ignoresSafeArea())
             .navigationTitle("App Updates")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -117,7 +121,11 @@ struct AppUpdatesView: View {
 struct TermsConditionsView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
     private let accent = Color(hex: "962043")
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
 
     private let sections: [(title: String, body: String)] = [
         (
@@ -167,7 +175,7 @@ struct TermsConditionsView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Terms & Conditions")
                             .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Color(hex: "1F2126"))
+                            .foregroundColor(primaryText)
                         Text("Last updated: April 2026")
                             .font(.system(size: 13))
                             .foregroundColor(Color(hex: "ABABAB"))
@@ -175,7 +183,7 @@ struct TermsConditionsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 24)
-                    .background(Color.white)
+                    .background(surfaceBackground)
 
                     VStack(spacing: 12) {
                         ForEach(sections, id: \.title) { section in
@@ -190,7 +198,7 @@ struct TermsConditionsView: View {
                             }
                             .padding(16)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
+                            .background(surfaceBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
                     }
@@ -199,7 +207,7 @@ struct TermsConditionsView: View {
                     .padding(.bottom, 48)
                 }
             }
-            .background(Color(hex: "F2F2F7").ignoresSafeArea())
+            .background(pageBackground.ignoresSafeArea())
             .navigationTitle("Terms & Conditions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

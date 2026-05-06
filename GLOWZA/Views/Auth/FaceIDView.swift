@@ -12,10 +12,15 @@ struct FaceIDAuthView: View {
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
     let onAuthSuccess: () -> Void
+    @Environment(AppSettings.self) private var appSettings
+
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1A1A1A") }
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            pageBackground.ignoresSafeArea()
 
             if showDetectionUI && viewModel.isAuthenticating {
                 // Creative Face ID Detection UI
@@ -66,7 +71,7 @@ struct FaceIDAuthView: View {
                     VStack(spacing: 10) {
                         Text("Secure Sign In")
                             .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .foregroundColor(primaryText)
                         Text("Use Face ID for a faster, private\nsign in to your GLOWZA account.")
                             .font(.system(size: 15))
                             .foregroundColor(Color(hex: "6B6B6B"))
@@ -108,12 +113,12 @@ struct FaceIDAuthView: View {
                     }
                 }
                 .padding(28)
-                .background(Color.white)
+                .background(surfaceBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color(hex: "F0F0F0"), lineWidth: 1)
+                    .stroke(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white, lineWidth: 1)
                 )
 
                 Spacer()
@@ -129,7 +134,7 @@ struct FaceIDAuthView: View {
             LinearGradient(
                 gradient: Gradient(colors: [
                     brand.opacity(0.05),
-                    Color.white
+                    pageBackground
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -142,7 +147,7 @@ struct FaceIDAuthView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Detecting Face ID")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
                         Text(successAnimation ? "Face ID Verified" : "Position your face in frame")
                             .font(.system(size: 12))
                             .foregroundColor(Color(hex: "8E8E93"))
@@ -234,7 +239,7 @@ struct FaceIDAuthView: View {
                         VStack(spacing: 4) {
                             Text("Authentication Successful!")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Color(hex: "1C1C1E"))
+                                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
                             Text("Welcome back to GLOWZA")
                                 .font(.system(size: 14))
                                 .foregroundColor(Color(hex: "8E8E93"))
@@ -244,7 +249,7 @@ struct FaceIDAuthView: View {
                         VStack(spacing: 4) {
                             Text("Scanning Your Face")
                                 .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Color(hex: "1C1C1E"))
+                                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
                             Text("Please remain still")
                                 .font(.system(size: 14))
                                 .foregroundColor(Color(hex: "8E8E93"))

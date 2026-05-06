@@ -13,10 +13,16 @@ struct WelcomeBackView: View {
     @State private var avatarOpacity: CGFloat = 0
     @State private var contentOpacity: CGFloat = 0
     @State private var contentOffset: CGFloat = 24
+    @Environment(AppSettings.self) private var appSettings
+
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var dividerColor: Color { appSettings.isDarkMode ? Color(hex: "2A2A2A") : .white }
+    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1A1A1A") }
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            pageBackground.ignoresSafeArea()
 
             // Soft backdrop
             Circle()
@@ -28,25 +34,27 @@ struct WelcomeBackView: View {
                 Spacer()
 
                 // ── Logo + greeting ──
-                VStack(spacing: 20) {
+                VStack(spacing: 24) {
                     Image("logo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 140, height: 112)
+                        .frame(width: 500, height: 260)
                         .scaleEffect(avatarScale)
                         .opacity(avatarOpacity)
+                        .frame(maxWidth: .infinity, alignment: .center)
 
                     VStack(spacing: 6) {
                         Text("Hello, Welcome Back ")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(Color(hex: "4A4A4A"))
                         Text(userName)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(primaryText)
                         Text("Great to have you back!")
                             .font(.system(size: 14))
                             .foregroundColor(Color(hex: "8A8A8A"))
                     }
+                    .multilineTextAlignment(.center)
                     .opacity(contentOpacity)
                     .offset(y: contentOffset)
                 }
@@ -66,7 +74,7 @@ struct WelcomeBackView: View {
                     }
                     .padding(.bottom, 14)
 
-                    Rectangle().fill(Color(hex: "F5F5F5")).frame(height: 1)
+                    Rectangle().fill(dividerColor).frame(height: 1)
                         .padding(.bottom, 14)
 
                     HStack(spacing: 14) {
@@ -81,7 +89,7 @@ struct WelcomeBackView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Laser Treatment")
                                 .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(Color(hex: "1A1A1A"))
+                                .foregroundColor(primaryText)
                             Text("Tomorrow · 10:00 AM")
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(hex: "6B6B6B"))
@@ -96,7 +104,7 @@ struct WelcomeBackView: View {
                     }
                 }
                 .padding(20)
-                .background(Color.white)
+                .background(surfaceBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
                 .shadow(color: Color.black.opacity(0.06), radius: 16, x: 0, y: 6)
                 .padding(.horizontal, 24)

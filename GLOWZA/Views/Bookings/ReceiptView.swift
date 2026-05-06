@@ -1,5 +1,8 @@
 import SwiftUI
 import MapKit
+import PDFKit
+
+private let brand = Color(hex: "962043")
 
 // MARK: - Receipt View
 struct ReceiptView: View {
@@ -13,93 +16,40 @@ struct ReceiptView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color(hex: "F8F9FB").ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .center, spacing: 24) {
-                    // Success animation
-                    VStack(spacing: 16) {
-                        ZStack {
-                            Circle()
-                                .fill(Color(hex: "962043").opacity(0.1))
-                                .frame(width: 100, height: 100)
-                            
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 54, weight: .bold))
-                                .foregroundColor(Color(hex: "962043"))
-                        }
-                        .scaleEffect(1.0)
+                VStack(alignment: .center, spacing: 16) {
+                    confirmationHeader
+                        .padding(.top, 18)
 
-                        VStack(spacing: 8) {
-                            Text("Booking Confirmed!")
-                                .font(.system(size: 32, weight: .bold, design: .default))
-                                .foregroundColor(Color(hex: "1F2126"))
-                            Text("Your appointment is booked and confirmed")
-                                .font(.system(size: 15))
-                                .foregroundColor(Color(hex: "7A7D85"))
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .padding(.top, 32)
-
-                    // Receipt details card
                     detailCard
-                        .padding(.horizontal, 20)
 
-                    // Next steps section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("WHAT'S NEXT")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(hex: "9A9DA5"))
-                            .tracking(1.5)
-                            .padding(.horizontal, 20)
-
-                        VStack(spacing: 10) {
-                            nextStepItem(
-                                icon: "calendar",
-                                title: "Save the Date",
-                                subtitle: booking.date.formatted(.dateTime.day().month().year()) + " at " + booking.timeSlot
-                            )
-                            nextStepItem(
-                                icon: "location.fill",
-                                title: "Visit Our Salon",
-                                subtitle: booking.salon.name
-                            )
-                            nextStepItem(
-                                icon: "bell.fill",
-                                title: "Reminders Set",
-                                subtitle: "We'll notify you 24 hours before"
-                            )
-                        }
-                        .padding(.horizontal, 20)
-                    }
-
-                    // Action buttons
                     VStack(spacing: 12) {
-                        actionButton(
-                            title: "Get Directions",
-                            icon: "map.fill",
-                            style: .secondary,
-                            action: openDirections
-                        )
-                        actionButton(
+                        HStack(spacing: 12) {
+                            squareActionButton(
                             title: "Download Receipt",
                             icon: "arrow.down.doc.fill",
-                            style: .secondary,
                             action: prepareReceiptFile
-                        )
+                            )
+
+                            squareActionButton(
+                            title: "Get Directions",
+                            icon: "map.fill",
+                            action: openDirections
+                            )
+                        }
+
                         actionButton(
                             title: "Back to Home",
                             icon: "house.fill",
-                            style: .primary,
                             action: onDone
                         )
                     }
-                    .padding(.horizontal, 20)
 
-                    Spacer().frame(height: 20)
+                    Spacer().frame(height: 36)
                 }
-                .padding(.bottom, 20)
+                .padding(.horizontal, 20)
             }
         }
         .sheet(isPresented: $showShareSheet) {
@@ -109,149 +59,253 @@ struct ReceiptView: View {
         }
     }
 
-    private func nextStepItem(icon: String, title: String, subtitle: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(hex: "962043"))
-                .frame(width: 36, height: 36)
-                .background(Color(hex: "962043").opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+    private var confirmationHeader: some View {
+        VStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .stroke(Color(hex: "00A878").opacity(0.18), lineWidth: 1.5)
+                    .frame(width: 88, height: 88)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(hex: "1F2126"))
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundColor(Color(hex: "9A9DA5"))
+                Circle()
+                    .fill(Color(hex: "00A878").opacity(0.10))
+                    .frame(width: 64, height: 64)
+
+                Image(systemName: "checkmark")
+                    .font(.system(size: 25, weight: .bold))
+                    .foregroundColor(Color(hex: "00A878"))
             }
-            Spacer()
+
+            Text("Booking Confirmed")
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .foregroundColor(Color(hex: "1F2126"))
+
+            Text("Your booking is confirmed")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(Color(hex: "8E8E93"))
         }
-        .padding(12)
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .frame(maxWidth: .infinity)
     }
 
     private var detailCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
+        VStack(spacing: 0) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Booking Details")
-                        .font(.system(size: 16, weight: .bold))
+                    Text("Booking Summary")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(Color(hex: "1F2126"))
-                    Text("Receipt: \(booking.receiptNumber)")
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "9A9DA5"))
+                    Text("Receipt #\(booking.receiptNumber)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(Color(hex: "8E8E93"))
                 }
                 Spacer()
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "00A878"))
             }
-            .padding(16)
-            .background(Color(hex: "F8F9FB"))
-            .overlay(
-                Divider()
-                    .offset(y: 0),
-                alignment: .bottom
-            )
+            .padding(.bottom, 12)
 
-            // Details
             VStack(spacing: 12) {
                 detailRow(icon: "building.2.fill", label: "Salon", value: booking.salon.name)
                 detailRow(icon: "sparkles", label: "Service", value: booking.service.name)
                 detailRow(icon: "calendar", label: "Date", value: booking.date.formatted(.dateTime.day().month().year()))
                 detailRow(icon: "clock.fill", label: "Time", value: booking.timeSlot)
-                Divider().padding(.vertical, 4)
-                detailRow(icon: "creditcard.fill", label: "Amount Paid", value: "LKR \(Int(booking.amountPaid))", isHighlight: true)
+                detailRow(icon: "creditcard.fill", label: "Paid", value: "LKR \(Int(booking.amountPaid))")
             }
-            .padding(16)
         }
+        .padding(16)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color(hex: "E9E9EB"), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
     }
 
-    private func detailRow(icon: String, label: String, value: String, isHighlight: Bool = false) -> some View {
+    private func detailRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(hex: "962043"))
+                .font(.system(size: 14)).foregroundColor(Color(hex: "6D7077"))
                 .frame(width: 28)
-            
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundColor(Color(hex: "8A8A8A"))
-            
+            Text(label).font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
             Spacer()
-            
             Text(value)
-                .font(.system(size: 13, weight: isHighlight ? .bold : .semibold))
-                .foregroundColor(isHighlight ? Color(hex: "962043") : Color(hex: "1F2126"))
+                .font(.system(size: 13, weight: .semibold)).foregroundColor(Color(hex: "1F2126"))
         }
     }
 
-    private enum ActionStyle {
-        case primary
-        case secondary
+    private func actionButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                Text(title)
+            }
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(height: 55)
+            .frame(maxWidth: .infinity)
+            .background(brand)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .frame(maxWidth: .infinity)
     }
 
-    private func actionButton(title: String, icon: String, style: ActionStyle, action: @escaping () -> Void) -> some View {
+    private func squareActionButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color(hex: "F5F5F7"))
+                        .frame(width: 30, height: 30)
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(brand)
+                }
+
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundColor(brand)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
+                    .allowsTightening(true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
             }
+            .padding(.horizontal, 12)
+            .frame(height: 52)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .foregroundColor(style == .primary ? .white : Color(hex: "962043"))
-            .background(
-                Group {
-                    if style == .primary {
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(hex: "962043"), Color(hex: "962043").opacity(0.85)]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    } else {
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.white.opacity(0.95), Color.white]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    }
-                }
-            )
-            .overlay(
-                Group {
-                    if style == .secondary {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(Color(hex: "962043"), lineWidth: 1.5)
-                    }
-                }
-            )
+            .background(Color.white)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(brand.opacity(0.4), lineWidth: 1.2)
+            )
         }
     }
 
     private func prepareReceiptFile() {
-        let text = """
-        GLOWZA BOOKING RECEIPT
-        Receipt: \(booking.receiptNumber)
-        Salon: \(booking.salon.name)
-        Service: \(booking.service.name)
-        Date: \(booking.date.formatted(.dateTime.day().month().year()))
-        Time: \(booking.timeSlot)
-        Amount Paid: LKR \(Int(booking.amountPaid))
-        """
-        let filename = "GLOWZA-\(booking.receiptNumber).txt"
+        let filename = "GLOWZA-\(booking.receiptNumber).pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842) // A4 at 72 DPI
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+
+        let brandColor = UIColor(red: 150 / 255, green: 32 / 255, blue: 67 / 255, alpha: 1)
+        let textPrimary = UIColor(red: 31 / 255, green: 33 / 255, blue: 38 / 255, alpha: 1)
+        let textSecondary = UIColor(red: 130 / 255, green: 132 / 255, blue: 139 / 255, alpha: 1)
+        let lineColor = UIColor(red: 234 / 255, green: 235 / 255, blue: 238 / 255, alpha: 1)
+
         do {
-            try text.write(to: url, atomically: true, encoding: .utf8)
+            let pdfData = renderer.pdfData { context in
+                context.beginPage()
+                let cg = context.cgContext
+
+                UIColor.white.setFill()
+                cg.fill(pageRect)
+
+                let margin: CGFloat = 44
+                let contentWidth = pageRect.width - (margin * 2)
+                var y: CGFloat = 56
+
+                if let appLogo = UIImage(named: "logo") {
+                    let logoRect = CGRect(x: (pageRect.width - 132) / 2, y: y, width: 132, height: 90)
+                    appLogo.draw(in: logoRect)
+                    y += 104
+                }
+
+                let titleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 24, weight: .bold),
+                    .foregroundColor: brandColor
+                ]
+                let subtitleAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 14, weight: .semibold),
+                    .foregroundColor: textSecondary
+                ]
+
+                let title = "GLOWZA BOOKING RECEIPT" as NSString
+                let titleSize = title.size(withAttributes: titleAttributes)
+                title.draw(
+                    at: CGPoint(x: (pageRect.width - titleSize.width) / 2, y: y),
+                    withAttributes: titleAttributes
+                )
+                y += 36
+
+                let receiptNo = "Receipt #\(booking.receiptNumber)" as NSString
+                let receiptSize = receiptNo.size(withAttributes: subtitleAttributes)
+                receiptNo.draw(
+                    at: CGPoint(x: (pageRect.width - receiptSize.width) / 2, y: y),
+                    withAttributes: subtitleAttributes
+                )
+                y += 26
+
+                cg.setStrokeColor(lineColor.cgColor)
+                cg.setLineWidth(1)
+                cg.move(to: CGPoint(x: margin, y: y))
+                cg.addLine(to: CGPoint(x: pageRect.width - margin, y: y))
+                cg.strokePath()
+                y += 30
+
+                let sectionAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 12, weight: .bold),
+                    .foregroundColor: textSecondary
+                ]
+                let labelAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 14, weight: .regular),
+                    .foregroundColor: textSecondary
+                ]
+                let valueAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 15, weight: .semibold),
+                    .foregroundColor: textPrimary
+                ]
+
+                ("BOOKING SUMMARY" as NSString).draw(
+                    at: CGPoint(x: margin, y: y),
+                    withAttributes: sectionAttributes
+                )
+                y += 24
+
+                let dateText = booking.date.formatted(.dateTime.day().month(.wide).year())
+                let rows: [(String, String)] = [
+                    ("Salon", booking.salon.name),
+                    ("Service", booking.service.name),
+                    ("Date", dateText),
+                    ("Time", booking.timeSlot),
+                    ("Amount Paid", "LKR \(Int(booking.amountPaid))")
+                ]
+
+                for (label, value) in rows {
+                    (label as NSString).draw(
+                        at: CGPoint(x: margin, y: y),
+                        withAttributes: labelAttributes
+                    )
+
+                    let valueText = value as NSString
+                    let valueRect = CGRect(x: margin + 130, y: y - 1, width: contentWidth - 130, height: 40)
+                    valueText.draw(in: valueRect, withAttributes: valueAttributes)
+
+                    y += 30
+                    cg.setStrokeColor(lineColor.cgColor)
+                    cg.move(to: CGPoint(x: margin, y: y))
+                    cg.addLine(to: CGPoint(x: pageRect.width - margin, y: y))
+                    cg.strokePath()
+                    y += 14
+                }
+
+                y += 20
+                let footerAttributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 12, weight: .regular),
+                    .foregroundColor: textSecondary
+                ]
+                ("Thank you for choosing GLOWZA." as NSString).draw(
+                    at: CGPoint(x: margin, y: y),
+                    withAttributes: footerAttributes
+                )
+            }
+
+            guard let pdfDocument = PDFDocument(data: pdfData) else {
+                receiptFileURL = nil
+                return
+            }
+
+            pdfDocument.write(to: url)
+
             receiptFileURL = url
             showShareSheet = true
         } catch {
@@ -280,6 +334,7 @@ struct ReceiptView: View {
             return CLLocationCoordinate2D(latitude: 6.8920, longitude: 79.8560)
         }
     }
+
 }
 
 struct ShareSheet: UIViewControllerRepresentable {

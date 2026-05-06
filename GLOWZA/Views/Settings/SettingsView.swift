@@ -4,11 +4,11 @@ import SwiftUI
 struct SettingsView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
 
     @AppStorage("pushNotifications") private var pushNotifications = true
     @AppStorage("emailNotifications") private var emailNotifications = false
     @AppStorage("faceIDEnabled") private var faceIDEnabled = true
-    @AppStorage("darkModeEnabled") private var darkModeEnabled = false
 
     private let brand = Color(hex: "962043")
 
@@ -25,7 +25,10 @@ struct SettingsView: View {
                 }
 
                 Section("Appearance") {
-                    Toggle("Dark Mode", isOn: $darkModeEnabled)
+                    Toggle("Dark Mode", isOn: Binding(
+                        get: { appSettings.isDarkMode },
+                        set: { appSettings.isDarkMode = $0 }
+                    ))
                 }
 
                 Section("About") {

@@ -3,14 +3,20 @@ import SwiftUI
 // MARK: - Create Account View
 struct CreateAccountView: View {
 
-    @StateObject private var viewModel = AuthViewModel()
     var onCreateAccount: (() -> Void)? = nil
     var onSignIn: (() -> Void)? = nil
     var onBack: (() -> Void)? = nil
 
+    @State private var username = ""
+    @State private var email = ""
+    @State private var password = ""
+    @State private var confirmPassword = ""
     @State private var showPassword = false
     @State private var showConfirm = false
-    @State private var confirmPassword = ""
+    @State private var isLoading = false
+
+    private let brand = Color(hex: "962043")
+    private let hotPink = Color(hex: "962043")
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -43,32 +49,12 @@ struct CreateAccountView: View {
                 .padding(.horizontal, 24)
 
                 Spacer().frame(height: 36)
-                
-                // Error message
-                if let error = viewModel.authenticationError {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundColor(.red)
-                            Text(error)
-                                .font(.system(size: 13))
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color(hex: "FFE5E5"))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
-                }
 
                 VStack(spacing: 12) {
-                    authInput(placeholder: "Full Name", text: $viewModel.fullName, isSecure: false, keyboard: false)
-                    authInput(placeholder: "Email", text: $viewModel.email, isSecure: false, keyboard: true)
-                    authInput(placeholder: "Phone", text: $viewModel.phone, isSecure: false, keyboard: false)
+                    authInput(placeholder: "Username", text: $username, isSecure: false, keyboard: false)
+                    authInput(placeholder: "Email", text: $email, isSecure: false, keyboard: true)
                     ZStack(alignment: .trailing) {
-                        authInput(placeholder: "Password", text: $viewModel.password, isSecure: !showPassword, keyboard: false)
+                        authInput(placeholder: "Password", text: $password, isSecure: !showPassword, keyboard: false)
                         Button(action: { showPassword.toggle() }) {
                             Image(systemName: showPassword ? "eye.slash" : "eye")
                                 .font(.system(size: 15))
@@ -90,16 +76,9 @@ struct CreateAccountView: View {
 
                 Spacer().frame(height: 32)
 
-                Button(action: {
-                    Task {
-                        await viewModel.signUp()
-                        if viewModel.isAuthenticated {
-                            onCreateAccount?()
-                        }
-                    }
-                }) {
+                Button(action: createAccount) {
                     Group {
-                        if viewModel.isAuthenticating {
+                        if isLoading {
                             ProgressView().tint(.white)
                         } else {
                             Text("Create Account")
@@ -108,10 +87,10 @@ struct CreateAccountView: View {
                     }
                     .foregroundColor(.white)
                     .frame(width: 330, height: 55)
-                    .background(canCreate ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                    .background(canCreate ? hotPink : Color(hex: "D4829E"))
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
-                .disabled(!canCreate || viewModel.isAuthenticating)
+                .disabled(!canCreate || isLoading)
                 .frame(maxWidth: .infinity)
 
                 Spacer().frame(height: 28)
@@ -137,7 +116,7 @@ struct CreateAccountView: View {
                     Button(action: { onSignIn?() }) {
                         Text("Sign In")
                             .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.glowzaPrimary)
+                            .foregroundColor(hotPink)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -148,8 +127,17 @@ struct CreateAccountView: View {
     }
 
     private var canCreate: Bool {
-        !viewModel.fullName.isEmpty && !viewModel.email.isEmpty && !viewModel.password.isEmpty
-        && viewModel.password == confirmPassword && !viewModel.phone.isEmpty
+        !username.isEmpty && !email.isEmpty && !password.isEmpty
+        && password == confirmPassword
+    }
+
+    private func createAccount() {
+        guard canCreate else { return }
+        isLoading = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            isLoading = false
+            onCreateAccount?()
+        }
     }
 
     private func authInput(placeholder: String, text: Binding<String>, isSecure: Bool, keyboard: Bool = false) -> some View {
@@ -169,7 +157,7 @@ struct CreateAccountView: View {
         .padding(.horizontal, 16)
         .frame(height: 54)
         .background(Color(hex: "F2F2F7"))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
     }
 
     private var dividerRow: some View {

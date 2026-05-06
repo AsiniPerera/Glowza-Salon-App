@@ -18,6 +18,9 @@ struct OnboardingView: View {
 
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var currentIndex = 0
+    @Environment(AppSettings.self) private var appSettings
+
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
 
     private let pages: [OnboardingPage] = [
         OnboardingPage(
@@ -45,7 +48,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            pageBackground.ignoresSafeArea()
 
             TabView(selection: $currentIndex) {
                 ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
@@ -92,10 +95,14 @@ struct OnboardingPageView: View {
     @State private var heroOpacity: CGFloat = 0
     @State private var txtOffset:  CGFloat = 28
     @State private var txtOpacity: CGFloat = 0
+    @Environment(AppSettings.self) private var appSettings
+
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var heroBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            pageBackground.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
 
@@ -103,7 +110,7 @@ struct OnboardingPageView: View {
                 ZStack {
                     // Background shape
                     RoundedRectangle(cornerRadius: 0)
-                        .fill(Color(hex: "F2F2F7"))
+                        .fill(heroBackground)
                         .frame(maxWidth: .infinity)
                         .frame(height: UIScreen.main.bounds.height * 0.46)
 
@@ -143,11 +150,11 @@ struct OnboardingPageView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(page.titleLine1)
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
 
                         Text(page.titleLine2)
-                            .font(.system(size: 34, weight: .bold))
+                            .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(brand)
                     }
 

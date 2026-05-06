@@ -1,8 +1,6 @@
 import SwiftUI
 import PhotosUI
 
-private let brand = Color(hex: "962043")
-
 // MARK: - Profile View
 struct ProfileView: View {
 
@@ -28,6 +26,12 @@ struct ProfileView: View {
     @State private var showPhotoPicker      = false
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @State private var displayName: String  = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini Perera"
+
+    private var brand: Color { appSettings.isHighContrast ? Color(hex: "FF66B2") : Color(hex: "962043") }
+    private var pageBackground: Color { appSettings.isHighContrast ? .black : .white }
+    private var primaryText: Color { appSettings.isHighContrast ? .white : Color(hex: "1C1C1E") }
+    private var secondaryText: Color { appSettings.isHighContrast ? .white.opacity(0.78) : Color(hex: "8E8E93") }
+    private var dividerColor: Color { appSettings.isHighContrast ? .white : Color(hex: "E5E5EA") }
 
     private var avatarImage: UIImage? {
         guard let data = avatarData else { return nil }
@@ -64,28 +68,20 @@ struct ProfileView: View {
                     sectionBlock(title: "General") {
                         navRow(icon: "gearshape",            label: "App Updates")        { showAppUpdates       = true }
                         navRow(icon: "doc.text",             label: "Terms & Conditions") { showTerms            = true }
+                        navRow(
+                            icon: "rectangle.portrait.and.arrow.right",
+                            label: "Sign Out",
+                            foreground: .red,
+                            showChevron: false
+                        ) {
+                            showSignOutAlert = true
+                        }
                     }
 
-                    Button(action: { showSignOutAlert = true }) {
-                        Text("Sign Out")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 330, height: 55)
-                            .background(brand)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 28)
-                    .padding(.bottom, 48)
+                    Spacer().frame(height: 32)
                 }
             }
-            .background({
-                if appSettings.isDarkMode {
-                    Color(hex: "0A0A0A").ignoresSafeArea()
-                } else {
-                    Color.white.ignoresSafeArea()
-                }
-            }())
+            .background(pageBackground.ignoresSafeArea())
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showEditProfile) {
@@ -121,7 +117,7 @@ struct ProfileView: View {
         VStack(spacing: 12) {
             Text("Profile")
                 .font(.system(size: 28, weight: .bold))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                .foregroundColor(primaryText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
@@ -139,7 +135,7 @@ struct ProfileView: View {
                             .clipShape(Circle())
                     } else {
                         Circle()
-                            .fill(Color(hex: appSettings.isDarkMode ? "2A2A2A" : "F2F2F7"))
+                            .fill(appSettings.isHighContrast ? Color.black : Color(hex: "F2F2F7"))
                             .frame(width: 94, height: 94)
                         Text(initials)
                             .font(.system(size: 32, weight: .bold))
@@ -162,11 +158,11 @@ struct ProfileView: View {
 
             Text(displayName)
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                .foregroundColor(primaryText)
                 .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .background(pageBackground)
     }
 
     // MARK: - Section Block
@@ -174,7 +170,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93"))
+                .foregroundColor(secondaryText)
                 .textCase(.uppercase)
                 .padding(.horizontal, 20)
                 .padding(.top, 28)
@@ -182,32 +178,46 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 content()
             }
-            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+            .background(pageBackground)
         }
     }
 
     // MARK: - Nav Row
-    private func navRow(icon: String, label: String, action: @escaping () -> Void) -> some View {
+    private func navRow(
+        icon: String,
+        label: String,
+        foreground: Color = Color(hex: "1C1C1E"),
+        showChevron: Bool = true,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93"))
+                    .foregroundColor(foreground == .red ? .red : secondaryText)
                     .frame(width: 28)
                 Text(label)
                     .font(.system(size: 16))
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                    .foregroundColor(foreground)
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.3) : Color(hex: "C7C7CC"))
+                if showChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(secondaryText)
+                }
             }
             .padding(.horizontal, 20)
             .frame(height: 52)
         }
         .buttonStyle(.plain)
+        .overlay {
+            if appSettings.isHighContrast {
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(Color.white, lineWidth: 3)
+            }
+        }
         .overlay(alignment: .bottom) {
-            Rectangle().fill(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "E5E5EA")).frame(height: 0.5).padding(.leading, 62)
+            Rectangle().fill(dividerColor).frame(height: appSettings.isHighContrast ? 1 : 0.5).padding(.leading, 62)
         }
     }
 
@@ -216,18 +226,24 @@ struct ProfileView: View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93"))
+                .foregroundColor(secondaryText)
                 .frame(width: 28)
             Text(label)
                 .font(.system(size: 16))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                .foregroundColor(primaryText)
             Spacer()
             Toggle("", isOn: value).tint(brand).labelsHidden()
         }
         .padding(.horizontal, 20)
         .frame(height: 52)
+        .overlay {
+            if appSettings.isHighContrast {
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(Color.white, lineWidth: 3)
+            }
+        }
         .overlay(alignment: .bottom) {
-            Rectangle().fill(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "E5E5EA")).frame(height: 0.5).padding(.leading, 62)
+            Rectangle().fill(dividerColor).frame(height: appSettings.isHighContrast ? 1 : 0.5).padding(.leading, 62)
         }
     }
 }

@@ -1,73 +1,122 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Notification Banner View (Glass-Frosted Effect for OLED)
 struct NotificationBannerView: View {
     let notification: NotificationItem
     
     @State private var isAnimatingIn = false
+    @State private var isExpanded = false
     @State private var pulseOpacity: Double = 0.6
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                // Text content
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(notification.title)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                    Text(notification.subtitle)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(Color.white.opacity(0.8))
-                        .lineLimit(2)
-                }
-                
+            HStack(spacing: 10) {
+                Image(systemName: notification.icon)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(Color(hex: "962043"))
+                    .frame(width: 30, height: 30)
+                    .background(Color.white.opacity(0.14))
+                    .clipShape(Circle())
+
+                Text(notification.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
                 Spacer()
-                
-                // Close button
+
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 1.5)) {
+                    triggerLightHaptic()
+                    withAnimation(.easeInOut(duration: 0.25)) {
                         NotificationManager.shared.dismissAll()
                     }
                 }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.5))
-                        .frame(width: 28, height: 28)
-                        .contentShape(Circle())
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white.opacity(0.68))
+                        .frame(width: 26, height: 26)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Circle())
                 }
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(notification.subtitle)
+                        .font(.system(size: 12.5, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.84))
+                        .lineLimit(2)
+
+                    if notification.type == .success {
+                        HStack(spacing: 10) {
+                            Button("View Results") {
+                                triggerLightHaptic()
+                                NotificationCenter.default.post(name: .glowzaGoToBookingsTab, object: nil)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                                    NotificationCenter.default.post(name: .glowzaShowUpcomingBookings, object: nil)
+                                }
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    NotificationManager.shared.dismissAll()
+                                }
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .frame(height: 34)
+                            .background(Color(hex: "962043"))
+                            .clipShape(Capsule())
+
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+                .padding(.top, 10)
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 13)
         .frame(maxWidth: .infinity)
         .background(luminousGlassFrostedBackground())
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: isExpanded ? 22 : 30, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: isExpanded ? 22 : 30, style: .continuous)
                 .strokeBorder(
                     LinearGradient(
                         gradient: Gradient(colors: [
-                            accentColor(for: notification.type).opacity(0.3),
-                            Color.white.opacity(0.15)
+                            Color(hex: "C6A769").opacity(0.64),
+                            Color(hex: "C6A769").opacity(0.28),
+                            Color.white.opacity(0.18)
                         ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1.5
+                    lineWidth: 1.3
                 )
         )
         // Multiple shadow layers for intense glow
-        .shadow(color: accentColor(for: notification.type).opacity(0.6), radius: 24, x: 0, y: 12)
-        .shadow(color: accentColor(for: notification.type).opacity(0.4), radius: 16, x: 0, y: 6)
-        .shadow(color: accentColor(for: notification.type).opacity(0.2), radius: 8, x: 0, y: 3)
-        .padding(.horizontal, 16)
-        .padding(.top, 16)
-        .scaleEffect(isAnimatingIn ? 1.0 : 0.92)
+        .shadow(color: Color(hex: "C6A769").opacity(0.28), radius: 18, x: 0, y: 10)
+        .shadow(color: accentColor(for: notification.type).opacity(0.24), radius: 14, x: 0, y: 6)
+        .padding(.horizontal, 20)
+        .padding(.top, 0)
+        .scaleEffect(isAnimatingIn ? 1.0 : 0.88, anchor: .top)
         .opacity(isAnimatingIn ? 1.0 : 0.0)
+        .offset(y: isAnimatingIn ? 0 : -14)
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.65, blendDuration: 0)) {
+            triggerLightHaptic()
+
+            withAnimation(.spring(response: 0.36, dampingFraction: 0.76, blendDuration: 0)) {
                 isAnimatingIn = true
             }
+
+            // Start as a compact top pill, then quickly expand to show details.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+                withAnimation(.spring(response: 0.34, dampingFraction: 0.82, blendDuration: 0)) {
+                    isExpanded = true
+                }
+            }
+
             // Subtle pulse animation
             withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
                 pulseOpacity = 0.8
@@ -78,13 +127,13 @@ struct NotificationBannerView: View {
     private func luminousGlassFrostedBackground() -> some View {
         ZStack {
             // Ultra-dark semi-transparent base for glass morphism
-            Color.black.opacity(0.25)
+            Color.black.opacity(0.24)
             
             // Frosted glass layer with blur effect
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.white.opacity(0.15),
-                    Color.white.opacity(0.06)
+                    Color.white.opacity(0.17),
+                    Color.white.opacity(0.08)
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -148,21 +197,36 @@ struct NotificationBannerView: View {
             return Color(hex: "F59E0B")  // Amber
         }
     }
+
+    private func triggerLightHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred(intensity: 0.9)
+    }
 }
 
 // MARK: - Notification Container (for RootView)
 struct NotificationContainer: View {
+    @State private var notificationManager = NotificationManager.shared
+
     var body: some View {
-        VStack(spacing: 0) {
-            if let notification = NotificationManager.shared.notifications.first {
-                NotificationBannerView(notification: notification)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+        GeometryReader { proxy in
+            let hasNotification = notificationManager.notifications.first != nil
+
+            VStack(spacing: 0) {
+                if let notification = notificationManager.notifications.first {
+                    NotificationBannerView(notification: notification)
+                        .padding(.top, proxy.safeAreaInsets.top + 2)
+                        .allowsHitTesting(true)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                Spacer()
+                    .allowsHitTesting(false)
             }
-            Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .allowsHitTesting(hasNotification)
+            .ignoresSafeArea(edges: .top)
         }
-        .ignoresSafeArea(edges: .top)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .allowsHitTesting(false)
     }
 }
 

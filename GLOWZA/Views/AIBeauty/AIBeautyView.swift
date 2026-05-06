@@ -15,7 +15,7 @@ struct AIBeautyView: View {
 
     @State private var messages: [ChatMessage] = [
         ChatMessage(
-            text: "Hi! I'm your AI Beauty Agent. Describe your skin concerns and I'll recommend personalised treatments and tips for you. ✨",
+            text: "Hi! I'm your AI Beauty Agent. Describe your skin concerns and I'll recommend personalised treatments and tips for you.",
             isUser: false
         )
     ]
@@ -32,7 +32,7 @@ struct AIBeautyView: View {
             // Header
             header
 
-            Divider().overlay(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "F0F0F0"))
+            Divider().overlay(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "E8E8E8"))
 
             // Chat messages
             ScrollViewReader { proxy in
@@ -59,7 +59,7 @@ struct AIBeautyView: View {
             // Input bar
             inputBar
         }
-        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A").ignoresSafeArea() : Color.white.ignoresSafeArea())
+        .background((appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea())
         .navigationBarHidden(true)
         .onReceive(
             Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()
@@ -77,7 +77,7 @@ struct AIBeautyView: View {
         .padding(.horizontal, 20)
         .padding(.top, 56)
         .padding(.bottom, 14)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
     }
 
     // MARK: - Message Bubble
@@ -87,11 +87,11 @@ struct AIBeautyView: View {
             if msg.isUser { Spacer(minLength: 60) }
             Text(msg.text)
                 .font(.system(size: 15))
-                .foregroundColor(msg.isUser ? .white : Color(hex: "1A1A1A"))
+                .foregroundColor(msg.isUser ? .white : (appSettings.isDarkMode ? .white : Color(hex: "1A1A1A")))
                 .lineSpacing(3)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(msg.isUser ? brand : Color(hex: "EDEBE9"))
+                .background(msg.isUser ? brand : (appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white))
                 .clipShape(
                     UnevenRoundedRectangle(
                         topLeadingRadius: 20,
@@ -118,7 +118,7 @@ struct AIBeautyView: View {
                 }
             }
             .padding(.horizontal, 18).padding(.vertical, 14)
-            .background(Color(hex: "EDEBE9"))
+            .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
             .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 4,
                                               bottomTrailingRadius: 20, topTrailingRadius: 20))
             Spacer()
@@ -130,12 +130,12 @@ struct AIBeautyView: View {
         HStack(spacing: 12) {
             TextField("Ask me anything...", text: $inputText, axis: .vertical)
                 .font(.system(size: 15))
-                .foregroundColor(Color(hex: "1A1A1A"))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(Color(hex: "F5F5F5"))
+                .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
                 .clipShape(Capsule())
 
             Button(action: sendMessage) {
@@ -144,7 +144,7 @@ struct AIBeautyView: View {
                         .fill(inputText.trimmingCharacters(in: .whitespaces).isEmpty
                               ? Color(hex: "D4829E") : brand)
                         .frame(width: 44, height: 44)
-                    Image(systemName: "arrow.left")
+                    Image(systemName: "arrow.up")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                 }
@@ -153,7 +153,7 @@ struct AIBeautyView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
         .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: -2)
     }
 

@@ -7,6 +7,7 @@ struct EditProfileView: View {
     @Binding var displayName: String
     @Binding var avatarData: Data?
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
 
     @State private var name: String    = ""
     @State private var email: String   = ""
@@ -20,7 +21,10 @@ struct EditProfileView: View {
 
     private let skinTypes = ["Normal", "Oily", "Dry", "Combination", "Sensitive"]
     private let accent = Color(hex: "962043")
-    private let dark = Color(hex: "1F2126")
+    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var chipBackground: Color { appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "EDEDED") }
 
     private var avatarImage: UIImage? {
         guard let data = avatarData else { return nil }
@@ -34,7 +38,7 @@ struct EditProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                Color(hex: "F2F2F7").ignoresSafeArea()
+                pageBackground.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
@@ -57,7 +61,7 @@ struct EditProfileView: View {
                                             .fill(accent.opacity(0.12))
                                             .frame(width: 94, height: 94)
                                         Text(initials)
-                                            .font(.system(size: 32, weight: .bold))
+                                            .font(.system(size: 18, weight: .semibold))
                                             .foregroundColor(accent)
                                     }
                                 }
@@ -73,11 +77,15 @@ struct EditProfileView: View {
                         .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhoto, matching: .images)
                         .onChange(of: selectedPhoto) { item in
                             Task {
-                                if let data = try? await item?.loadTransferable(type: Data.self) {
+                                if let raw = try? await item?.loadTransferable(type: Data.self),
+                                   let uiImage = UIImage(data: raw),
+                                   let compressed = uiImage.jpegData(compressionQuality: 0.5) {
                                     await MainActor.run {
-                                        avatarData = data
-                                        UserDefaults.standard.set(data, forKey: "profile_avatarData")
+                                        avatarData = compressed
+                                        UserDefaults.standard.set(compressed, forKey: "profile_avatarData")
                                     }
+                                    try? await AuthService.shared.updateProfileAvatarData(compressed)
+                                    NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
                                 }
                             }
                         }
@@ -140,7 +148,7 @@ struct EditProfileView: View {
                                                     .foregroundColor(skinType == type ? .white : dark)
                                                     .padding(.horizontal, 14)
                                                     .padding(.vertical, 8)
-                                                    .background(skinType == type ? accent : Color(hex: "EDEDED"))
+                                                    .background(skinType == type ? accent : chipBackground)
                                                     .clipShape(Capsule())
                                             }
                                         }
@@ -153,7 +161,7 @@ struct EditProfileView: View {
                                     .padding(.leading, 16)
                             }
                         }
-                        .background(Color.white)
+                        .background(surfaceBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                         // Error message
@@ -249,7 +257,19 @@ struct EditProfileView: View {
         UserDefaults.standard.set(phone,     forKey: "profile_phone")
         UserDefaults.standard.set(dob,       forKey: "profile_dob")
         UserDefaults.standard.set(skinType,  forKey: "profile_skinType")
+
+        Task {
+            try? await AuthService.shared.updateUserProfile(
+                fullName: trimmed,
+                email: email,
+                phone: phone,
+                skinType: skinType,
+                dateOfBirth: dob
+            )
+        }
+
         displayName = trimmed
+        NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
         withAnimation { showSavedBanner = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { showSavedBanner = false }

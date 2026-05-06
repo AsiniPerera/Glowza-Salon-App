@@ -23,7 +23,11 @@ struct PaymentView: View {
             CardEntryView(
                 draft: $draft,
                 selectedCardIndex: $selectedCardIndex,
-                onBack: { showCardEntry = false }
+                onBack: { showCardEntry = false },
+                onContinue: {
+                    showCardEntry = false
+                    confirmPayment()
+                }
             )
         } else {
             mainPaymentView
@@ -56,7 +60,7 @@ struct PaymentView: View {
                     // MARK: Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Payment")
-                            .font(.system(size: 34, weight: .bold))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(Color(hex: "1C1C1E"))
                         Text("Select payment method")
                             .font(.system(size: 15))
@@ -97,7 +101,7 @@ struct PaymentView: View {
 
                     // MARK: Payment method selection
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("PAYMENT METHOD")
+                        Text("Payment Method")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(Color(hex: "8E8E93"))
                             .tracking(0.5)
@@ -318,19 +322,7 @@ struct PaymentView: View {
             status: .upcoming,
             review: nil
         )
-        
-        // Show booking confirmation notification
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d, yyyy"
-        let dateString = dateFormatter.string(from: booking.date)
-        
-        NotificationManager.shared.notifyBookingSuccess(
-            serviceName: booking.service.name,
-            salonName: booking.salon.name,
-            time: booking.timeSlot,
-            date: dateString
-        )
-        
+
         onPay(booking)
     }
 }
@@ -340,6 +332,7 @@ struct CardEntryView: View {
     @Binding var draft: BookingDraft
     @Binding var selectedCardIndex: Int?
     let onBack: () -> Void
+    let onContinue: () -> Void
     
     @State private var showAddCard = false
     @State private var savedCards: [(last4: String, brand: String)] = [
@@ -503,7 +496,7 @@ struct CardEntryView: View {
             if !showAddCard {
                 VStack(spacing: 0) {
                     Divider().opacity(0.5)
-                    Button(action: onBack) {
+                    Button(action: onContinue) {
                         Text(selectedCardIndex != nil ? "Continue" : "Select a Card")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
@@ -646,9 +639,9 @@ struct AddCardFormView: View {
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 14)
                                 .background(Color(hex: "F2F2F7"))
-                                .cornerRadius(12)
+                                .cornerRadius(25)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .stroke(focusedField == .name ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
                                 )
                         }
@@ -674,9 +667,9 @@ struct AddCardFormView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 14)
                             .background(Color(hex: "F2F2F7"))
-                            .cornerRadius(12)
+                            .cornerRadius(25)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: 25)
                                     .stroke(focusedField == .number ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
                             )
                         }
@@ -702,9 +695,9 @@ struct AddCardFormView: View {
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 14)
                                     .background(Color(hex: "F2F2F7"))
-                                    .cornerRadius(12)
+                                    .cornerRadius(25)
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
+                                        RoundedRectangle(cornerRadius: 25)
                                             .stroke(focusedField == .expiry ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
                                     )
                             }
@@ -729,9 +722,9 @@ struct AddCardFormView: View {
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 14)
                                 .background(Color(hex: "F2F2F7"))
-                                .cornerRadius(12)
+                                .cornerRadius(25)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .stroke(focusedField == .cvv ? Color.glowzaPrimary : Color.clear, lineWidth: 1.5)
                                 )
                             }

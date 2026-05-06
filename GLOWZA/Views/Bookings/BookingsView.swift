@@ -14,11 +14,12 @@ struct AddReviewView: View {
     @State private var comment: String = ""
     @State private var isSubmitting = false
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.white.ignoresSafeArea()
+                (appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
 
@@ -32,7 +33,7 @@ struct AddReviewView: View {
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(salonName)
-                                    .font(.system(size: 15, weight: .bold)).foregroundColor(Color(hex: "1A1A1A"))
+                                    .font(.system(size: 15, weight: .bold)).foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                                 Text(serviceName)
                                     .font(.system(size: 12)).foregroundColor(Color(hex: "8A8A8A"))
                             }
@@ -41,7 +42,7 @@ struct AddReviewView: View {
                         // Star rating
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Your Rating")
-                                .font(.system(size: 15, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A"))
+                                .font(.system(size: 15, weight: .semibold)).foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                             HStack(spacing: 12) {
                                 ForEach(1...5, id: \.self) { star in
                                     Image(systemName: star <= rating ? "star.fill" : "star")
@@ -59,16 +60,16 @@ struct AddReviewView: View {
                             }
                         }
                         .padding(16)
-                        .background(Color(hex: "F9F9F9"))
+                        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                         // Comment
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Your Review")
-                                .font(.system(size: 15, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A"))
+                                .font(.system(size: 15, weight: .semibold)).foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                             ZStack(alignment: .topLeading) {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(hex: "F5F5F5"))
+                                    .fill(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
                                     .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .stroke(Color(hex: "EBEBEB"), lineWidth: 1))
                                 if comment.isEmpty {
@@ -77,7 +78,7 @@ struct AddReviewView: View {
                                         .padding(14).allowsHitTesting(false)
                                 }
                                 TextEditor(text: $comment)
-                                    .font(.system(size: 14)).foregroundColor(Color(hex: "1A1A1A"))
+                                    .font(.system(size: 14)).foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                                     .padding(10).frame(minHeight: 120)
                                     .scrollContentBackground(.hidden).background(Color.clear)
                             }
@@ -127,15 +128,32 @@ struct AddReviewView: View {
     private func submitReview() {
         isSubmitting = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            let reviewComment = comment.isEmpty ? ratingLabel : comment
+            let reviewerName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "You"
+
             BookingStore.shared.addReview(
                 bookingID: bookingID,
                 review: BookingReview(
                     rating: rating,
-                    comment: comment.isEmpty ? ratingLabel : comment,
+                    comment: reviewComment,
                     date: Date(),
-                    reviewerName: UserDefaults.standard.string(forKey: "profile_name") ?? "You"
+                    reviewerName: reviewerName
                 )
             )
+
+            // Also save to Firestore salonReviews collection
+            let salonId = SalonFirestoreService.shared.salonId(for: salonName)
+            let userId  = AuthService.shared.currentUID ?? "guest"
+            Task {
+                try? await SalonFirestoreService.shared.addSalonReview(
+                    salonId: salonId,
+                    userId: userId,
+                    userName: reviewerName,
+                    rating: rating,
+                    comment: reviewComment
+                )
+            }
+
             isSubmitting = false
             onSubmit()
             dismiss()
@@ -147,13 +165,14 @@ struct AddReviewView: View {
 
 private struct BookingCardImage: View {
     let salonName: String
+    @Environment(AppSettings.self) private var appSettings
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(hex: "F0EBE8"))
+                .fill(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
                 .frame(width: 80, height: 80)
-            if UIImage(named: "Salon1") != nil {
-                Image("Salon1")
+            if UIImage(named: mappedSalonImageName(salonName)) != nil {
+                Image(mappedSalonImageName(salonName))
                     .resizable()
                     .scaledToFill()
                     .frame(width: 80, height: 80)
@@ -164,6 +183,22 @@ private struct BookingCardImage: View {
                     .foregroundColor(brand.opacity(0.4))
             }
         }
+    }
+}
+
+private func mappedSalonImageName(_ salonName: String) -> String {
+    switch salonName {
+    case "Haley Avenue": return "Salon1"
+    case "Glow Studio": return "salon2"
+    case "Luxe Aesthetics": return "salon3"
+    case "Velvet Touch": return "salon4"
+    case "Aura Beauty Bar": return "salon5"
+    case "Silk & Shine": return "salon6"
+    case "Prime Beauty": return "salon7"
+    case "Elegance Salon": return "salon8"
+    case "Crystal Beauty": return "salon9"
+    case "Radiant Aesthetic": return "salon10"
+    default: return "Salon1"
     }
 }
 
@@ -179,6 +214,7 @@ struct UpcomingBookingsView: View {
     @State private var store = BookingStore.shared
     @Binding var receiptBooking: Booking?
     @State private var cancelTarget: Booking? = nil
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -194,7 +230,7 @@ struct UpcomingBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
         .alert("Cancel Booking", isPresented: Binding(
             get: { cancelTarget != nil },
             set: { if !$0 { cancelTarget = nil } }
@@ -225,7 +261,7 @@ struct UpcomingBookingsView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(booking.salon.name)
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                     Text(booking.salon.location)
                         .font(.system(size: 13))
                         .foregroundColor(Color(hex: "8A8A8A"))
@@ -244,7 +280,7 @@ struct UpcomingBookingsView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(Color(hex: "962043"))
                         .frame(maxWidth: .infinity).frame(height: 36)
-                        .background(Color.white)
+                        .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(Color(hex: "962043"), lineWidth: 1.5))
                 }
@@ -259,7 +295,7 @@ struct UpcomingBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 4)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
@@ -271,6 +307,8 @@ struct CompletedBookingsView: View {
     @State private var store = BookingStore.shared
     @Binding var receiptBooking: Booking?
     @Binding var reviewBooking: Booking?
+    let onRebook: (Booking) -> Void
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -286,16 +324,34 @@ struct CompletedBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
     }
 
     private func completedCard(_ booking: Booking) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Date header
-            Text(bookingDateLabel(booking))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+            HStack {
+                Text(bookingDateLabel(booking))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "8A8A8A"))
+
+                Spacer()
+
+                Button(action: { onRebook(booking) }) {
+                    Text("Rebook")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Color(hex: "962043"))
+                        .padding(.horizontal, 10)
+                        .frame(height: 26)
+                        .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color(hex: "962043"), lineWidth: 1.2)
+                        )
+                }
+            }
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
 
             Divider().padding(.horizontal, 16)
 
@@ -305,7 +361,7 @@ struct CompletedBookingsView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(booking.salon.name)
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                     Text(booking.salon.location)
                         .font(.system(size: 13))
                         .foregroundColor(Color(hex: "8A8A8A"))
@@ -324,7 +380,7 @@ struct CompletedBookingsView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(booking.review != nil ? Color(hex: "8E8E93") : Color(hex: "962043"))
                         .frame(maxWidth: .infinity).frame(height: 36)
-                        .background(Color.white)
+                        .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .stroke(booking.review != nil ? Color(hex: "E5E5EA") : Color(hex: "962043"), lineWidth: 1.5))
@@ -341,7 +397,7 @@ struct CompletedBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 4)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
@@ -351,6 +407,7 @@ struct CompletedBookingsView: View {
 
 struct CancelledBookingsView: View {
     @State private var store = BookingStore.shared
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -366,7 +423,7 @@ struct CancelledBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
     }
 
     private func cancelledCard(_ booking: Booking) -> some View {
@@ -404,7 +461,7 @@ struct CancelledBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
     }
@@ -416,6 +473,7 @@ struct BookingEmptyState: View {
     let icon: String
     let label: String
     let subtitle: String
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         VStack(spacing: 14) {
@@ -425,7 +483,7 @@ struct BookingEmptyState: View {
                     .font(.system(size: 34)).foregroundColor(brand.opacity(0.45))
             }
             Text(label)
-                .font(.system(size: 16, weight: .semibold)).foregroundColor(Color(hex: "1A1A1A"))
+                .font(.system(size: 16, weight: .semibold)).foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
             Text(subtitle)
                 .font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
                 .multilineTextAlignment(.center)
@@ -440,60 +498,55 @@ struct BookingsView: View {
     @State private var selectedTab = 0
     @State private var receiptBooking: Booking? = nil
     @State private var reviewBooking: Booking? = nil
+    @State private var rebookDraft: BookingDraft? = nil
     @Environment(AppSettings.self) private var appSettings
 
     private let tabs = ["Upcoming", "Completed", "Cancelled"]
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Navigation header
-            HStack {
-                Text("Bookings")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 14)
-            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
-
-            // Segmented tab bar
-            HStack(spacing: 0) {
-                ForEach(tabs.indices, id: \.self) { i in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.22)) { selectedTab = i }
-                    } label: {
-                        VStack(spacing: 0) {
-                            Text(tabs[i])
-                                .font(.system(size: 14, weight: selectedTab == i ? .semibold : .regular))
-                                .foregroundColor(selectedTab == i ? Color(hex: "962043") : (appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8E8E93")))
-                                .padding(.bottom, 10)
-                            Rectangle()
-                                .fill(selectedTab == i ? Color(hex: "962043") : Color.clear)
-                                .frame(height: 2)
-                        }
+        NavigationStack {
+            VStack(spacing: 0) {
+                Picker("Booking Status", selection: $selectedTab) {
+                    ForEach(tabs.indices, id: \.self) { i in
+                        Text(tabs[i]).tag(i)
                     }
-                    .frame(maxWidth: .infinity)
                 }
-            }
-            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
 
-            Divider()
-
-            // Tab content using TabView for swipe support
-            TabView(selection: $selectedTab) {
-                UpcomingBookingsView(receiptBooking: $receiptBooking)
-                    .tag(0)
-                CompletedBookingsView(receiptBooking: $receiptBooking, reviewBooking: $reviewBooking)
-                    .tag(1)
-                CancelledBookingsView()
-                    .tag(2)
+                TabView(selection: $selectedTab) {
+                    UpcomingBookingsView(receiptBooking: $receiptBooking)
+                        .tag(0)
+                    CompletedBookingsView(
+                        receiptBooking: $receiptBooking,
+                        reviewBooking: $reviewBooking,
+                        onRebook: { booking in
+                            var draft = BookingDraft(salon: booking.salon)
+                            draft.service = booking.service
+                            draft.date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+                            draft.timeSlot = ""
+                            rebookDraft = draft
+                        }
+                    )
+                        .tag(1)
+                    CancelledBookingsView()
+                        .tag(2)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .animation(.easeInOut(duration: 0.22), value: selectedTab)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(.easeInOut(duration: 0.22), value: selectedTab)
+            .navigationTitle("Bookings")
+            .navigationBarTitleDisplayMode(.large)
+            .background((appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea())
         }
-        .background(Color.white.ignoresSafeArea())
+        .task {
+            await BookingStore.shared.fetchUserBookings()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .glowzaShowUpcomingBookings)) { _ in
+            selectedTab = 0
+        }
         .sheet(item: $receiptBooking) { booking in
             ReceiptView(booking: booking) { receiptBooking = nil }
         }
@@ -503,6 +556,16 @@ struct BookingsView: View {
                 salonName: booking.salon.name,
                 serviceName: booking.service.name
             ) { reviewBooking = nil }
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { rebookDraft != nil },
+                set: { if !$0 { rebookDraft = nil } }
+            )
+        ) {
+            if let rebookDraft {
+                BookingFlowView(draft: rebookDraft)
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ import SwiftUI
 struct SecurityPrivacyView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
 
     @State private var twoFactorEnabled      = UserDefaults.standard.bool(forKey: "sec_2fa")
     @State private var loginNotifications    = UserDefaults.standard.bool(forKey: "sec_loginNotif")
@@ -12,7 +13,9 @@ struct SecurityPrivacyView: View {
     @State private var showDataDeleteAlert   = false
 
     private let accent = Color(hex: "962043")
-    private let dark   = Color(hex: "1F2126")
+    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
+    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
 
     var body: some View {
         NavigationStack {
@@ -70,7 +73,7 @@ struct SecurityPrivacyView: View {
                 .padding(.top, 20)
                 .padding(.bottom, 48)
             }
-            .background(Color(hex: "F2F2F7").ignoresSafeArea())
+            .background(pageBackground.ignoresSafeArea())
             .navigationTitle("Security & Privacy")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -99,7 +102,7 @@ struct SecurityPrivacyView: View {
             VStack(spacing: 0) {
                 content()
             }
-            .background(Color.white)
+            .background(surfaceBackground)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
@@ -115,7 +118,7 @@ struct SecurityPrivacyView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
                     .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "1F2126"))
+                    .foregroundColor(dark)
                 Text(subtitle)
                     .font(.system(size: 12))
                     .foregroundColor(Color(hex: "ABABAB"))

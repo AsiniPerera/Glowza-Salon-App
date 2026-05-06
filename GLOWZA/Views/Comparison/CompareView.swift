@@ -1,31 +1,25 @@
 import SwiftUI
+import Charts
 
 // MARK: - Constants
-private let brand    = Color(hex: "962043")
-private let teal     = Color(hex: "00A878")
-private let featureW: CGFloat = 110
-private let treatW:   CGFloat = 105
+private let brand = Color(hex: "962043")
+private let teal = Color(hex: "00A878")
+private let treatmentScopeName = "All Treatments"
 
 // MARK: - Helpers
-
+ 
 private struct CatalogEntry: Identifiable {
     let id: UUID
     let service: SalonService
-    let salonName: String
 }
 
 private func durationMins(_ s: SalonService) -> Int {
     Int(s.duration.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()) ?? 0
 }
 
-private func categoryIcon(_ cat: String) -> String {
-    switch cat {
-    case "Skin":      return "face.smiling"
-    case "Hair":      return "scissors"
-    case "Nails":     return "hand.raised.fill"
-    case "Aesthetic": return "sparkles"
-    default:          return "tag"
-    }
+private func shortTreatmentName(_ name: String) -> String {
+    if name.count <= 16 { return name }
+    return String(name.prefix(16)) + "..."
 }
 
 // MARK: - CompareView
@@ -33,51 +27,77 @@ private func categoryIcon(_ cat: String) -> String {
 struct CompareView: View {
 
     @Environment(TreatmentComparisonStore.self) private var store
-    @State private var selectedCategory = "All"
-
-    private let slotColors: [Color] = [
-        Color(hex: "962043"), Color(hex: "4A7C9A"),
-        Color(hex: "7A4A9A"), Color(hex: "C8860A"),
-        Color(hex: "2E8B57"), Color(hex: "B5451B"),
-        Color(hex: "1B6BB5"), Color(hex: "8B2E7A"),
-        Color(hex: "4A7A2E"), Color(hex: "7A6B1B")
-    ]
+    @Environment(AppSettings.self) private var appSettings
 
     // MARK: Data
 
+    private let comparisonTreatments: [SalonService] = [
+        SalonService(name: "Hydra Facial", icon: "drop", duration: "55 min", price: 4500, category: "Skin", benefits: ["Hydration", "Glow", "Pore care"]),
+        SalonService(name: "Oxygen Facial", icon: "wind", duration: "50 min", price: 5200, category: "Skin", benefits: ["Brightness", "Smooth texture", "Fresh look"]),
+        SalonService(name: "Vitamin C Facial", icon: "sun.max", duration: "45 min", price: 4800, category: "Skin", benefits: ["Pigment care", "Radiance", "Even tone"]),
+        SalonService(name: "Acne Control Facial", icon: "bandage", duration: "60 min", price: 5000, category: "Skin", benefits: ["Acne care", "Oil control", "Calming"]),
+        SalonService(name: "Anti-Aging Facial", icon: "sparkles", duration: "65 min", price: 6200, category: "Skin", benefits: ["Firming", "Fine line care", "Lift effect"]),
+        SalonService(name: "Detan Treatment", icon: "sun.haze", duration: "40 min", price: 3800, category: "Skin", benefits: ["Tan removal", "Brightening", "Soft skin"]),
+        SalonService(name: "Keratin Hair Treatment", icon: "scissors", duration: "120 min", price: 9800, category: "Hair", benefits: ["Frizz control", "Shine", "Smoothness"]),
+        SalonService(name: "Hair Spa", icon: "drop", duration: "60 min", price: 4200, category: "Hair", benefits: ["Scalp health", "Soft hair", "Repair"]),
+        SalonService(name: "Protein Hair Mask", icon: "leaf", duration: "50 min", price: 3900, category: "Hair", benefits: ["Strength", "Damage repair", "Moisture"]),
+        SalonService(name: "Scalp Detox", icon: "waveform.path.ecg", duration: "45 min", price: 3600, category: "Hair", benefits: ["Deep cleanse", "Oil balance", "Fresh scalp"]),
+        SalonService(name: "Dandruff Care", icon: "shield", duration: "40 min", price: 3400, category: "Hair", benefits: ["Flake control", "Scalp soothe", "Healthy roots"]),
+        SalonService(name: "Hair Fall Control", icon: "heart.text.square", duration: "55 min", price: 4600, category: "Hair", benefits: ["Root support", "Volume", "Stronger strands"]),
+        SalonService(name: "Classic Manicure", icon: "hand.raised", duration: "35 min", price: 2200, category: "Nails", benefits: ["Clean nails", "Soft hands", "Neat finish"]),
+        SalonService(name: "Classic Pedicure", icon: "figure.walk", duration: "45 min", price: 2600, category: "Nails", benefits: ["Foot care", "Dead skin removal", "Relaxation"]),
+        SalonService(name: "Gel Manicure", icon: "paintbrush", duration: "50 min", price: 3200, category: "Nails", benefits: ["Long wear", "Gloss finish", "Chip resistance"]),
+        SalonService(name: "Nail Art Basic", icon: "wand.and.stars", duration: "55 min", price: 3500, category: "Nails", benefits: ["Custom design", "Stylish look", "Unique finish"]),
+        SalonService(name: "French Tip Nails", icon: "sparkle.magnifyingglass", duration: "45 min", price: 3000, category: "Nails", benefits: ["Classic style", "Neat edges", "Elegant look"]),
+        SalonService(name: "Paraffin Hand Therapy", icon: "flame", duration: "30 min", price: 2500, category: "Nails", benefits: ["Deep moisture", "Soft skin", "Warm relaxation"]),
+        SalonService(name: "Cuticle Therapy", icon: "cross.case", duration: "30 min", price: 2100, category: "Nails", benefits: ["Cuticle health", "Nail growth support", "Cleaner base"]),
+        SalonService(name: "Nail Strengthening", icon: "shield.lefthalf.filled", duration: "40 min", price: 2800, category: "Nails", benefits: ["Reduced breakage", "Hardening", "Healthy nails"])
+    ]
+
     private var allEntries: [CatalogEntry] {
-        SalonCatalog.shared.salons.flatMap { salon in
-            salon.services.map { CatalogEntry(id: $0.id, service: $0, salonName: salon.name) }
-        }
+        comparisonTreatments.map { CatalogEntry(id: $0.id, service: $0) }
     }
-
-    private var categories: [String] {
-        ["All"] + Array(Set(allEntries.map { $0.service.category })).sorted()
-    }
-
-    private var filtered: [CatalogEntry] {
-        selectedCategory == "All"
-            ? allEntries
-            : allEntries.filter { $0.service.category == selectedCategory }
-    }
-
-    private func slotColor(_ idx: Int) -> Color { slotColors[idx % slotColors.count] }
 
     private var shortestDurationIndices: Set<Int> {
-        let mins = store.items.map { durationMins($0.service) }
+        let mins = store.items.map { lowerDurationBound(for: $0.service) }
         guard let best = mins.filter({ $0 > 0 }).min() else { return [] }
         return Set(mins.indices.filter { mins[$0] == best })
     }
 
     private var lowestPriceIndices: Set<Int> {
-        guard let minP = store.items.map(\.service.price).min() else { return [] }
-        return Set(store.items.indices.filter { store.items[$0].service.price == minP })
+        let mins = store.items.map { lowerPriceBound(for: $0.service) }
+        guard let minP = mins.min() else { return [] }
+        return Set(mins.indices.filter { mins[$0] == minP })
+    }
+
+    private func benefitCount(_ service: SalonService) -> Int {
+        service.benefits.count
+    }
+
+    private func lowerDurationBound(for service: SalonService) -> Int {
+        max(durationMins(service) - 8, 10)
+    }
+
+    private func upperDurationBound(for service: SalonService) -> Int {
+        durationMins(service) + 8
+    }
+
+    private func durationRange(_ service: SalonService) -> String {
+        "\(lowerDurationBound(for: service)) - \(upperDurationBound(for: service)) min"
+    }
+
+    private func lowerPriceBound(for service: SalonService) -> Double {
+        service.price * 0.9
+    }
+
+    private func upperPriceBound(for service: SalonService) -> Double {
+        service.price * 1.1
     }
 
     private func priceRange(_ service: SalonService) -> String {
-        let lo = Int(service.price * 0.80)
-        let hi = Int(service.price)
-        return "LKR \(lo)\nu2013\(hi)"
+        let low = Int(lowerPriceBound(for: service))
+        let high = Int(upperPriceBound(for: service))
+        return "LKR \(low) - \(high)"
     }
 
     // MARK: - Body
@@ -85,23 +105,24 @@ struct CompareView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                     selectSection
 
                     if store.items.count >= 2 {
-                        comparisonTable
-                        recommendationCard
+                        priceChartCard
+                        durationTableCard
+                        benefitsTableCard
                         clearBtn
-                    } else if store.items.count == 1 {
+                    } else {
                         addMoreBanner
                     }
 
-                    Spacer().frame(height: 40)
+                    Spacer().frame(height: 36)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
             }
-            .background(Color.white.ignoresSafeArea())
+            .background((appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea())
             .navigationTitle("Treatment Comparison")
             .navigationBarTitleDisplayMode(.large)
         }
@@ -111,294 +132,311 @@ struct CompareView: View {
 
     private var selectSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Select Treatments")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(brand)
+            HStack {
+                Text("Select Treatments")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(brand)
+                Spacer()
+                Text("\(store.items.count)/10")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color(hex: "8A8A8A"))
+            }
+
+            selectedTabsSection
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(categories, id: \.self) { chipBtn($0) }
+                HStack(spacing: 10) {
+                    ForEach(allEntries) { entry in
+                        treatmentTile(entry)
+                    }
                 }
+                .padding(.leading, 20)
+                .padding(.trailing, 20)
+                .padding(.vertical, 4)
             }
-
-            let cols = [GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)]
-            LazyVGrid(columns: cols, spacing: 12) {
-                ForEach(filtered) { entry in treatmentTile(entry) }
-            }
+            .padding(.horizontal, -20)
         }
     }
 
-    private func chipBtn(_ cat: String) -> some View {
-        let sel = selectedCategory == cat
-        return Button {
-            withAnimation(.easeInOut(duration: 0.2)) { selectedCategory = cat }
-        } label: {
-            HStack(spacing: 4) {
-                if cat != "All" {
-                    Image(systemName: categoryIcon(cat)).font(.system(size: 11))
+    private var selectedTabsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if store.items.isEmpty {
+                Text("No treatments selected")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "9A9A9A"))
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(store.items.enumerated()), id: \.element.id) { index, item in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    store.remove(item)
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text("\(index + 1)")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 18, height: 18)
+                                        .background(brand)
+                                        .clipShape(Circle())
+                                    Text(shortTreatmentName(item.service.name))
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(Color(hex: "8A8A8A"))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(appSettings.isDarkMode ? Color(hex: "242424") : Color(hex: "F4F4F7"))
+                                .clipShape(Capsule())
+                                .overlay(
+                                    Capsule().stroke(brand.opacity(0.25), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
-                Text(cat).font(.system(size: 13, weight: sel ? .semibold : .regular))
             }
-            .foregroundColor(sel ? .white : Color(hex: "1A1A1A"))
-            .padding(.horizontal, 14).padding(.vertical, 7)
-            .background(sel ? brand : Color(hex: "F2F2F2"))
-            .clipShape(Capsule())
         }
     }
 
     private func treatmentTile(_ entry: CatalogEntry) -> some View {
-        let added  = store.isAdded(entry.service, from: entry.salonName)
+        let added = store.isAdded(entry.service, from: treatmentScopeName)
         let canAdd = store.canAddMore || added
 
         return Button {
             withAnimation(.spring(response: 0.25)) {
                 if added {
-                    if let item = store.items.first(where: {
-                        $0.service.id == entry.service.id && $0.salonName == entry.salonName
-                    }) { store.remove(item) }
+                    if let item = store.items.first(where: { $0.service.id == entry.service.id }) {
+                        store.remove(item)
+                    }
                 } else {
-                    store.add(service: entry.service, salonName: entry.salonName)
+                    store.add(service: entry.service, salonName: treatmentScopeName)
                 }
             }
         } label: {
             ZStack(alignment: .topTrailing) {
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(entry.service.name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(hex: "1A1A1A"))
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(entry.salonName)
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(hex: "8A8A8A"))
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(14)
+                Text(entry.service.name)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(10)
+                    .frame(width: 110, height: 68, alignment: .center)
 
                 if added {
                     ZStack {
-                        Circle().fill(brand).frame(width: 24, height: 24)
+                        Circle().fill(brand).frame(width: 20, height: 20)
                         Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 9, weight: .bold))
                             .foregroundColor(.white)
                     }
-                    .padding(10)
+                    .padding(5)
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 72)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .frame(width: 110, height: 68)
+            .background(added ? brand.opacity(0.06) : (appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(added ? brand : Color(hex: "E0E0E0"),
-                                  lineWidth: added ? 2 : 1)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(added ? brand : Color(hex: "E0E0E0"), lineWidth: added ? 1.5 : 1)
             )
-            .shadow(color: added ? brand.opacity(0.10) : Color.black.opacity(0.03),
-                    radius: 5, x: 0, y: 2)
+            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
         }
+        .buttonStyle(.plain)
         .disabled(!canAdd)
         .opacity(!canAdd ? 0.45 : 1)
     }
 
-    // MARK: - Comparison Table
+    // MARK: - Price Chart
 
-    private var tableWidth: CGFloat {
-        featureW + CGFloat(store.items.count) * treatW
-    }
+    private var priceChartCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Price Level")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
 
-    private var comparisonTable: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            VStack(spacing: 0) {
-                tableHeader
-                Divider()
-                durationRow
-                Divider().padding(.leading, featureW)
-                benefitsRow
-                Divider().padding(.leading, featureW)
-                priceRow
-                Divider().padding(.leading, featureW)
-                focusRow
+            Chart {
+                ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
+                    BarMark(
+                        x: .value("Treatment", shortTreatmentName(item.service.name)),
+                        y: .value("Price (LKR)", item.service.price)
+                    )
+                    .foregroundStyle(lowestPriceIndices.contains(idx) ? teal : brand.opacity(0.8))
+                    .cornerRadius(4)
+                }
             }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(brand.opacity(0.35), lineWidth: 1.5)
-            )
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 2)
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { val in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3]))
+                        .foregroundStyle(Color(hex: "E0E0E0"))
+                    AxisValueLabel {
+                        if let d = val.as(Double.self) {
+                            Text("\(Int(d / 1000))k")
+                                .font(.system(size: 10))
+                                .foregroundStyle(Color(hex: "8A8A8A"))
+                        }
+                    }
+                }
+            }
+            .chartXAxis {
+                AxisMarks { _ in
+                    AxisValueLabel()
+                }
+            }
+            .frame(height: 160)
+
+            HStack(spacing: 16) {
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 3).fill(teal).frame(width: 12, height: 8)
+                    Text("Best Price").font(.system(size: 10))
+                }
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 3).fill(brand.opacity(0.8)).frame(width: 12, height: 8)
+                    Text("Standard").font(.system(size: 10))
+                }
+            }
+            .foregroundColor(Color(hex: "8A8A8A"))
         }
+        .padding(14)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color(hex: "E3E3E8"), lineWidth: 1)
+        )
     }
 
-    private var tableHeader: some View {
-        HStack(spacing: 0) {
-            Text("Feature")
+    // MARK: - Duration Table
+
+    private var durationTableCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Duration")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Treatment")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Duration Range")
+                        .frame(width: 140, alignment: .trailing)
+                }
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(Color(hex: "8A8A8A"))
-                .frame(width: featureW, alignment: .leading)
-                .padding(.vertical, 12).padding(.leading, 14)
-            ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, _ in
-                Text(String(format: "%02d", idx + 1))
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(Color(hex: "4A90D9"))
-                    .frame(width: treatW)
-                    .padding(.vertical, 12)
-            }
-        }
-        .frame(minWidth: tableWidth)
-        .background(Color(hex: "F9F9F9"))
-    }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(Color(hex: "F7F7FA"))
 
-    private var durationRow: some View {
-        HStack(alignment: .top, spacing: 0) {
-            featureCell(icon: "clock", label: "Duration", sublabel: "Session total")
-            ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
-                let best = shortestDurationIndices.contains(idx)
-                VStack(spacing: 5) {
-                    Text(item.service.duration)
-                        .font(.system(size: 12, weight: best ? .semibold : .regular))
-                        .foregroundColor(Color(hex: "1A1A1A"))
-                        .multilineTextAlignment(.center)
-                    if best {
-                        Text("Recommended")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(teal)
-                            .clipShape(Capsule())
-                    }
-                }
-                .frame(width: treatW)
-                .padding(.vertical, 14)
-            }
-        }
-        .frame(minWidth: tableWidth)
-    }
+                ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
+                    let isFastest = shortestDurationIndices.contains(idx)
 
-    private var benefitsRow: some View {
-        HStack(alignment: .top, spacing: 0) {
-            featureCell(icon: "sparkles", label: "Benefits", sublabel: nil)
-            ForEach(Array(store.items.enumerated()), id: \.element.id) { _, item in
-                VStack(spacing: 4) {
-                    if item.service.benefits.isEmpty {
-                        Text("—").font(.system(size: 11)).foregroundColor(Color(hex: "CCCCCC"))
-                    } else {
-                        ForEach(item.service.benefits.prefix(3), id: \.self) { b in
-                            Text(b)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundColor(teal)
-                                .padding(.horizontal, 8).padding(.vertical, 3)
-                                .background(teal.opacity(0.12))
-                                .clipShape(Capsule())
+                    HStack {
+                        Text(shortTreatmentName(item.service.name))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        HStack(spacing: 6) {
+                            if isFastest {
+                                Text("Fast")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(teal)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(teal.opacity(0.12))
+                                    .clipShape(Capsule())
+                            }
+                            Text(durationRange(item.service))
+                                .font(.system(size: 11, weight: isFastest ? .semibold : .regular))
+                                .foregroundColor(isFastest ? teal : Color(hex: "505050"))
                         }
+                        .frame(width: 140, alignment: .trailing)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+
+                    if idx < store.items.count - 1 {
+                        Divider().padding(.leading, 12)
                     }
                 }
-                .frame(width: treatW)
-                .padding(.vertical, 12)
             }
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color(hex: "E3E3E8"), lineWidth: 1)
+            )
         }
-        .frame(minWidth: tableWidth)
+        .padding(14)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color(hex: "E3E3E8"), lineWidth: 1)
+        )
     }
 
-    private var priceRow: some View {
-        HStack(alignment: .top, spacing: 0) {
-            featureCell(icon: "banknote", label: "Price", sublabel: nil)
-            ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
-                let isLowest = lowestPriceIndices.contains(idx)
-                Text(priceRange(item.service))
-                    .font(.system(size: 11, weight: isLowest ? .semibold : .regular))
-                    .foregroundColor(isLowest ? teal : Color(hex: "1A1A1A"))
-                    .multilineTextAlignment(.center)
-                    .frame(width: treatW)
-                    .padding(.vertical, 14)
-            }
-        }
-        .frame(minWidth: tableWidth)
-    }
+    // MARK: - Benefits Table
 
-    private var focusRow: some View {
-        HStack(alignment: .top, spacing: 0) {
-            featureCell(icon: "tag", label: "Focus", sublabel: nil)
-            ForEach(store.items, id: \.id) { item in
-                Text(item.service.category)
-                    .font(.system(size: 12).italic())
-                    .foregroundColor(Color(hex: "8A8A8A"))
-                    .multilineTextAlignment(.center)
-                    .frame(width: treatW)
-                    .padding(.vertical, 14)
-            }
-        }
-        .frame(minWidth: tableWidth)
-    }
+    private var benefitsTableCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Benefits")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
 
-    private func featureCell(icon: String, label: String, sublabel: String?) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Treatment")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("Benefits")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(Color(hex: "8A8A8A"))
-                .frame(width: 16).padding(.top, 1)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(label)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(hex: "1A1A1A"))
-                if let sub = sublabel {
-                    Text(sub).font(.system(size: 10))
-                        .foregroundColor(Color(hex: "8A8A8A"))
-                }
-            }
-        }
-        .frame(width: featureW, alignment: .leading)
-        .padding(.vertical, 14).padding(.leading, 14)
-    }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(Color(hex: "F7F7FA"))
 
-    // MARK: - Recommendation Card
+                ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
+                    let maxBenefits = store.items.map { benefitCount($0.service) }.max() ?? 0
+                    let isTop = benefitCount(item.service) == maxBenefits
 
-    private var recommendationCard: some View {
-        Group {
-            if let best = store.items.min(by: { $0.service.price < $1.service.price }) {
-                let maxP   = store.items.map(\.service.price).max() ?? 0
-                let saving = maxP - best.service.price
+                    HStack(alignment: .top, spacing: 8) {
+                        Text(shortTreatmentName(item.service.name))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle().fill(teal.opacity(0.12)).frame(width: 44, height: 44)
-                        Image(systemName: best.service.icon)
-                            .font(.system(size: 20)).foregroundColor(teal)
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 11)).foregroundColor(teal)
-                            Text("Best Value")
-                                .font(.system(size: 11, weight: .bold)).foregroundColor(teal)
-                        }
-                        Text(best.service.name)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
-                        Text("at \(best.salonName)")
+                        Text(item.service.benefits.joined(separator: "  •  "))
                             .font(.system(size: 11))
-                            .foregroundColor(Color(hex: "8A8A8A"))
+                            .foregroundColor(isTop ? teal : Color(hex: "505050"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("LKR \(Int(best.service.price))")
-                            .font(.system(size: 14, weight: .bold)).foregroundColor(teal)
-                        if saving > 0 {
-                            Text("Save LKR \(Int(saving))")
-                                .font(.system(size: 9, weight: .bold)).foregroundColor(.white)
-                                .padding(.horizontal, 8).padding(.vertical, 3)
-                                .background(teal).clipShape(Capsule())
-                        }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+
+                    if idx < store.items.count - 1 {
+                        Divider().padding(.leading, 12)
                     }
                 }
-                .padding(14)
-                .background(Color(hex: "F0FBF7"))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .strokeBorder(teal.opacity(0.25), lineWidth: 1.5)
-                )
             }
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color(hex: "E3E3E8"), lineWidth: 1)
+            )
         }
+        .padding(14)
+        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color(hex: "E3E3E8"), lineWidth: 1)
+        )
     }
 
     // MARK: - Bottom Controls
@@ -407,20 +445,25 @@ struct CompareView: View {
         Button { withAnimation { store.clear() } } label: {
             Label("Clear All", systemImage: "trash")
                 .font(.system(size: 14, weight: .semibold)).foregroundColor(brand)
-                .frame(maxWidth: .infinity).frame(height: 46)
-                .background(brand.opacity(0.07))
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(brand.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(brand.opacity(0.3), lineWidth: 1)
                 )
         }
+    }
+
+    private var missingSelectionCount: Int {
+        max(0, 2 - store.items.count)
     }
 
     private var addMoreBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "info.circle.fill").foregroundColor(brand)
-            Text("Select 1 more treatment to start comparing")
+            Text("Select \(missingSelectionCount) more treatment\(missingSelectionCount == 1 ? "" : "s") to compare")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(Color(hex: "1A1A1A"))
         }

@@ -9,6 +9,7 @@ struct SalonDetailView: View {
 
     @Environment(TreatmentComparisonStore.self) private var comparisonStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
 
     @State private var showBookingFlow = false
     @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0])
@@ -16,12 +17,19 @@ struct SalonDetailView: View {
     @State private var photoIndex      = 0
     @State private var selectedTab     = 0
     @State private var selectedService: SalonService? = nil
+    @State private var firestoreReviews: [FirestoreSalonReview] = []
 
     private var salon: Salon {
         SalonCatalog.shared.salon(named: salonName)
     }
 
     private var reviews: [BookingReview] {
+        // Prefer live Firestore reviews
+        if !firestoreReviews.isEmpty {
+            return firestoreReviews.map { fr in
+                BookingReview(rating: fr.rating, comment: fr.comment, date: fr.createdAt, reviewerName: fr.userName)
+            }
+        }
         let real = BookingStore.shared.reviews(forSalon: salonName)
         return real.isEmpty ? sampleReviews : real
     }
@@ -33,7 +41,7 @@ struct SalonDetailView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            (appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
@@ -51,9 +59,17 @@ struct SalonDetailView: View {
         .onAppear {
             bookingDraft = BookingDraft(salon: salon)
         }
+        .task {
+            await fetchFirestoreReviews()
+        }
         .fullScreenCover(isPresented: $showBookingFlow) {
             BookingFlowView(draft: bookingDraft)
         }
+    }
+
+    private func fetchFirestoreReviews() async {
+        let salonId = SalonFirestoreService.shared.salonId(for: salonName)
+        firestoreReviews = (try? await SalonFirestoreService.shared.fetchReviews(forSalonId: salonId)) ?? []
     }
 
     // MARK: - Hero
@@ -63,9 +79,11 @@ struct SalonDetailView: View {
                 .fill(Color(hex: "C0BBB7"))
                 .frame(height: 260)
                 .overlay(
-                    Image(systemName: "photo")
-                        .font(.system(size: 36))
-                        .foregroundColor(.white.opacity(0.3))
+                    Image(mappedSalonImageName(salon.name))
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 260)
+                        .clipped()
                 )
 
             LinearGradient(
@@ -110,7 +128,7 @@ struct SalonDetailView: View {
                     .font(.system(size: 15))
                     .foregroundColor(Color(hex: "1A1A1A"))
                     .frame(width: 36, height: 36)
-                    .background(Color.white)
+                    .background(.ultraThinMaterial)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.12), radius: 5)
             }
@@ -124,7 +142,7 @@ struct SalonDetailView: View {
                         .font(.system(size: 15))
                         .foregroundColor(isFavourited ? brand : Color(hex: "1A1A1A"))
                         .frame(width: 36, height: 36)
-                        .background(Color.white)
+                        .background(.ultraThinMaterial)
                         .clipShape(Circle())
                         .shadow(color: .black.opacity(0.12), radius: 5)
                 }
@@ -133,7 +151,7 @@ struct SalonDetailView: View {
                         .font(.system(size: 15))
                         .foregroundColor(Color(hex: "1A1A1A"))
                         .frame(width: 36, height: 36)
-                        .background(Color.white)
+                        .background(.ultraThinMaterial)
                         .clipShape(Circle())
                         .shadow(color: .black.opacity(0.12), radius: 5)
                 }
@@ -158,51 +176,40 @@ struct SalonDetailView: View {
             Text(salon.about)
                 .italic()
                 .font(.system(size: 14))
-                .foregroundColor(Color(hex: "3A3A3A"))
+                .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "3A3A3A"))
                 .multilineTextAlignment(.center)
                 .lineSpacing(5)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 20)
 
-            tabBar
-            Divider()
-
-            if selectedTab == 1 {
-                servicesContent
-            } else if selectedTab == 2 {
-                reviewsContent
-            } else {
-                aboutContent
+            Picker("Salon Section", selection: $selectedTab) {
+                Text("Services").tag(0)
+                Text("About").tag(1)
+                Text("Reviews").tag(2)
             }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
 
-            Spacer().frame(height: 100)
+            TabView(selection: $selectedTab) {
+                servicesContent
+                    .tag(0)
+                aboutContent
+                    .tag(1)
+                reviewsContent
+                    .tag(2)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(.easeInOut(duration: 0.22), value: selectedTab)
+            .frame(minHeight: 400)
         }
-        .background(Color.white)
+        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
     }
 
     
 
     // MARK: - Helpers
-
-    private var tabBar: some View {
-        HStack(spacing: 0) {
-            ForEach([("About", 0), ("Services", 1), ("Reviews & Ratings", 2)], id: \.1) { label, idx in
-                Button(action: { selectedTab = idx }) {
-                    VStack(spacing: 0) {
-                        Text(label)
-                            .font(.system(size: 13))
-                            .foregroundColor(selectedTab == idx ? brand : Color(hex: "8A8A8A"))
-                            .padding(.vertical, 14)
-                        Rectangle()
-                            .fill(selectedTab == idx ? brand : Color.clear)
-                            .frame(height: 2)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .buttonStyle(.plain)
-            }
-        }
-    }
 
     private var aboutContent: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -219,7 +226,7 @@ struct SalonDetailView: View {
                     }
                     Text("Open Today")
                         .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                     Text(salon.openHours)
                         .font(.system(size: 12))
                         .foregroundColor(Color(hex: "8A8A8A"))
@@ -238,7 +245,7 @@ struct SalonDetailView: View {
                     }
                     Text("\(salon.distance) · 12 min")
                         .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                     Button(action: {}) {
                         Text("Get Direction")
                             .font(.system(size: 12))
@@ -260,33 +267,51 @@ struct SalonDetailView: View {
                 Text("Gallery")
                     .font(.system(size: 13))
                     .foregroundColor(Color(hex: "8A8A8A"))
-                LazyVGrid(
-                    columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                    spacing: 8
-                ) {
-                    ForEach(0..<4, id: \.self) { _ in
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color(hex: "D5CFC9"))
-                            .aspectRatio(1, contentMode: .fit)
-                            .overlay(
-                                Image(systemName: "photo")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.white.opacity(0.5))
-                            )
+                TabView(selection: $photoIndex) {
+                    ForEach(Array(galleryImageNames.enumerated()), id: \.offset) { index, imageName in
+                        Image(imageName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 190)
+                            .frame(maxWidth: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .tag(index)
                     }
                 }
+                .frame(height: 190)
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
             .padding(.horizontal, 24)
 
             HStack(spacing: 8) {
-                ForEach(0..<3, id: \.self) { i in
+                ForEach(0..<galleryImageNames.count, id: \.self) { i in
                     Circle()
-                        .fill(i == 0 ? brand : Color(hex: "D0D0D0"))
-                        .frame(width: i == 0 ? 10 : 8, height: i == 0 ? 10 : 8)
+                        .fill(i == photoIndex ? brand : Color(hex: "D0D0D0"))
+                        .frame(width: i == photoIndex ? 10 : 8, height: i == photoIndex ? 10 : 8)
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.bottom, 10)
+        }
+    }
+
+    private var galleryImageNames: [String] {
+        ["galery1", "galery2", "galery3", "galery4", "galery5"]
+    }
+
+    private func mappedSalonImageName(_ salonName: String) -> String {
+        switch salonName {
+        case "Haley Avenue": return "Salon1"
+        case "Glow Studio": return "salon2"
+        case "Luxe Aesthetics": return "salon3"
+        case "Velvet Touch": return "salon4"
+        case "Aura Beauty Bar": return "salon5"
+        case "Silk & Shine": return "salon6"
+        case "Prime Beauty": return "salon7"
+        case "Elegance Salon": return "salon8"
+        case "Crystal Beauty": return "salon9"
+        case "Radiant Aesthetic": return "salon10"
+        default: return "Salon1"
         }
     }
 
@@ -319,7 +344,7 @@ struct SalonDetailView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(service.name)
                                 .font(.system(size: 14))
-                                .foregroundColor(Color(hex: "1A1A1A"))
+                                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                             Text(service.duration)
                                 .font(.system(size: 12))
                                 .foregroundColor(Color(hex: "8A8A8A"))
@@ -366,7 +391,7 @@ struct SalonDetailView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(review.reviewerName)
                         .font(.system(size: 14))
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                     HStack(spacing: 3) {
                         ForEach(1...5, id: \.self) { i in
                             Image(systemName: i <= review.rating ? "star.fill" : "star")
@@ -391,8 +416,8 @@ struct SalonDetailView: View {
 
     private var showBookNow: Bool {
         switch selectedTab {
-        case 0: return true                        // About tab — always show
-        case 1: return selectedService != nil      // Services tab — only when selection made
+        case 0: return selectedService != nil
+        case 1: return false                       // About tab — hidden
         default: return false                      // Reviews tab — hidden
         }
     }
@@ -408,7 +433,7 @@ struct SalonDetailView: View {
                 showBookingFlow = true
             }) {
                 HStack(spacing: 10) {
-                    if let svc = selectedService, selectedTab == 1 {
+                    if let svc = selectedService, selectedTab == 0 {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(svc.name)
                                 .font(.system(size: 13, weight: .semibold))
@@ -418,13 +443,13 @@ struct SalonDetailView: View {
                                 .foregroundColor(.white.opacity(0.85))
                         }
                         Spacer()
-                    } else if selectedTab != 1 {
+                    } else if selectedTab != 0 {
                         Spacer()
                     }
                     Text("Book Now")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
-                    if selectedService == nil || selectedTab != 1 {
+                    if selectedService == nil || selectedTab != 0 {
                         Spacer()
                     }
                 }
@@ -437,7 +462,7 @@ struct SalonDetailView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
             .padding(.bottom, 8)
-            .background(Color.white)
+            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
         }
     }
 
