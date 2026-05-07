@@ -13,14 +13,14 @@ struct NotificationBannerView: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Image(systemName: notification.icon)
-                    .font(.system(size: 14, weight: .bold))
+                    .glowzaFont(size: 14, weight: .bold)
                     .foregroundColor(Color(hex: "962043"))
                     .frame(width: 30, height: 30)
                     .background(Color.white.opacity(0.14))
                     .clipShape(Circle())
 
                 Text(notification.title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .glowzaFont(size: 15, weight: .semibold)
                     .foregroundColor(.white)
                     .lineLimit(1)
 
@@ -33,7 +33,7 @@ struct NotificationBannerView: View {
                     }
                 }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .glowzaFont(size: 11, weight: .bold)
                         .foregroundColor(.white.opacity(0.68))
                         .frame(width: 26, height: 26)
                         .background(Color.white.opacity(0.06))
@@ -44,7 +44,7 @@ struct NotificationBannerView: View {
             if isExpanded {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(notification.subtitle)
-                        .font(.system(size: 12.5, weight: .regular))
+                        .glowzaFont(size: 12.5, weight: .regular)
                         .foregroundColor(Color.white.opacity(0.84))
                         .lineLimit(2)
 
@@ -60,7 +60,7 @@ struct NotificationBannerView: View {
                                     NotificationManager.shared.dismissAll()
                                 }
                             }
-                            .font(.system(size: 12, weight: .semibold))
+                            .glowzaFont(size: 12, weight: .semibold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 12)
                             .frame(height: 34)

@@ -51,6 +51,7 @@
 		457CE5442FA9F9F90002B0FC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		457CE5462FA9F9F90002B0FC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		457CE7312FAA390F0002B0FC /* GLOWZATests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GLOWZATests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		457CE74E2FAB39420002B0FC /* GLOWZAWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GLOWZAWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		45F070742F91E8D000505233 /* GLOWZA.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GLOWZA.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -127,6 +128,7 @@
 		45F0706B2F91E8D000505233 = {
 			isa = PBXGroup;
 			children = (
+				457CE74E2FAB39420002B0FC /* GLOWZAWidgetsExtension.entitlements */,
 				45F070762F91E8D000505233 /* GLOWZA */,
 				457CE5482FA9F9F90002B0FC /* GLOWZAWidgets */,
 				457CE7322FAA390F0002B0FC /* GLOWZATests */,
@@ -333,8 +335,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = GLOWZAWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GLOWZAWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GLOWZAWidgets;
@@ -362,8 +366,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = GLOWZAWidgetsExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GLOWZAWidgets/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GLOWZAWidgets;
@@ -550,8 +556,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GLOWZA/GLOWZA.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleURLTypes = "[{CFBundleTypeRole=Editor;CFBundleURLName=com.asini.glowza;CFBundleURLSchemes=(glowza);} ]";
@@ -586,8 +594,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = GLOWZA/GLOWZA.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleURLTypes = "[{CFBundleTypeRole=Editor;CFBundleURLName=com.asini.glowza;CFBundleURLSchemes=(glowza);} ]";

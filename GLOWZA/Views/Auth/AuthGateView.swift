@@ -1,7 +1,7 @@
 import SwiftUI
 import LocalAuthentication
 
-private let brand = Color(hex: "962043")
+private var brand: Color { Color.glowzaPrimary }
 
 // MARK: - Auth Gate View (Face ID)
 struct AuthGateView: View {
@@ -11,10 +11,11 @@ struct AuthGateView: View {
     @State private var isAuthenticating = false
     @State private var shakeOffset: CGFloat = 0
     @State private var appear = false
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         ZStack {
-            Color.white.ignoresSafeArea()
+            appSettings.themePage.ignoresSafeArea()
 
             // Subtle decorative circles
             Circle()
@@ -36,13 +37,13 @@ struct AuthGateView: View {
                         Circle().fill(brand).frame(width: 52, height: 52)
                             .shadow(color: brand.opacity(0.30), radius: 14)
                         Image(systemName: "sparkles")
-                            .font(.system(size: 22, weight: .medium))
+                            .glowzaFont(size: 22, weight: .medium)
                             .foregroundColor(.white)
                     }
                     Text("GLOWZA")
-                        .font(.system(size: 26, weight: .bold))
+                        .glowzaFont(size: 26, weight: .bold)
                         .tracking(6)
-                        .foregroundColor(Color(hex: "1A1A1A"))
+                        .foregroundColor(appSettings.themeText)
                 }
                 .opacity(appear ? 1 : 0)
 
@@ -68,7 +69,7 @@ struct AuthGateView: View {
                             .fill(brand.opacity(0.08))
                             .frame(width: 88, height: 88)
                         Image(systemName: "faceid")
-                            .font(.system(size: 44, weight: .light))
+                            .glowzaFont(size: 44, weight: .light)
                             .foregroundColor(brand)
                             .symbolEffect(.bounce, value: isAuthenticating)
                     }
@@ -76,10 +77,10 @@ struct AuthGateView: View {
 
                     VStack(spacing: 8) {
                         Text("Welcome Back")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(Color(hex: "1A1A1A"))
+                            .glowzaFont(size: 28, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
                         Text("Use Face ID to securely access\nyour beauty profile")
-                            .font(.system(size: 15))
+                            .glowzaFont(size: 15)
                             .foregroundColor(Color(hex: "8A8A8A"))
                             .multilineTextAlignment(.center)
                             .lineSpacing(4)
@@ -87,7 +88,7 @@ struct AuthGateView: View {
 
                     if let error = authError {
                         Label(error, systemImage: "exclamationmark.circle.fill")
-                            .font(.system(size: 13, weight: .medium))
+                            .glowzaFont(size: 13, weight: .medium)
                             .foregroundColor(brand)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
@@ -103,10 +104,10 @@ struct AuthGateView: View {
                                 ProgressView().tint(.white).scaleEffect(0.85)
                             } else {
                                 Image(systemName: "faceid")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .glowzaFont(size: 14, weight: .medium)
                             }
                             Text(isAuthenticating ? "Authenticating…" : "Sign in with Face ID")
-                                .font(.system(size: 15, weight: .semibold))
+                                .glowzaFont(size: 15, weight: .semibold)
                         }
                         .foregroundColor(.white)
                         .frame(width: 330, height: 55)
@@ -118,10 +119,10 @@ struct AuthGateView: View {
 
                     HStack(spacing: 5) {
                         Image(systemName: "lock.shield")
-                            .font(.system(size: 11))
+                            .glowzaFont(size: 11)
                             .foregroundColor(brand.opacity(0.6))
                         Text("Your data never leaves this device")
-                            .font(.system(size: 12))
+                            .glowzaFont(size: 12)
                             .foregroundColor(Color(hex: "ABABAB"))
                     }
                 }

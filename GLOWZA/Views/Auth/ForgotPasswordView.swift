@@ -24,10 +24,10 @@ struct ForgotPasswordView: View {
     @State private var showNewPassword = false
     @State private var showConfirmPassword = false
 
-    private let accent = Color(hex: "962043")
-    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var accent: Color { appSettings.themeBrand }
+    private var dark: Color { appSettings.themeText }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
 
     private var canProceedEmail: Bool {
         !email.isEmpty && email.contains("@")
@@ -60,10 +60,10 @@ struct ForgotPasswordView: View {
                         // Header
                         VStack(alignment: .leading, spacing: 8) {
                             Text(headerTitle)
-                                .font(.system(size: 28, weight: .bold))
+                                .glowzaFont(size: 28, weight: .bold)
                                 .foregroundColor(dark)
                             Text(headerSubtitle)
-                                .font(.system(size: 15))
+                                .glowzaFont(size: 15)
                                 .foregroundColor(Color(hex: "8A8D94"))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,7 +97,7 @@ struct ForgotPasswordView: View {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .foregroundColor(.red)
                                 Text(error)
-                                    .font(.system(size: 13))
+                                    .glowzaFont(size: 13)
                                     .foregroundColor(.red)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -123,7 +123,7 @@ struct ForgotPasswordView: View {
                                 .tint(.white)
                         } else {
                             Text(buttonTitle)
-                                .font(.system(size: 15, weight: .semibold))
+                                .glowzaFont(size: 15, weight: .semibold)
                                 .foregroundColor(.white)
                         }
                     }
@@ -139,7 +139,7 @@ struct ForgotPasswordView: View {
                     if step != .email {
                         Button(action: handleBack) {
                             Text("Back")
-                                .font(.system(size: 15, weight: .semibold))
+                                .glowzaFont(size: 15, weight: .semibold)
                                 .foregroundColor(accent)
                         }
                         .frame(height: 50)
@@ -160,7 +160,7 @@ struct ForgotPasswordView: View {
                         }
                     }) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 17, weight: .semibold))
+                            .glowzaFont(size: 17, weight: .semibold)
                             .foregroundColor(accent)
                     }
                 }
@@ -180,10 +180,10 @@ struct ForgotPasswordView: View {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Email Address")
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "8A8D94"))
                     TextField("Enter your email", text: $email)
-                        .font(.system(size: 15))
+                        .glowzaFont(size: 15)
                         .foregroundColor(dark)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
@@ -192,7 +192,10 @@ struct ForgotPasswordView: View {
                         .background(surfaceBackground)
                         .overlay(
                             RoundedRectangle(cornerRadius: 25, style: .continuous)
-                                .stroke(Color(hex: "E8E8EC"), lineWidth: 1)
+                                .stroke(
+                                    appSettings.isHighContrast ? Color.white.opacity(0.85) : Color(hex: "E8E8EC"),
+                                    lineWidth: appSettings.isHighContrast ? 3 : 1
+                                )
                         )
                 }
             }
@@ -200,9 +203,9 @@ struct ForgotPasswordView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "info.circle")
                     .foregroundColor(accent)
-                    .font(.system(size: 14))
+                    .glowzaFont(size: 14)
                 Text("We'll send a verification code to this email address.")
-                    .font(.system(size: 13))
+                    .glowzaFont(size: 13)
                     .foregroundColor(Color(hex: "5A5D65"))
             }
             .padding(14)
@@ -216,10 +219,10 @@ struct ForgotPasswordView: View {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Verification Code")
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "8A8D94"))
                     TextField("000000", text: $verificationCode)
-                        .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                        .glowzaFont(size: 18, weight: .semibold, design: .monospaced)
                         .foregroundColor(dark)
                         .keyboardType(.numberPad)
                         .tracking(8)
@@ -228,7 +231,10 @@ struct ForgotPasswordView: View {
                         .background(surfaceBackground)
                         .overlay(
                             RoundedRectangle(cornerRadius: 25, style: .continuous)
-                                .stroke(Color(hex: "E8E8EC"), lineWidth: 1)
+                                .stroke(
+                                    appSettings.isHighContrast ? Color.white.opacity(0.85) : Color(hex: "E8E8EC"),
+                                    lineWidth: appSettings.isHighContrast ? 3 : 1
+                                )
                         )
                 }
             }
@@ -236,13 +242,13 @@ struct ForgotPasswordView: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "envelope.open")
                     .foregroundColor(accent)
-                    .font(.system(size: 14))
+                    .glowzaFont(size: 14)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Check your email")
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "5A5D65"))
                     Text("We sent a 6-digit code to \(email)")
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "8A8D94"))
                 }
             }
@@ -252,11 +258,11 @@ struct ForgotPasswordView: View {
 
             HStack(spacing: 4) {
                 Text("Didn't receive the code?")
-                    .font(.system(size: 13))
+                    .glowzaFont(size: 13)
                     .foregroundColor(Color(hex: "8A8D94"))
                 Button(action: { /* Resend logic */ }) {
                     Text("Resend")
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(accent)
                 }
             }
@@ -271,7 +277,7 @@ struct ForgotPasswordView: View {
                 Image(systemName: "lock.shield")
                     .foregroundColor(accent)
                 Text("Use a strong password with at least 8 characters, including numbers and symbols.")
-                    .font(.system(size: 13))
+                    .glowzaFont(size: 13)
                     .foregroundColor(Color(hex: "5A5D65"))
             }
             .padding(14)
@@ -298,6 +304,13 @@ struct ForgotPasswordView: View {
             }
             .background(surfaceBackground)
             .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(
+                        appSettings.isHighContrast ? Color.white.opacity(0.85) : Color.clear,
+                        lineWidth: appSettings.isHighContrast ? 3 : 0
+                    )
+            )
 
             // Strength indicators
             VStack(alignment: .leading, spacing: 8) {
@@ -317,7 +330,7 @@ struct ForgotPasswordView: View {
                 .fill(isActive ? accent : Color(hex: "E8E8EC"))
                 .frame(height: 32)
             Text("\(step)")
-                .font(.system(size: 13, weight: .semibold))
+                .glowzaFont(size: 13, weight: .semibold)
                 .foregroundColor(isActive ? .white : Color(hex: "C7C7CC"))
         }
     }
@@ -338,7 +351,7 @@ struct ForgotPasswordView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "8A8D94"))
                     Group {
                         if show.wrappedValue {
@@ -347,12 +360,12 @@ struct ForgotPasswordView: View {
                             SecureField("", text: text)
                         }
                     }
-                    .font(.system(size: 15))
+                    .glowzaFont(size: 15)
                     .foregroundColor(dark)
                 }
                 Button(action: { show.wrappedValue.toggle() }) {
                     Image(systemName: show.wrappedValue ? "eye.slash" : "eye")
-                        .font(.system(size: 16))
+                        .glowzaFont(size: 16)
                         .foregroundColor(Color(hex: "ABABAB"))
                 }
             }
@@ -364,10 +377,10 @@ struct ForgotPasswordView: View {
     private func strengthRow(label: String, met: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 14))
+                .glowzaFont(size: 14)
                 .foregroundColor(met ? Color(hex: "00A878") : Color(hex: "C7C7CC"))
             Text(label)
-                .font(.system(size: 13))
+                .glowzaFont(size: 13)
                 .foregroundColor(met ? Color(hex: "3A3C42") : Color(hex: "ABABAB"))
         }
     }

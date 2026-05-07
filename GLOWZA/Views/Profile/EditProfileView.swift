@@ -20,10 +20,10 @@ struct EditProfileView: View {
     @State private var nameError: String? = nil
 
     private let skinTypes = ["Normal", "Oily", "Dry", "Combination", "Sensitive"]
-    private let accent = Color(hex: "962043")
-    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var accent: Color { appSettings.themeBrand }
+    private var dark: Color { appSettings.themeText }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
     private var chipBackground: Color { appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "EDEDED") }
 
     private var avatarImage: UIImage? {
@@ -61,14 +61,14 @@ struct EditProfileView: View {
                                             .fill(accent.opacity(0.12))
                                             .frame(width: 94, height: 94)
                                         Text(initials)
-                                            .font(.system(size: 18, weight: .semibold))
+                                            .glowzaFont(size: 18, weight: .semibold)
                                             .foregroundColor(accent)
                                     }
                                 }
                                 ZStack {
                                     Circle().fill(accent).frame(width: 28, height: 28)
                                     Image(systemName: "camera.fill")
-                                        .font(.system(size: 12, weight: .semibold))
+                                        .glowzaFont(size: 12, weight: .semibold)
                                         .foregroundColor(.white)
                                 }
                                 .offset(x: 4, y: 4)
@@ -96,7 +96,7 @@ struct EditProfileView: View {
                             formField(icon: "person", label: "Full Name", content:
                                 AnyView(
                                     TextField("Your name", text: $name)
-                                        .font(.system(size: 15))
+                                        .glowzaFont(size: 15)
                                         .foregroundColor(dark)
                                 )
                             )
@@ -105,7 +105,7 @@ struct EditProfileView: View {
                                     TextField("Email address", text: $email)
                                         .keyboardType(.emailAddress)
                                         .autocapitalization(.none)
-                                        .font(.system(size: 15))
+                                        .glowzaFont(size: 15)
                                         .foregroundColor(dark)
                                 )
                             )
@@ -113,14 +113,14 @@ struct EditProfileView: View {
                                 AnyView(
                                     TextField("Phone number", text: $phone)
                                         .keyboardType(.phonePad)
-                                        .font(.system(size: 15))
+                                        .glowzaFont(size: 15)
                                         .foregroundColor(dark)
                                 )
                             )
                             formField(icon: "calendar", label: "Date of Birth", content:
                                 AnyView(
                                     TextField("e.g. 1998-06-15", text: $dob)
-                                        .font(.system(size: 15))
+                                        .glowzaFont(size: 15)
                                         .foregroundColor(dark)
                                 )
                             )
@@ -129,11 +129,11 @@ struct EditProfileView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "drop")
-                                        .font(.system(size: 17))
+                                        .glowzaFont(size: 17)
                                         .foregroundColor(Color(hex: "6B6E77"))
                                         .frame(width: 28)
                                     Text("Skin Type")
-                                        .font(.system(size: 13))
+                                        .glowzaFont(size: 13)
                                         .foregroundColor(Color(hex: "8A8D94"))
                                 }
                                 .padding(.horizontal, 16)
@@ -144,7 +144,7 @@ struct EditProfileView: View {
                                         ForEach(skinTypes, id: \.self) { type in
                                             Button(action: { skinType = type }) {
                                                 Text(type)
-                                                    .font(.system(size: 13, weight: skinType == type ? .semibold : .regular))
+                                                    .glowzaFont(size: 13, weight: skinType == type ? .semibold : .regular)
                                                     .foregroundColor(skinType == type ? .white : dark)
                                                     .padding(.horizontal, 14)
                                                     .padding(.vertical, 8)
@@ -163,11 +163,16 @@ struct EditProfileView: View {
                         }
                         .background(surfaceBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-
-                        // Error message
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(
+                                    appSettings.isHighContrast ? Color.white.opacity(0.85) : Color.clear,
+                                    lineWidth: appSettings.isHighContrast ? 3 : 0
+                                )
+                        )
                         if let err = nameError {
                             Text(err)
-                                .font(.system(size: 13))
+                                .glowzaFont(size: 13)
                                 .foregroundColor(.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 4)
@@ -176,7 +181,7 @@ struct EditProfileView: View {
                         // Save button
                         Button(action: saveProfile) {
                             Text("Save Changes")
-                                .font(.system(size: 15, weight: .semibold))
+                                .glowzaFont(size: 15, weight: .semibold)
                                 .foregroundColor(.white)
                                 .frame(width: 330, height: 55)
                                 .background(accent)
@@ -197,7 +202,7 @@ struct EditProfileView: View {
                             Image(systemName: "checkmark.circle.fill")
                             Text("Profile saved!")
                         }
-                        .font(.system(size: 14, weight: .semibold))
+                        .glowzaFont(size: 14, weight: .semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
@@ -223,12 +228,12 @@ struct EditProfileView: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 17))
+                    .glowzaFont(size: 17)
                     .foregroundColor(Color(hex: "6B6E77"))
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "8A8D94"))
                     content
                 }

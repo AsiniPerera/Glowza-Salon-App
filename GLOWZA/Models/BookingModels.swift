@@ -69,10 +69,13 @@ struct BookingDraft {
     var paymentMethod: PaymentMethodType = .card
 
     static let timeSlots: [(time: String, available: Bool)] = [
-        ("9:00 AM", true),  ("9:30 AM", false), ("10:00 AM", true),
-        ("10:30 AM", true), ("11:00 AM", false), ("11:30 AM", true),
-        ("2:00 PM",  true), ("2:30 PM",  true),  ("3:00 PM",  false),
-        ("3:30 PM",  true), ("4:00 PM",  true),  ("4:30 PM",  true), ("5:00 PM", true)
+        ("9:00 AM",  true),  ("9:45 AM",  true),  ("10:30 AM", true),
+        ("11:15 AM", true),  ("12:00 PM", true),  ("12:45 PM", true),
+        ("1:30 PM",  true),  ("2:15 PM",  true),  ("3:00 PM",  true),
+        ("3:45 PM",  true),  ("4:30 PM",  true),  ("5:15 PM",  true),
+        ("6:00 PM",  true),  ("6:45 PM",  true),  ("7:30 PM",  true),
+        ("8:15 PM",  true),  ("9:00 PM",  true),  ("9:45 PM",  true),
+        ("10:00 PM", true)
     ]
 }
 

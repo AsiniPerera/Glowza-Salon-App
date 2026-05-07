@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Booking Flow Steps
 enum BookingFlowStep {
-    case dateTime, summary, consent, payment, receipt
+    case dateTime, summary, consent, payment, confirmation, receipt
 }
 
 // MARK: - BookingFlowView (Container)
@@ -39,7 +39,7 @@ struct BookingFlowView: View {
                 guard !isSubmittingPayment else { return }
                 isSubmittingPayment = true
 
-                // Move straight to receipt to avoid duplicate confirmation screens.
+                // Move to confirmation screen after payment
                 completedBooking = booking
 
                 let dateFormatter = DateFormatter()
@@ -54,11 +54,14 @@ struct BookingFlowView: View {
                 )
 
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    step = .receipt
+                    step = .confirmation
                 }
 
                 // Add to local store immediately so BookingsView shows it right away
                 BookingStore.shared.add(booking)
+
+                // ── Step 5: Sync to widget via App Group ──────────────────────
+                WidgetBookingSyncService.shared.saveUpcomingBooking(booking)
 
                 // Save appointment to iOS Calendar (simulator/device) in background.
                 Task {
@@ -139,6 +142,12 @@ struct BookingFlowView: View {
                 if isSubmittingPayment { return }
                 step = .consent
             }
+        case .confirmation:
+            if let booking = completedBooking {
+                BookingConfirmedView(booking: booking) {
+                    step = .receipt
+                }
+            }
         case .receipt:
             if let booking = completedBooking {
                 ReceiptView(booking: booking) {
@@ -156,33 +165,52 @@ struct BookAppointmentView: View {
     let onNext: () -> Void
     let onBack: () -> Void
 
-    @State private var selectedDateOffset: Int = 0
     @State private var selectedTime: String = ""
+    @State private var displayMonth: Date = Date()
 
     @Environment(AppSettings.self) private var appSettings
 
-    private let accent = Color(hex: "962043")
-    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "2A2C32") }
+    private var accent: Color { appSettings.themeBrand }
+    private var dark: Color { appSettings.themeText }
     private var selectedService: SalonService { draft.service ?? draft.salon.services[0] }
 
-    private var days: [(label: String, num: Int, date: Date)] {
-        (0..<10).map { offset in
-            let date = Calendar.current.date(byAdding: .day, value: offset, to: Date()) ?? Date()
-            let day = Calendar.current.component(.day, from: date)
-            let wday = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][Calendar.current.component(.weekday, from: date) - 1]
-            return (wday, day, date)
-        }
-    }
-
+    // MARK: - Calendar Calculations
     private var monthYear: String {
         let f = DateFormatter()
         f.dateFormat = "MMMM yyyy"
-        return f.string(from: draft.date).uppercased()
+        return f.string(from: displayMonth).uppercased()
+    }
+
+    private var calendarDates: [Date?] {
+        let calendar = Calendar.current
+        let range = calendar.range(of: .day, in: .month, for: displayMonth)!
+        let numDays = range.count
+
+        let first = calendar.date(from: calendar.dateComponents([.year, .month], from: displayMonth))!
+        let firstWeekday = calendar.component(.weekday, from: first) - 1 // 0 = Sunday
+
+        let paddingDays = Array(repeating: Optional<Date>(nil), count: firstWeekday)
+        let dateDays: [Date?] = (0..<numDays).map { day in
+            calendar.date(byAdding: .day, value: day, to: first)!
+        }
+
+        let combined = paddingDays + dateDays
+        let remainder = combined.count % 7
+        let trailing = remainder == 0 ? [] : Array(repeating: Optional<Date>(nil), count: 7 - remainder)
+        return combined + trailing
+    }
+
+    private var calendarWeeks: [[Date?]] {
+        calendarDates.chunked(into: 7)
+    }
+
+    private var dayOfWeekHeaders: [String] {
+        ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            (appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea()
+            (appSettings.themePage).ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
@@ -206,7 +234,7 @@ struct BookAppointmentView: View {
             if draft.service == nil {
                 draft.service = draft.salon.services.first
             }
-            draft.date = days[selectedDateOffset].date
+            displayMonth = draft.date
             selectedTime = draft.timeSlot
         }
     }
@@ -214,7 +242,7 @@ struct BookAppointmentView: View {
     private var topBack: some View {
         Button(action: onBack) {
             Image(systemName: "chevron.left")
-                .font(.system(size: 20, weight: .semibold))
+                .glowzaFont(size: 20, weight: .semibold)
                 .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "5F6168"))
         }
         .padding(.top, 2)
@@ -222,87 +250,165 @@ struct BookAppointmentView: View {
 
     private var serviceSelectionHeader: some View {
         Text("Select Date & Time")
-            .font(.system(size: 16, weight: .semibold))
+            .glowzaFont(size: 16, weight: .semibold)
             .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
             .tracking(1.4)
             .padding(.top, 6)
     }
 
     private var selectedServiceCard: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(draft.salon.name)
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundColor(dark)
-                Text(selectedService.name)
-                    .font(.system(size: 13))
-                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.6) : Color(hex: "7A7D84"))
-            }
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 86)
-        .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "E5E2E2"))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(accent, lineWidth: 1.6)
-                .mask(
-                    HStack {
-                        Rectangle().frame(width: 6)
-                        Spacer()
+        HStack(spacing: 0) {
+            // Left accent bar
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(accent)
+                .frame(width: 4)
+                .padding(.vertical, 14)
+                .padding(.leading, 14)
+
+            VStack(alignment: .leading, spacing: 10) {
+                // Salon row
+                HStack(spacing: 8) {
+                    Text(draft.salon.name)
+                        .glowzaFont(size: 16, weight: .semibold)
+                        .foregroundColor(appSettings.themeText)
+                }
+
+                Divider()
+                    .padding(.trailing, 16)
+
+                // Service + meta row
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(selectedService.name)
+                            .glowzaFont(size: 13, weight: .medium)
+                            .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.85) : Color(hex: "3A3A3A"))
+                        HStack(spacing: 10) {
+                            Label(selectedService.duration, systemImage: "clock")
+                                .glowzaFont(size: 11)
+                                .foregroundColor(Color(hex: "8A8A8A"))
+                            Label(selectedService.category, systemImage: "tag")
+                                .glowzaFont(size: 11)
+                                .foregroundColor(Color(hex: "8A8A8A"))
+                        }
                     }
-                )
-        )
+                    Spacer()
+                    Text("LKR \(Int(selectedService.price))")
+                        .glowzaFont(size: 14, weight: .bold)
+                        .foregroundColor(accent)
+                        .padding(.trailing, 16)
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.vertical, 16)
+        }
+        .background(appSettings.isDarkMode ? Color(hex: "1E1E1E") : Color(hex: "FAFAFA"))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .hcBorder(radius: 16)
+        .shadow(color: Color.black.opacity(appSettings.isDarkMode ? 0.3 : 0.07), radius: 8, x: 0, y: 3)
     }
 
     private var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Select Date")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
-                    .tracking(1.2)
-                Spacer()
+                Button(action: {
+                    let cal = Calendar.current
+                    displayMonth = cal.date(byAdding: .month, value: -1, to: displayMonth) ?? displayMonth
+                }) {
+                    Image(systemName: "chevron.left")
+                        .glowzaFont(size: 14, weight: .semibold)
+                        .foregroundColor(accent)
+                }
+                
                 Text(monthYear)
-                    .font(.system(size: 16, weight: .semibold))
+                    .glowzaFont(size: 16, weight: .semibold)
                     .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
                     .tracking(1)
+                
+                Spacer()
+                
+                Button(action: {
+                    let cal = Calendar.current
+                    displayMonth = cal.date(byAdding: .month, value: 1, to: displayMonth) ?? displayMonth
+                }) {
+                    Image(systemName: "chevron.right")
+                        .glowzaFont(size: 14, weight: .semibold)
+                        .foregroundColor(accent)
+                }
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 14) {
-                    ForEach(days.indices, id: \.self) { i in
-                        let item = days[i]
-                        let isSelected = i == selectedDateOffset
-                        Button(action: {
-                            selectedDateOffset = i
-                            draft.date = item.date
-                        }) {
-                            VStack(spacing: 6) {
-                                Text(item.label)
-                                    .font(.system(size: 14, weight: .medium))
-                                Text("\(item.num)")
-                                    .font(.system(size: 34, weight: .medium, design: .serif))
+            // Day of week headers
+            GeometryReader { geo in
+                let cellW = geo.size.width / 7
+                HStack(spacing: 0) {
+                    ForEach(dayOfWeekHeaders, id: \.self) { day in
+                        Text(day)
+                            .glowzaFont(size: 10, weight: .semibold)
+                            .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "8A8D94"))
+                            .frame(width: cellW, height: 26)
+                    }
+                }
+            }
+            .frame(height: 26)
+
+            // Calendar grid
+            GeometryReader { geo in
+                let cellW = geo.size.width / 7
+                let cellH: CGFloat = 34
+                let weeks = calendarWeeks
+                VStack(spacing: 4) {
+                    ForEach(weeks.indices, id: \.self) { weekIndex in
+                        HStack(spacing: 0) {
+                            ForEach(weeks[weekIndex].indices, id: \.self) { dayIndex in
+                                let date = weeks[weekIndex][dayIndex]
+                                let isSelected = date.map { Calendar.current.isDate($0, inSameDayAs: draft.date) } ?? false
+                                let isFuture = date.map { $0 >= Calendar.current.startOfDay(for: Date()) } ?? false
+
+                                ZStack {
+                                    if let date = date {
+                                        let day = Calendar.current.component(.day, from: date)
+                                        Button(action: {
+                                            guard isFuture else { return }
+                                            draft.date = date
+                                        }) {
+                                            Text("\(day)")
+                                                .glowzaFont(size: 13, weight: .medium)
+                                                .foregroundColor(
+                                                    !isFuture ? Color(hex: "C5C5C5") :
+                                                    isSelected ? .white : (appSettings.themeText)
+                                                )
+                                                .frame(width: cellW - 4, height: cellH - 4)
+                                                .background(
+                                                    Group {
+                                                        if isSelected {
+                                                            Circle().fill(accent)
+                                                        } else if isFuture {
+                                                            Circle().fill(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
+                                                        } else {
+                                                            Circle().fill(Color.clear)
+                                                        }
+                                                    }
+                                                )
+                                        }
+                                        .disabled(!isFuture)
+                                    }
+                                }
+                                .frame(width: cellW, height: cellH)
                             }
-                            .foregroundColor(isSelected ? .white : (appSettings.isDarkMode ? .white : Color(hex: "3B3D42")))
-                            .frame(width: 64, height: 96)
-                            .background(isSelected ? accent : (appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "EAE7E7")))
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
                     }
                 }
-                .padding(.vertical, 2)
             }
+            .frame(height: CGFloat(calendarWeeks.count) * 34)
         }
     }
 
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Available Times")
-                .font(.system(size: 16, weight: .semibold))
+                .glowzaFont(size: 15, weight: .regular)
                 .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
-                .tracking(1.2)
+                .tracking(0.5)
+                .padding(.top, 10)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                 ForEach(BookingDraft.timeSlots, id: \.time) { slot in
@@ -313,19 +419,22 @@ struct BookAppointmentView: View {
                         draft.timeSlot = slot.time
                     }) {
                         Text(slot.time)
-                            .font(.system(size: 14, weight: .medium))
+                            .glowzaFont(size: 15, weight: .semibold)
                             .foregroundColor(
                                 !slot.available ? Color(hex: "BDBFC5") : (isSelected ? .white : dark)
                             )
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 7)
+                            .padding(.vertical, 12)
                             .background(
-                                isSelected ? accent : (appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "F1F1F1"))
+                                isSelected ? accent : (appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "F5F5F7"))
                             )
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .hcBorder(radius: 10)
                             .overlay(
-                                Capsule().stroke(Color(hex: "BBBBBE"), lineWidth: isSelected ? 0 : 1)
+                                !slot.available ? nil :
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(isSelected ? Color.clear : Color(hex: "EBEBF0"), lineWidth: isSelected ? 0 : 1.5)
                             )
-                            .clipShape(Capsule())
                     }
                     .disabled(!slot.available)
                 }
@@ -341,7 +450,7 @@ struct BookAppointmentView: View {
                 if canProceed { onNext() }
             }) {
                 Text("Confirm")
-                    .font(.system(size: 15, weight: .semibold))
+                    .glowzaFont(size: 15, weight: .semibold)
                     .foregroundColor(.white)
                     .frame(width: 330, height: 55)
                     .background(canProceed ? accent : Color(hex: "D4829E"))
@@ -350,7 +459,16 @@ struct BookAppointmentView: View {
             .disabled(!canProceed)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
-            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+            .background(appSettings.themeSurface)
+        }
+    }
+}
+
+// MARK: - Array extension for calendar grid
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
         }
     }
 }

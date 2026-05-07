@@ -15,10 +15,10 @@ struct ChangePasswordView: View {
     @State private var errorMessage: String? = nil
     @State private var showSuccess      = false
 
-    private let accent = Color(hex: "962043")
-    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var accent: Color { appSettings.themeBrand }
+    private var dark: Color { appSettings.themeText }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
 
     private var passwordsMatch: Bool   { newPassword == confirmPassword }
     private var newIsStrong: Bool      { newPassword.count >= 8 }
@@ -37,7 +37,7 @@ struct ChangePasswordView: View {
                             Image(systemName: "lock.shield")
                                 .foregroundColor(accent)
                             Text("Use a strong password with at least 8 characters, including numbers and symbols.")
-                                .font(.system(size: 13))
+                                .glowzaFont(size: 13)
                                 .foregroundColor(Color(hex: "5A5D65"))
                         }
                         .padding(14)
@@ -52,6 +52,13 @@ struct ChangePasswordView: View {
                         }
                         .background(surfaceBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                                .stroke(
+                                    appSettings.isHighContrast ? Color.white.opacity(0.85) : Color.clear,
+                                    lineWidth: appSettings.isHighContrast ? 3 : 0
+                                )
+                        )
 
                         // Strength indicators
                         VStack(alignment: .leading, spacing: 8) {
@@ -63,7 +70,7 @@ struct ChangePasswordView: View {
 
                         // Error
                         if let err = errorMessage {
-                            Text(err).font(.system(size: 13)).foregroundColor(.red)
+                            Text(err).glowzaFont(size: 13).foregroundColor(.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
@@ -77,7 +84,7 @@ struct ChangePasswordView: View {
                 VStack(spacing: 0) {
                     Button(action: submit) {
                         Text("Update Password")
-                            .font(.system(size: 15, weight: .semibold))
+                            .glowzaFont(size: 15, weight: .semibold)
                             .foregroundColor(.white)
                             .frame(width: 330, height: 55)
                             .background(canSubmit ? accent : Color(hex: "D4829E"))
@@ -109,7 +116,7 @@ struct ChangePasswordView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "8A8D94"))
                     Group {
                         if show.wrappedValue {
@@ -118,12 +125,12 @@ struct ChangePasswordView: View {
                             SecureField("", text: text)
                         }
                     }
-                    .font(.system(size: 15))
+                    .glowzaFont(size: 15)
                     .foregroundColor(Color(hex: "1F2126"))
                 }
                 Button(action: { show.wrappedValue.toggle() }) {
                     Image(systemName: show.wrappedValue ? "eye.slash" : "eye")
-                        .font(.system(size: 16))
+                        .glowzaFont(size: 16)
                         .foregroundColor(Color(hex: "ABABAB"))
                 }
             }
@@ -138,10 +145,10 @@ struct ChangePasswordView: View {
     private func strengthRow(label: String, met: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 14))
+                .glowzaFont(size: 14)
                 .foregroundColor(met ? Color(hex: "00A878") : Color(hex: "C7C7CC"))
             Text(label)
-                .font(.system(size: 13))
+                .glowzaFont(size: 13)
                 .foregroundColor(met ? Color(hex: "3A3C42") : Color(hex: "ABABAB"))
         }
     }

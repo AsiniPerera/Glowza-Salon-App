@@ -17,7 +17,7 @@ struct BookingConfirmedView: View {
 
     @Environment(AppSettings.self) private var appSettings
 
-    private let brand = Color(hex: "962043")
+    private var brand: Color { Color.glowzaPrimary }
     private let gold  = Color(hex: "C6A769")
     private let teal  = Color(hex: "00A878")
 
@@ -52,7 +52,7 @@ struct BookingConfirmedView: View {
                         .frame(width: 90, height: 90)
 
                     Image(systemName: "checkmark")
-                        .font(.system(size: 38, weight: .bold))
+                        .glowzaFont(size: 38, weight: .bold)
                         .foregroundColor(teal)
                 }
                 .scaleEffect(checkScale)
@@ -63,10 +63,10 @@ struct BookingConfirmedView: View {
                 // ── Title ──────────────────────────────────────────────
                 VStack(spacing: 8) {
                     Text("Thank You!")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                        .glowzaFont(size: 26, weight: .bold)
+                        .foregroundColor(appSettings.themeText)
                     Text("Your booking is confirmed")
-                        .font(.system(size: 15))
+                        .glowzaFont(size: 15)
                         .foregroundColor(Color(hex: "8E8E93"))
                 }
                 .opacity(contentOpacity)
@@ -86,7 +86,7 @@ struct BookingConfirmedView: View {
                     Divider().padding(.leading, 52).opacity(0.4)
                     detailRow(icon: "creditcard.fill", label: "Amount Paid",value: "LKR \(Int(booking.amountPaid))", color: teal)
                 }
-                .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+                .background(appSettings.themeSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -108,7 +108,7 @@ struct BookingConfirmedView: View {
                 Spacer().frame(height: 14)
 
                 Text("Receipt #\(booking.receiptNumber)")
-                    .font(.system(size: 13, weight: .medium))
+                    .glowzaFont(size: 13, weight: .medium)
                     .foregroundColor(Color(hex: "8E8E93"))
                     .opacity(contentOpacity)
 
@@ -118,9 +118,9 @@ struct BookingConfirmedView: View {
                 Button(action: onViewReceipt) {
                     HStack(spacing: 8) {
                         Image(systemName: "doc.text.fill")
-                            .font(.system(size: 15, weight: .semibold))
+                            .glowzaFont(size: 15, weight: .semibold)
                         Text("View Receipt")
-                            .font(.system(size: 17, weight: .semibold))
+                            .glowzaFont(size: 17, weight: .semibold)
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
@@ -169,17 +169,17 @@ struct BookingConfirmedView: View {
                     .fill(color.opacity(0.10))
                     .frame(width: 36, height: 36)
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .glowzaFont(size: 14, weight: .semibold)
                     .foregroundColor(color)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.system(size: 11, weight: .semibold))
+                    .glowzaFont(size: 11, weight: .semibold)
                     .foregroundColor(Color(hex: "8E8E93"))
                     .tracking(0.3)
                 Text(value)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                    .glowzaFont(size: 15, weight: .semibold)
+                    .foregroundColor(appSettings.themeText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }

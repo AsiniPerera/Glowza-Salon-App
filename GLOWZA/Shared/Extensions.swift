@@ -6,16 +6,32 @@ import SwiftUI
 // MARK: - View Extensions
 extension View {
     /// Applies the standard Glowza card style
+    /// Standard Glowza card.
+    /// In High Contrast: ultra-dark glass (#1A1A1A) + 2 px Electric Rose neon border + Electric Rose glow shadow.
     func glowzaCard(radius: CGFloat = 16) -> some View {
-        let isHighContrast = UserDefaults.standard.bool(forKey: "app_highContrast")
+        let isHC = UserDefaults.standard.bool(forKey: "app_highContrast")
+        let rose  = Color(hex: "FF2D55")
         return self
-            .background(isHighContrast ? Color.black : Color.white)
+            .background(
+                ZStack {
+                    if isHC {
+                        // Glassmorphism base
+                        Color(hex: "1A1A1A")
+                        // Subtle pink glass shimmer
+                        rose.opacity(0.04)
+                    } else {
+                        Color.white
+                    }
+                }
+            )
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(Color.white.opacity(isHighContrast ? 1.0 : 0), lineWidth: isHighContrast ? 3 : 0)
+                    .stroke(isHC ? Color.white.opacity(0.85) : Color.clear,
+                            lineWidth: isHC ? 3 : 0)
             )
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+            .shadow(color: isHC ? Color.white.opacity(0.08) : Color.black.opacity(0.05),
+                    radius: isHC ? 12 : 10, x: 0, y: isHC ? 0 : 4)
     }
 
     /// Applies the standard Glowza screen background
@@ -23,12 +39,34 @@ extension View {
         self.background(Color.glowzaBackground.ignoresSafeArea())
     }
 
-    /// Applies a global neon high-contrast style when enabled.
+    /// Applies OLED-black + Electric Rose high-contrast style when enabled.
     func glowzaHighContrastStyle(enabled: Bool) -> some View {
         self
-            .tint(enabled ? Color(hex: "FF66B2") : Color.glowzaPrimary)
+            .tint(enabled ? Color(hex: "FF2D55") : Color.glowzaPrimary)
             .foregroundStyle(enabled ? Color.white : Color.primary)
             .background((enabled ? Color.black : Color.clear).ignoresSafeArea())
+    }
+}
+
+// MARK: - Scaled Font ViewModifier
+/// Multiplies a fixed base size by the user's chosen font scale from AppSettings.
+/// Use `.glowzaFont(size:weight:design:)` on any Text or View instead of
+/// `.font(.system(size:))` so it responds to the in-app font-size preference.
+private struct GlowzaScaledFont: ViewModifier {
+    @Environment(AppSettings.self) private var appSettings
+    let baseSize: CGFloat
+    let weight: Font.Weight
+    let design: Font.Design
+
+    func body(content: Content) -> some View {
+        // Use .font() directly here — NOT .glowzaFont() — to avoid infinite recursion.
+        content.font(.system(size: baseSize * appSettings.fontMultiplier, weight: weight, design: design))
+    }
+}
+
+extension View {
+    func glowzaFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
+        modifier(GlowzaScaledFont(baseSize: size, weight: weight, design: design))
     }
 }
 
@@ -41,9 +79,39 @@ struct GlowzaRoundedButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .stroke(Color.white.opacity(isHighContrast ? 1.0 : 0), lineWidth: isHighContrast ? 3 : 0)
+                    .stroke(Color(hex: "FF2D55").opacity(isHighContrast ? 0.65 : 0),
+                            lineWidth: isHighContrast ? 3 : 0)
             )
-            .opacity(configuration.isPressed ? 0.92 : 1.0)
+            .shadow(color: Color(hex: "FF2D55").opacity(isHighContrast ? 0.25 : 0),
+                    radius: isHighContrast ? 8 : 0)
+            .opacity(configuration.isPressed ? 0.88 : 1.0)
+    }
+}
+
+extension View {
+    /// Adds a 3 px WHITE border overlay on any card/container in HC — maximum contrast for accessibility.
+    /// Drop this after .clipShape(...) on any container that needs HC affordance.
+    func hcBorder(radius: CGFloat = 16) -> some View {
+        let isHC = UserDefaults.standard.bool(forKey: "app_highContrast")
+        return self.overlay(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .stroke(
+                    isHC ? Color.white.opacity(0.85) : Color.clear,
+                    lineWidth: isHC ? 3 : 0
+                )
+        )
+    }
+
+    /// Adds a 3 px WHITE border on Capsule-shaped inputs/bars in HC.
+    func hcBorderCapsule() -> some View {
+        let isHC = UserDefaults.standard.bool(forKey: "app_highContrast")
+        return self.overlay(
+            Capsule()
+                .stroke(
+                    isHC ? Color.white.opacity(0.85) : Color.clear,
+                    lineWidth: isHC ? 3 : 0
+                )
+        )
     }
 }
 

@@ -41,6 +41,8 @@ struct RootView: View {
     @State private var isAuthenticated = false
     @Environment(AppSettings.self) private var settings
     @State private var authService = AuthService.shared
+    /// Detects iOS system "Increase Contrast" accessibility setting (Accessibility → Display & Text Size)
+    @Environment(\.colorSchemeContrast) private var systemContrast
 
     var body: some View {
         ZStack {
@@ -89,7 +91,8 @@ struct RootView: View {
                 case .createAccount:
                     CreateAccountView(
                         onCreateAccount: { withAnimation { isAuthenticated = true } },
-                        onSignIn: { withAnimation { screen = .login } }
+                        onSignIn: { withAnimation { screen = .login } },
+                        onBack: { withAnimation { screen = .landing } }
                     )
                     .transition(.move(edge: .trailing).combined(with: .opacity))
                     .zIndex(3)
@@ -107,10 +110,18 @@ struct RootView: View {
             }
         }
         .glowzaHighContrastStyle(enabled: settings.isHighContrast)
+
         .animation(.easeInOut(duration: 0.4), value: screen)
+        // Auto-enable HC when the user has "Increase Contrast" on in iOS Accessibility settings
+        .onChange(of: systemContrast) { _, val in
+            if val == .increased && !settings.isHighContrast {
+                settings.isHighContrast = true
+            }
+        }
         .onChange(of: isAuthenticated) { _, newValue in
             if newValue {
                 withAnimation { screen = .main }
+                Task { await FavouritesStore.shared.load() }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .glowzaSignOut)) { _ in
@@ -160,7 +171,7 @@ struct RootView: View {
                 }
             }
         }
-        .preferredColorScheme(settings.isHighContrast ? .dark : settings.colorScheme)
+        .preferredColorScheme(settings.colorScheme)
         .environment(\.isHighContrast, settings.isHighContrast)
     }
 }
@@ -173,12 +184,12 @@ struct PlaceholderDashboardView: View {
             Color.glowzaBackground.ignoresSafeArea()
             VStack(spacing: 16) {
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 56))
+                    .glowzaFont(size: 56)
                     .foregroundColor(Color.glowzaGold)
                 Text("You're In! 🎉")
-                    .font(.system(size: 28, weight: .bold))
+                    .glowzaFont(size: 28, weight: .bold)
                 Text("Dashboard — share Figma design to build")
-                    .font(.system(size: 14))
+                    .glowzaFont(size: 14)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
             }

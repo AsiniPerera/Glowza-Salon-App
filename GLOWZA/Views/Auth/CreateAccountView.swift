@@ -15,8 +15,8 @@ struct CreateAccountView: View {
     @State private var showConfirm = false
     @State private var isLoading = false
 
-    private let brand = Color(hex: "962043")
-    private let hotPink = Color(hex: "962043")
+    @Environment(AppSettings.self) private var appSettings
+    private var brand: Color { Color.glowzaPrimary }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -24,14 +24,13 @@ struct CreateAccountView: View {
 
                 // Back button
                 Button(action: { onBack?() }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color(hex: "F2F2F7"))
-                            .frame(width: 36, height: 36)
+                    HStack(spacing: 6) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 15, weight: .semibold)
+                        Text("Back")
+                            .glowzaFont(size: 15, weight: .medium)
                     }
+                    .foregroundStyle(Color(hex: "962043"))
                 }
                 .padding(.top, 24)
                 .padding(.horizontal, 24)
@@ -40,10 +39,10 @@ struct CreateAccountView: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Create Account")
-                        .font(.system(size: 34, weight: .bold))
+                        .glowzaFont(size: 34, weight: .bold)
                         .foregroundColor(Color(hex: "1C1C1E"))
                     Text("Fill in your details to get started.")
-                        .font(.system(size: 17))
+                        .glowzaFont(size: 17)
                         .foregroundColor(Color(hex: "8E8E93"))
                 }
                 .padding(.horizontal, 24)
@@ -57,7 +56,7 @@ struct CreateAccountView: View {
                         authInput(placeholder: "Password", text: $password, isSecure: !showPassword, keyboard: false)
                         Button(action: { showPassword.toggle() }) {
                             Image(systemName: showPassword ? "eye.slash" : "eye")
-                                .font(.system(size: 15))
+                                .glowzaFont(size: 15)
                                 .foregroundColor(Color(hex: "8E8E93"))
                                 .padding(.trailing, 18)
                         }
@@ -66,7 +65,7 @@ struct CreateAccountView: View {
                         authInput(placeholder: "Confirm password", text: $confirmPassword, isSecure: !showConfirm, keyboard: false)
                         Button(action: { showConfirm.toggle() }) {
                             Image(systemName: showConfirm ? "eye.slash" : "eye")
-                                .font(.system(size: 15))
+                                .glowzaFont(size: 15)
                                 .foregroundColor(Color(hex: "8E8E93"))
                                 .padding(.trailing, 18)
                         }
@@ -82,12 +81,12 @@ struct CreateAccountView: View {
                             ProgressView().tint(.white)
                         } else {
                             Text("Create Account")
-                                .font(.system(size: 17, weight: .semibold))
+                                .glowzaFont(size: 17, weight: .semibold)
                         }
                     }
                     .foregroundColor(.white)
                     .frame(width: 330, height: 55)
-                    .background(canCreate ? hotPink : Color(hex: "D4829E"))
+                    .background(canCreate ? Color.glowzaPrimary : Color.hotPinkDisabled)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .disabled(!canCreate || isLoading)
@@ -103,7 +102,7 @@ struct CreateAccountView: View {
                 HStack(spacing: 12) {
                     socialIcon(label: "f", labelColor: Color(hex: "1877F2"))
                     socialIcon(label: "G", labelColor: Color(hex: "DB4437"))
-                    socialIcon(sfSymbol: "apple.logo", labelColor: .black)
+                    socialIcon(sfSymbol: "apple.logo", labelColor: Color.glowzaTextPrimary)
                 }
                 .padding(.horizontal, 24)
 
@@ -111,19 +110,19 @@ struct CreateAccountView: View {
 
                 HStack(spacing: 4) {
                     Text("Already have an account?")
-                        .font(.system(size: 15))
+                        .glowzaFont(size: 15)
                         .foregroundColor(Color(hex: "8E8E93"))
                     Button(action: { onSignIn?() }) {
                         Text("Sign In")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(hotPink)
+                            .glowzaFont(size: 15, weight: .semibold)
+                            .foregroundColor(Color.glowzaPrimary)
                     }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 40)
             }
         }
-        .background(Color.white.ignoresSafeArea())
+        .background(appSettings.themePage.ignoresSafeArea())
     }
 
     private var canCreate: Bool {
@@ -144,27 +143,32 @@ struct CreateAccountView: View {
         Group {
             if isSecure {
                 SecureField(placeholder, text: text)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "1C1C1E"))
+                    .glowzaFont(size: 16)
+                    .foregroundColor(appSettings.themeText)
             } else {
                 TextField(placeholder, text: text)
                     .keyboardType(keyboard ? .emailAddress : .default)
                     .autocapitalization(keyboard ? .none : .words)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "1C1C1E"))
+                    .glowzaFont(size: 16)
+                    .foregroundColor(appSettings.themeText)
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 54)
-        .background(Color(hex: "F2F2F7"))
+        .background(appSettings.isHighContrast ? appSettings.themeRaised : Color(hex: "F2F2F7"))
         .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 25, style: .continuous)
+                .stroke(appSettings.themeElementBorder,
+                        lineWidth: appSettings.isHighContrast ? 3 : 0)
+        )
     }
 
     private var dividerRow: some View {
         HStack(spacing: 12) {
             Rectangle().fill(Color(hex: "E5E5EA")).frame(height: 1)
             Text("or continue with")
-                .font(.system(size: 13))
+                .glowzaFont(size: 13)
                 .foregroundColor(Color(hex: "8E8E93"))
                 .fixedSize()
             Rectangle().fill(Color(hex: "E5E5EA")).frame(height: 1)
@@ -177,11 +181,11 @@ struct CreateAccountView: View {
             Group {
                 if let symbol = sfSymbol {
                     Image(systemName: symbol)
-                        .font(.system(size: 20, weight: .medium))
+                        .glowzaFont(size: 20, weight: .medium)
                         .foregroundColor(labelColor)
                 } else {
                     Text(label ?? "")
-                        .font(.system(size: 20, weight: .bold))
+                        .glowzaFont(size: 20, weight: .bold)
                         .foregroundColor(labelColor)
                 }
             }

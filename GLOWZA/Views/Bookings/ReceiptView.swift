@@ -11,12 +11,14 @@ struct ReceiptView: View {
     let onDone: () -> Void
 
     @Environment(\.openURL) private var openURL
+    @Environment(AppSettings.self) private var appSettings
     @State private var showShareSheet = false
     @State private var receiptFileURL: URL? = nil
 
+
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            appSettings.themePage.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .center, spacing: 16) {
@@ -71,16 +73,16 @@ struct ReceiptView: View {
                     .frame(width: 64, height: 64)
 
                 Image(systemName: "checkmark")
-                    .font(.system(size: 25, weight: .bold))
+                    .glowzaFont(size: 25, weight: .bold)
                     .foregroundColor(Color(hex: "00A878"))
             }
 
             Text("Booking Confirmed")
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .glowzaFont(size: 30, weight: .bold, design: .rounded)
                 .foregroundColor(Color(hex: "1F2126"))
 
             Text("Your booking is confirmed")
-                .font(.system(size: 16, weight: .regular))
+                .glowzaFont(size: 16, weight: .regular)
                 .foregroundColor(Color(hex: "8E8E93"))
         }
         .frame(maxWidth: .infinity)
@@ -91,10 +93,10 @@ struct ReceiptView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Booking Summary")
-                        .font(.system(size: 18, weight: .semibold))
+                        .glowzaFont(size: 18, weight: .semibold)
                         .foregroundColor(Color(hex: "1F2126"))
                     Text("Receipt #\(booking.receiptNumber)")
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "8E8E93"))
                 }
                 Spacer()
@@ -110,7 +112,7 @@ struct ReceiptView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color(hex: "F5F5F7"))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -122,12 +124,12 @@ struct ReceiptView: View {
     private func detailRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14)).foregroundColor(Color(hex: "6D7077"))
+                .glowzaFont(size: 14).foregroundColor(Color(hex: "8E8E93").opacity(0.7))
                 .frame(width: 28)
-            Text(label).font(.system(size: 13)).foregroundColor(Color(hex: "8A8A8A"))
+            Text(label).glowzaFont(size: 13).foregroundColor(Color(hex: "8E8E93"))
             Spacer()
             Text(value)
-                .font(.system(size: 13, weight: .semibold)).foregroundColor(Color(hex: "1F2126"))
+                .glowzaFont(size: 13, weight: .semibold).foregroundColor(Color(hex: "1F2126"))
         }
     }
 
@@ -137,7 +139,7 @@ struct ReceiptView: View {
                 Image(systemName: icon)
                 Text(title)
             }
-            .font(.system(size: 15, weight: .semibold))
+            .glowzaFont(size: 15, weight: .semibold)
             .foregroundColor(.white)
             .frame(height: 55)
             .frame(maxWidth: .infinity)
@@ -150,33 +152,20 @@ struct ReceiptView: View {
     private func squareActionButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(hex: "F5F5F7"))
-                        .frame(width: 30, height: 30)
-                    Image(systemName: icon)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(brand)
-                }
-
+                Image(systemName: icon)
+                    .glowzaFont(size: 15, weight: .semibold)
                 Text(title)
-                    .font(.system(size: 13.5, weight: .semibold))
-                    .foregroundColor(brand)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.78)
-                    .allowsTightening(true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
+                    .glowzaFont(size: 15, weight: .semibold)
             }
-            .padding(.horizontal, 12)
-            .frame(height: 52)
+            .foregroundColor(brand)
             .frame(maxWidth: .infinity)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(height: 50)
+            .background(Color(hex: "F5F5F7"))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(brand.opacity(0.4), lineWidth: 1.2)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(brand, lineWidth: 1.5)
             )
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
     }
 

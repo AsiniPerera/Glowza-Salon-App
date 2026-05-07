@@ -12,7 +12,8 @@ import SwiftUI
 struct GLOWZAWidgetsBundle: WidgetBundle {
     var body: some Widget {
         GLOWZAWidgets()
-        GLOWZAWidgetsControl()
+        UpcomingBookingsWidget()
+        BookAgainWidget()
         GLOWZAWidgetsLiveActivity()
     }
 }

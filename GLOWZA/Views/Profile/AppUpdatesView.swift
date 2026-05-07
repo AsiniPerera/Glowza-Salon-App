@@ -5,10 +5,10 @@ struct AppUpdatesView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
-    private let accent = Color(hex: "962043")
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
-    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
+    private var accent: Color { appSettings.themeBrand }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var primaryText: Color { appSettings.themeText }
 
     private let changes: [(version: String, date: String, notes: [String])] = [
         (
@@ -51,17 +51,17 @@ struct AppUpdatesView: View {
                     // Current version hero
                     VStack(spacing: 8) {
                         Image(systemName: "sparkles")
-                            .font(.system(size: 40))
+                            .glowzaFont(size: 40)
                             .foregroundColor(accent)
                         Text("GLOWZA")
-                            .font(.system(size: 13, weight: .medium))
+                            .glowzaFont(size: 13, weight: .medium)
                             .foregroundColor(Color(hex: "8A8D94"))
                             .tracking(4)
                         Text("Version 2.1.0")
-                            .font(.system(size: 22, weight: .bold))
+                            .glowzaFont(size: 22, weight: .bold)
                             .foregroundColor(primaryText)
                         Text("You're on the latest version")
-                            .font(.system(size: 13))
+                            .glowzaFont(size: 13)
                             .foregroundColor(Color(hex: "00A878"))
                     }
                     .frame(maxWidth: .infinity)
@@ -73,11 +73,11 @@ struct AppUpdatesView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack {
                                     Text(release.version)
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .glowzaFont(size: 16, weight: .semibold)
                                         .foregroundColor(primaryText)
                                     Spacer()
                                     Text(release.date)
-                                        .font(.system(size: 12))
+                                        .glowzaFont(size: 12)
                                         .foregroundColor(Color(hex: "ABABAB"))
                                 }
 
@@ -89,7 +89,7 @@ struct AppUpdatesView: View {
                                                 .frame(width: 5, height: 5)
                                                 .padding(.top, 6)
                                             Text(note)
-                                                .font(.system(size: 14))
+                                                .glowzaFont(size: 14)
                                                 .foregroundColor(Color(hex: "5A5D65"))
                                         }
                                     }
@@ -122,10 +122,10 @@ struct TermsConditionsView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
-    private let accent = Color(hex: "962043")
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
-    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
+    private var accent: Color { appSettings.themeBrand }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var primaryText: Color { appSettings.themeText }
 
     private let sections: [(title: String, body: String)] = [
         (
@@ -174,10 +174,10 @@ struct TermsConditionsView: View {
                     // Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Terms & Conditions")
-                            .font(.system(size: 24, weight: .bold))
+                            .glowzaFont(size: 24, weight: .bold)
                             .foregroundColor(primaryText)
                         Text("Last updated: April 2026")
-                            .font(.system(size: 13))
+                            .glowzaFont(size: 13)
                             .foregroundColor(Color(hex: "ABABAB"))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -189,10 +189,10 @@ struct TermsConditionsView: View {
                         ForEach(sections, id: \.title) { section in
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(section.title)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .glowzaFont(size: 15, weight: .semibold)
                                     .foregroundColor(accent)
                                 Text(section.body)
-                                    .font(.system(size: 14))
+                                    .glowzaFont(size: 14)
                                     .foregroundColor(Color(hex: "5A5D65"))
                                     .lineSpacing(4)
                             }

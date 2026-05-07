@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Brand Colors (quick access)
-private let brand = Color(hex: "962043")
+private var brand: Color { Color.glowzaPrimary }
 private let brandDark = Color(hex: "8A1538")
 private let brandTint = Color(hex: "FFF0F4")
 
@@ -16,7 +16,7 @@ struct StandardCard<Content: View>: View {
 
     var body: some View {
         content
-            .background(Color.white)
+            .background(Color.glowzaCardBg)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .shadow(color: Color.black.opacity(0.07), radius: 10, x: 0, y: 4)
     }
@@ -39,7 +39,7 @@ struct PrimaryButton: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Text(title)
-                        .font(.system(size: 15, weight: .semibold))
+                        .glowzaFont(size: 15, weight: .semibold)
                 }
             }
             .frame(width: 330, height: 55)
@@ -63,10 +63,10 @@ struct SecondaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .glowzaFont(size: 15, weight: .semibold)
                 .foregroundColor(hotPink)
                 .frame(width: 330, height: 55)
-                .background(Color.white)
+                .background(Color.glowzaCardBg)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -85,25 +85,25 @@ struct StandardSearchBar: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 14, weight: .medium))
+                .glowzaFont(size: 14, weight: .medium)
                 .foregroundColor(Color(hex: "ABABAB"))
 
             TextField(placeholder, text: $text)
-                .font(.system(size: 15))
+                .glowzaFont(size: 15)
                 .submitLabel(.search)
                 .onSubmit { onSearch?() }
 
             if !text.isEmpty {
                 Button(action: { text = "" }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
+                        .glowzaFont(size: 15)
                         .foregroundColor(Color(hex: "ABABAB"))
                 }
             }
         }
         .padding(.horizontal, 14)
         .frame(height: 46)
-        .background(Color.white)
+        .background(Color.glowzaCardBg)
         .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
     }
 }
@@ -116,7 +116,7 @@ struct StandardBadge: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 11, weight: .semibold))
+            .glowzaFont(size: 11, weight: .semibold)
             .foregroundColor(textColor)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
@@ -141,11 +141,11 @@ struct SectionHeader: View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 20, weight: .bold))
+                    .glowzaFont(size: 20, weight: .bold)
                     .foregroundColor(Color(hex: "1A1A1A"))
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .glowzaFont(size: 13)
                         .foregroundColor(Color(hex: "8A8A8A"))
                 }
             }
@@ -153,7 +153,7 @@ struct SectionHeader: View {
             if let action {
                 Button(action: action) {
                     Text("See All")
-                        .font(.system(size: 14, weight: .semibold))
+                        .glowzaFont(size: 14, weight: .semibold)
                         .foregroundColor(brand)
                 }
             }
@@ -171,7 +171,7 @@ struct RatingView: View {
         HStack(spacing: 2) {
             ForEach(1...5, id: \.self) { i in
                 Image(systemName: Double(i) <= rating ? "star.fill" : (Double(i) - 0.5 <= rating ? "star.leadinghalf.filled" : "star"))
-                    .font(.system(size: size))
+                    .glowzaFont(size: size)
                     .foregroundColor(Double(i) <= rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
             }
         }
@@ -186,22 +186,22 @@ struct LocationChip: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "mappin.circle.fill")
-                .font(.system(size: 13))
+                .glowzaFont(size: 13)
                 .foregroundColor(brand)
             VStack(alignment: .leading, spacing: 0) {
                 Text(location)
-                    .font(.system(size: 13))
+                    .glowzaFont(size: 13)
                     .foregroundColor(Color(hex: "1A1A1A"))
                 if let distance {
                     Text(distance)
-                        .font(.system(size: 11))
+                        .glowzaFont(size: 11)
                         .foregroundColor(Color(hex: "8A8A8A"))
                 }
             }
             Spacer()
         }
         .padding(10)
-        .background(Color.white)
+        .background(Color.glowzaCardBg)
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
@@ -215,14 +215,14 @@ struct FilterChip: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .glowzaFont(size: 13, weight: isSelected ? .semibold : .regular)
                 .foregroundColor(isSelected ? .white : Color(hex: "1A1A1A"))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(isSelected ? brand : Color.white)
+                .background(isSelected ? brand : Color.glowzaCardBg)
                 .clipShape(Capsule())
                 .overlay(
-                    Capsule().stroke(isSelected ? Color.clear : Color(hex: "EBEBEB"), lineWidth: 1)
+                    Capsule().stroke(isSelected ? Color.clear : Color.glowzaBorder, lineWidth: 1)
                 )
         }
     }
@@ -237,38 +237,43 @@ struct GlowzaTextField: View {
     var icon: String? = nil
 
     @State private var showPassword = false
+    @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
+        let isHC = appSettings.isHighContrast
         HStack(spacing: 12) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(hex: "ABABAB"))
+                    .glowzaFont(size: 16)
+                    .foregroundColor(appSettings.themeTextSecondary)
                     .frame(width: 20)
             }
             if isSecure && !showPassword {
                 SecureField(placeholder, text: $text)
-                    .font(.system(size: 15))
+                    .glowzaFont(size: 15)
+                    .foregroundColor(appSettings.themeText)
             } else {
                 TextField(placeholder, text: $text)
-                    .font(.system(size: 15))
+                    .glowzaFont(size: 15)
                     .keyboardType(keyboardType)
+                    .foregroundColor(appSettings.themeText)
             }
             if isSecure {
                 Button(action: { showPassword.toggle() }) {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "ABABAB"))
+                        .glowzaFont(size: 15)
+                        .foregroundColor(appSettings.themeTextSecondary)
                 }
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 52)
-        .background(Color(hex: "F8F8F8"))
+        .background(isHC ? appSettings.themeRaised : Color(hex: "F8F8F8"))
         .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 25, style: .continuous)
-                .stroke(Color(hex: "EBEBEB"), lineWidth: 1)
+                .stroke(appSettings.themeElementBorder,
+                        lineWidth: isHC ? 3 : 1)
         )
     }
 }
@@ -277,7 +282,7 @@ struct GlowzaTextField: View {
 struct GlowzaDivider: View {
     var body: some View {
         Rectangle()
-            .fill(Color(hex: "F0F0F0"))
+            .fill(Color.glowzaBorder)
             .frame(height: 1)
             .padding(.horizontal, 20)
     }

@@ -26,20 +26,29 @@ extension Color {
             return hex
         }
 
-        let neon = "FF66B2"
+        // Electric Rose HC: OLED #000000 bg + Electric Rose #FF2D55 accents + crisp white text
+        let electricRose = "FF2D55"   // Electric Rose — primary CTA + neon border
+        let deepMagenta  = "C2185B"   // Deep Magenta  — subtle gradient partner
 
-        // Brand and action colors become neon pink.
+        // Brand, action, and accent colors → Electric Rose.
         let brandLike: Set<String> = [
-            "962043", "8A1538", "D4829E", "E5A820", "C8860A", "4A3828", "F5E8EE",
+            "962043", "8A1538", "D4829E", "FF69B4", "E5A820", "C8860A", "4A3828",
             "F59E0B", "DB4437", "1877F2", "2196F3", "4CAF50", "FF9800", "F44336", "00A878"
         ]
         if brandLike.contains(hex) {
-            return neon
+            return electricRose
         }
 
-        // Light surfaces become black for high contrast base.
+        // Secondary brand variants → Deep Magenta.
+        let magentaLike: Set<String> = ["F5E8EE", "FFF0F4", "E8C8D4"]
+        if magentaLike.contains(hex) {
+            return deepMagenta
+        }
+
+        // Light surfaces → pure OLED black.
         let lightSurfaces: Set<String> = [
-            "FFFFFF", "FAFAFA", "F8F8F8", "F2F2F7", "EBEBEB", "E5E5EA", "E8E8EC", "FFF0F4", "F0F0F0"
+            "FFFFFF", "FAFAFA", "F8F8F8", "F2F2F7", "EBEBEB", "E5E5EA", "E8E8EC",
+            "F0F0F0", "EDEBE9", "EEEAE5", "F7F7FA", "F7F7F7", "FCFCFC", "F9F9F9"
         ]
         if lightSurfaces.contains(hex) {
             return "000000"
@@ -110,32 +119,36 @@ extension Color {
         UserDefaults.standard.bool(forKey: "app_highContrast")
     }
 
+    // Electric Rose HC palette
+    private static let hcRose    = Color(hex: "FF2D55")   // Electric Rose — primary CTA & neon border
+    private static let hcMagenta = Color(hex: "C2185B")   // Deep Magenta   — gradient partner
+
     // Brand Colors
-    static var glowzaPrimary: Color { neonHighContrastEnabled ? Color(hex: "FF66B2") : Color(hex: "962043") }
-    static var glowzaPrimaryTint: Color { neonHighContrastEnabled ? .black : Color(hex: "F5E8EE") }
+    static var glowzaPrimary: Color { neonHighContrastEnabled ? hcRose : Color(hex: "962043") }
+    static var glowzaPrimaryTint: Color { neonHighContrastEnabled ? hcMagenta.opacity(0.18) : Color(hex: "F5E8EE") }
 
     // Primary Colors
-    static var glowzaGold: Color { neonHighContrastEnabled ? Color(hex: "FF66B2") : Color(hex: "E5A820") }
-    static var glowzaGoldDark: Color { neonHighContrastEnabled ? Color(hex: "FF66B2") : Color(hex: "C8860A") }
+    static var glowzaGold: Color { neonHighContrastEnabled ? hcRose : Color(hex: "E5A820") }
+    static var glowzaGoldDark: Color { neonHighContrastEnabled ? hcMagenta : Color(hex: "C8860A") }
     static var glowzaBrown: Color { neonHighContrastEnabled ? .white : Color(hex: "4A3828") }
-    
-    // Neutral Colors
+
+    // Neutral / Background Colors
     static var glowzaBackground: Color { neonHighContrastEnabled ? .black : .white }
-    static var glowzaSurface: Color { neonHighContrastEnabled ? .black : .white }
-    static var glowzaCardBg: Color { neonHighContrastEnabled ? .black : .white }
-    
+    static var glowzaSurface: Color { neonHighContrastEnabled ? Color(hex: "0D0D0D") : .white }
+    static var glowzaCardBg: Color { neonHighContrastEnabled ? Color(hex: "1A1A1A") : .white }
+
     // Text Colors
     static var glowzaTextPrimary: Color { neonHighContrastEnabled ? .white : Color(hex: "1A1A1A") }
-    static var glowzaTextSecondary: Color { neonHighContrastEnabled ? .white.opacity(0.92) : Color(hex: "5E5E5E") }
-    static var glowzaSubtext: Color { neonHighContrastEnabled ? .white.opacity(0.78) : Color(hex: "8A8A8A") }
-    static var glowzaTextDisabled: Color { neonHighContrastEnabled ? .white.opacity(0.55) : Color(hex: "ABABAB") }
-    
-    // Border / Divider
-    static var glowzaBorder: Color { neonHighContrastEnabled ? .white : Color(hex: "EBEBEB") }
+    static var glowzaTextSecondary: Color { neonHighContrastEnabled ? .white.opacity(0.70) : Color(hex: "5E5E5E") }
+    static var glowzaSubtext: Color { neonHighContrastEnabled ? .white.opacity(0.55) : Color(hex: "8A8A8A") }
+    static var glowzaTextDisabled: Color { neonHighContrastEnabled ? .white.opacity(0.40) : Color(hex: "ABABAB") }
+
+    // Neon Border / Divider — Electric Rose at 60 % in HC
+    static var glowzaBorder: Color { neonHighContrastEnabled ? hcRose.opacity(0.60) : Color(hex: "EBEBEB") }
 
     // Brand CTA
-    static var hotPink: Color { neonHighContrastEnabled ? Color(hex: "FF66B2") : Color(hex: "962043") }
-    static var hotPinkDisabled: Color { neonHighContrastEnabled ? Color(hex: "FF66B2").opacity(0.55) : Color(hex: "D4829E") }
+    static var hotPink: Color { neonHighContrastEnabled ? hcRose : Color(hex: "962043") }
+    static var hotPinkDisabled: Color { neonHighContrastEnabled ? hcRose.opacity(0.45) : Color(hex: "D4829E") }
 
     // State Colors
     static let glowzaSuccess = Color(hex: "4CAF50")
@@ -155,7 +168,8 @@ struct HighContrastModifier: ViewModifier {
             .bold(isHighContrast)
             .overlay(
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .stroke(Color.white.opacity(isHighContrast ? 1.0 : 0), lineWidth: isHighContrast ? 3 : 0)
+                    .stroke(Color.white.opacity(isHighContrast ? 0.85 : 0),
+                            lineWidth: isHighContrast ? 3 : 0)
             )
     }
 }

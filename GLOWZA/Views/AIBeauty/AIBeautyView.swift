@@ -1,7 +1,7 @@
 import SwiftUI
 import Combine
 
-private let brand = Color(hex: "962043")
+private var brand: Color { Color.glowzaPrimary }
 
 // MARK: - Chat Message
 struct ChatMessage: Identifiable {
@@ -25,19 +25,30 @@ struct AIBeautyView: View {
     @FocusState private var inputFocused: Bool
     @Environment(AppSettings.self) private var appSettings
 
+    private var pageBackground:    Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var bubbleBackground:  Color { appSettings.themeRaised }
+    private var dividerColor:      Color { appSettings.themeDivider }
+    private var primaryText:       Color { appSettings.themeText }
+    private var inputBackground:   Color { appSettings.themeRaised }
+
     private let bottomID = "chatBottom"
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            header
-
-            Divider().overlay(appSettings.isDarkMode ? Color.white.opacity(0.1) : Color(hex: "E8E8E8"))
-
             // Chat messages
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 14) {
+                        // Title at top of scroll content
+                        Text("AI Beauty Agent")
+                            .glowzaFont(size: 20, weight: .bold)
+                            .foregroundColor(appSettings.isHighContrast ? appSettings.themeBrand : primaryText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
+
                         ForEach(messages) { msg in
                             messageBubble(msg)
                         }
@@ -47,7 +58,7 @@ struct AIBeautyView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 16)
                 }
-                .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
+                .background(pageBackground)
                 .onChange(of: messages.count) { _ in
                     withAnimation { proxy.scrollTo(bottomID, anchor: .bottom) }
                 }
@@ -59,7 +70,7 @@ struct AIBeautyView: View {
             // Input bar
             inputBar
         }
-        .background((appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea())
+        .background(pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
         .onReceive(
             Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()
@@ -68,30 +79,36 @@ struct AIBeautyView: View {
 
     // MARK: - Header
     private var header: some View {
-        HStack {
-            Text("AI Beauty Agent")
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
-          
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 56)
-        .padding(.bottom, 14)
-        .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
+        Text("AI Beauty Agent")
+            .glowzaFont(size: 18, weight: .bold)
+            .foregroundColor(appSettings.isHighContrast ? appSettings.themeBrand : primaryText)
+            .padding(.horizontal, 20)
+            .padding(.top, 14)
+            .padding(.bottom, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(pageBackground.ignoresSafeArea(edges: .top))
     }
 
     // MARK: - Message Bubble
     @ViewBuilder
     private func messageBubble(_ msg: ChatMessage) -> some View {
+        let isHC = appSettings.isHighContrast
+        let rose  = Color(hex: "FF2D55")
         HStack(alignment: .bottom, spacing: 0) {
             if msg.isUser { Spacer(minLength: 60) }
             Text(msg.text)
-                .font(.system(size: 15))
-                .foregroundColor(msg.isUser ? .white : (appSettings.isDarkMode ? .white : Color(hex: "1A1A1A")))
+                .glowzaFont(size: 15, weight: isHC ? .medium : .regular)
+                .foregroundColor(msg.isUser ? .white : primaryText)
                 .lineSpacing(3)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(msg.isUser ? brand : (appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white))
+                .background(
+                    ZStack {
+                        msg.isUser ? brand : bubbleBackground
+                        // Rose tint on AI bubbles in HC — visually distinct from dark mode
+                        if isHC && !msg.isUser { rose.opacity(0.12) }
+                    }
+                )
                 .clipShape(
                     UnevenRoundedRectangle(
                         topLeadingRadius: 20,
@@ -100,6 +117,18 @@ struct AIBeautyView: View {
                         topTrailingRadius: 20
                     )
                 )
+                // Neon border on AI bubbles in HC
+                .overlay(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: 20,
+                        bottomLeadingRadius: msg.isUser ? 20 : 4,
+                        bottomTrailingRadius: msg.isUser ? 4 : 20,
+                        topTrailingRadius: 20
+                    )
+                    .stroke(isHC && !msg.isUser ? rose.opacity(0.80) : Color.clear, lineWidth: 3)
+                )
+                // Electric Rose glow behind user bubble in HC
+                .shadow(color: isHC && msg.isUser ? rose.opacity(0.35) : .clear, radius: 10)
             if !msg.isUser { Spacer(minLength: 60) }
         }
     }
@@ -110,7 +139,7 @@ struct AIBeautyView: View {
             HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { i in
                     Circle()
-                        .fill(Color(hex: "8A8A8A"))
+                        .fill(appSettings.isHighContrast ? Color(hex: "FF2D55") : appSettings.themeTextSecondary)
                         .frame(width: 7, height: 7)
                         .scaleEffect(dotPhase == i ? 1.3 : 0.8)
                         .opacity(dotPhase == i ? 1 : 0.4)
@@ -118,7 +147,7 @@ struct AIBeautyView: View {
                 }
             }
             .padding(.horizontal, 18).padding(.vertical, 14)
-            .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
+            .background(bubbleBackground)
             .clipShape(UnevenRoundedRectangle(topLeadingRadius: 20, bottomLeadingRadius: 4,
                                               bottomTrailingRadius: 20, topTrailingRadius: 20))
             Spacer()
@@ -127,34 +156,51 @@ struct AIBeautyView: View {
 
     // MARK: - Input Bar
     private var inputBar: some View {
-        HStack(spacing: 12) {
+        let isHC     = appSettings.isHighContrast
+        let rose     = Color(hex: "FF2D55")
+        let isEmpty  = inputText.trimmingCharacters(in: .whitespaces).isEmpty
+        return HStack(spacing: 12) {
             TextField("Ask me anything...", text: $inputText, axis: .vertical)
-                .font(.system(size: 15))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                .glowzaFont(size: 15)
+                .foregroundColor(primaryText)
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white)
+                .background(inputBackground)
                 .clipShape(Capsule())
+                // White border on input field in HC (element affordance)
+                .overlay(
+                    Capsule()
+                        .stroke(isHC ? Color.white.opacity(inputFocused ? 1.0 : 0.70) : Color.clear,
+                                lineWidth: 3)
+                )
 
             Button(action: sendMessage) {
                 ZStack {
                     Circle()
-                        .fill(inputText.trimmingCharacters(in: .whitespaces).isEmpty
-                              ? Color(hex: "D4829E") : brand)
+                        .fill(isEmpty ? appSettings.themeBrandMuted : brand)
                         .frame(width: 44, height: 44)
+                        // Neon glow on send button in HC when active
+                        .shadow(color: isHC && !isEmpty ? rose.opacity(0.45) : .clear, radius: 10)
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 17, weight: .semibold))
+                        .glowzaFont(size: 17, weight: .semibold)
                         .foregroundColor(.white)
                 }
             }
-            .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty || isTyping)
+            .disabled(isEmpty || isTyping)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
-        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: -2)
+        .background(surfaceBackground)
+        .overlay(alignment: .top) {
+            Rectangle()
+                .fill(isHC ? rose.opacity(0.45) : dividerColor)
+                .frame(height: isHC ? 1 : 0.5)
+                .opacity(isHC ? 1 : (appSettings.isDarkMode ? 0.15 : 1))
+        }
+        .shadow(color: .black.opacity((appSettings.isDarkMode || isHC) ? 0.0 : 0.06),
+                radius: 8, x: 0, y: -2)
     }
 
     // MARK: - Send
@@ -199,4 +245,7 @@ struct AIBeautyView: View {
     }
 }
 
-#Preview { AIBeautyView() }
+#Preview {
+    AIBeautyView()
+        .environment(AppSettings.shared)
+}

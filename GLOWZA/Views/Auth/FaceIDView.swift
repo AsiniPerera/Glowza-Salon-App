@@ -1,7 +1,7 @@
 import SwiftUI
 import LocalAuthentication
 
-private let brand = Color(hex: "962043")
+private var brand: Color { Color.glowzaPrimary }
 
 // MARK: - Face ID Auth View
 struct FaceIDAuthView: View {
@@ -14,9 +14,9 @@ struct FaceIDAuthView: View {
     let onAuthSuccess: () -> Void
     @Environment(AppSettings.self) private var appSettings
 
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
-    private var primaryText: Color { appSettings.isDarkMode ? .white : Color(hex: "1A1A1A") }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var primaryText: Color { appSettings.themeText }
 
     var body: some View {
         ZStack {
@@ -64,16 +64,16 @@ struct FaceIDAuthView: View {
                         Circle().fill(brand).frame(width: 76, height: 76)
                             .shadow(color: brand.opacity(0.30), radius: 16)
                         Image(systemName: viewModel.biometricIconName)
-                            .font(.system(size: 34, weight: .light))
+                            .glowzaFont(size: 34, weight: .light)
                             .foregroundColor(.white)
                     }
 
                     VStack(spacing: 10) {
                         Text("Secure Sign In")
-                            .font(.system(size: 28, weight: .bold))
+                            .glowzaFont(size: 28, weight: .bold)
                             .foregroundColor(primaryText)
                         Text("Use Face ID for a faster, private\nsign in to your GLOWZA account.")
-                            .font(.system(size: 15))
+                            .glowzaFont(size: 15)
                             .foregroundColor(Color(hex: "6B6B6B"))
                             .multilineTextAlignment(.center)
                             .lineSpacing(4)
@@ -91,9 +91,9 @@ struct FaceIDAuthView: View {
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: viewModel.biometricIconName)
-                                .font(.system(size: 14, weight: .medium))
+                                .glowzaFont(size: 14, weight: .medium)
                             Text(viewModel.biometricButtonTitle)
-                                .font(.system(size: 15, weight: .semibold))
+                                .glowzaFont(size: 15, weight: .semibold)
                         }
                         .foregroundColor(.white)
                         .frame(width: 330, height: 55)
@@ -105,10 +105,10 @@ struct FaceIDAuthView: View {
 
                     HStack(spacing: 5) {
                         Image(systemName: "lock.shield")
-                            .font(.system(size: 11))
+                            .glowzaFont(size: 11)
                             .foregroundColor(brand.opacity(0.6))
                         Text("Your biometric data stays on this device")
-                            .font(.system(size: 12))
+                            .glowzaFont(size: 12)
                             .foregroundColor(Color(hex: "ABABAB"))
                     }
                 }
@@ -118,7 +118,7 @@ struct FaceIDAuthView: View {
                 .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color.white, lineWidth: 1)
+                    .stroke(appSettings.themeRaised, lineWidth: 1)
                 )
 
                 Spacer()
@@ -146,10 +146,10 @@ struct FaceIDAuthView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Detecting Face ID")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 15, weight: .semibold)
+                            .foregroundColor(appSettings.themeText)
                         Text(successAnimation ? "Face ID Verified" : "Position your face in frame")
-                            .font(.system(size: 12))
+                            .glowzaFont(size: 12)
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
                     Spacer()
@@ -158,7 +158,7 @@ struct FaceIDAuthView: View {
                             .fill(successAnimation ? Color.green.opacity(0.1) : brand.opacity(0.1))
                             .frame(width: 32, height: 32)
                         Image(systemName: successAnimation ? "checkmark" : "faceid")
-                            .font(.system(size: 16, weight: .semibold))
+                            .glowzaFont(size: 16, weight: .semibold)
                             .foregroundColor(successAnimation ? .green : brand)
                     }
                 }
@@ -199,7 +199,7 @@ struct FaceIDAuthView: View {
                         if successAnimation {
                             // Success checkmark
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 80, weight: .semibold))
+                                .glowzaFont(size: 80, weight: .semibold)
                                 .foregroundColor(.green)
                                 .scaleEffect(1.0)
                                 .transition(.scale)
@@ -207,7 +207,7 @@ struct FaceIDAuthView: View {
                             // Scanning face
                             VStack(spacing: 16) {
                                 Image(systemName: "faceid")
-                                    .font(.system(size: 60, weight: .light))
+                                    .glowzaFont(size: 60, weight: .light)
                                     .foregroundColor(brand)
                                     .rotationEffect(.degrees(rotationAngle))
 
@@ -238,20 +238,20 @@ struct FaceIDAuthView: View {
                     if successAnimation {
                         VStack(spacing: 4) {
                             Text("Authentication Successful!")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                                .glowzaFont(size: 18, weight: .bold)
+                                .foregroundColor(appSettings.themeText)
                             Text("Welcome back to GLOWZA")
-                                .font(.system(size: 14))
+                                .glowzaFont(size: 14)
                                 .foregroundColor(Color(hex: "8E8E93"))
                         }
                         .transition(.opacity.combined(with: .scale))
                     } else {
                         VStack(spacing: 4) {
                             Text("Scanning Your Face")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                                .glowzaFont(size: 18, weight: .bold)
+                                .foregroundColor(appSettings.themeText)
                             Text("Please remain still")
-                                .font(.system(size: 14))
+                                .glowzaFont(size: 14)
                                 .foregroundColor(Color(hex: "8E8E93"))
                         }
                     }

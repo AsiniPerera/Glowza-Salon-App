@@ -86,6 +86,7 @@ final class WidgetBookingSyncService {
     }
 
     private func reloadWidgets() {
+        WidgetCenter.shared.reloadTimelines(ofKind: "GLOWZAWidgets")
         WidgetCenter.shared.reloadTimelines(ofKind: "UpcomingBookingsWidget")
         WidgetCenter.shared.reloadTimelines(ofKind: "BookAgainWidget")
     }
