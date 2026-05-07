@@ -4,10 +4,11 @@ import FirebaseAuth
 
 @main
 struct GLOWZAApp: App {
+    
     init() {
         // Initialize Core Data first
         _ = CoreDataStack.shared
-        print("✅ Core Data stack initialized")
+        print("Core Data stack initialized")
         
         // Then Firebase
         FirebaseApp.configure()
@@ -186,7 +187,7 @@ struct PlaceholderDashboardView: View {
                 Image(systemName: "checkmark.seal.fill")
                     .glowzaFont(size: 56)
                     .foregroundColor(Color.glowzaGold)
-                Text("You're In! 🎉")
+                Text("You're In! ")
                     .glowzaFont(size: 28, weight: .bold)
                 Text("Dashboard — share Figma design to build")
                     .glowzaFont(size: 14)

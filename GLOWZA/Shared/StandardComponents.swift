@@ -237,7 +237,7 @@ struct GlowzaTextField: View {
     var icon: String? = nil
 
     @State private var showPassword = false
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
 
     var body: some View {
         let isHC = appSettings.isHighContrast

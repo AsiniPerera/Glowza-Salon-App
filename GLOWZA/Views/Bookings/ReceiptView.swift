@@ -11,7 +11,7 @@ struct ReceiptView: View {
     let onDone: () -> Void
 
     @Environment(\.openURL) private var openURL
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
     @State private var showShareSheet = false
     @State private var receiptFileURL: URL? = nil
 

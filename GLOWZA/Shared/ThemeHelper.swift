@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Theme Helper
 struct ThemeHelper {
-    @Environment(AppSettings.self) static var settings
+    static var settings: AppSettings { AppSettings.shared }
     
     /// Background color that adapts to theme
     static func backgroundColor(_ colorScheme: ColorScheme?) -> Color {

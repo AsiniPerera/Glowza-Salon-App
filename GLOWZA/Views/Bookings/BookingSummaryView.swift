@@ -7,7 +7,7 @@ struct BookingSummaryView: View {
     let onProceed: () -> Void
     let onBack: () -> Void
 
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
 
     private var service: SalonService { draft.service ?? draft.salon.services[0] }
     private var total: Double { service.price }

@@ -53,7 +53,7 @@ extension View {
 /// Use `.glowzaFont(size:weight:design:)` on any Text or View instead of
 /// `.font(.system(size:))` so it responds to the in-app font-size preference.
 private struct GlowzaScaledFont: ViewModifier {
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
     let baseSize: CGFloat
     let weight: Font.Weight
     let design: Font.Design

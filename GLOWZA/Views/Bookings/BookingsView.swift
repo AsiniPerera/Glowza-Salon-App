@@ -577,6 +577,7 @@ struct BookingsView: View {
         ) {
             if let rebookDraft {
                 BookingFlowView(draft: rebookDraft)
+                    .environment(AppSettings.shared)
             }
         }
     }

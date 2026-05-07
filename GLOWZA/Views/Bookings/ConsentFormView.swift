@@ -34,7 +34,7 @@ struct ConsentFormView: View {
     @State private var canvasView = PKCanvasView()
     @State private var isAgreed = false
     @State private var hasSignature = false
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
 
     private var accent: Color { appSettings.themeBrand }
     private var dark: Color { appSettings.themeText }

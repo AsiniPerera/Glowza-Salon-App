@@ -39,7 +39,7 @@ struct BookingFlowView: View {
                 guard !isSubmittingPayment else { return }
                 isSubmittingPayment = true
 
-                // Move to confirmation screen after payment
+                // Move to booking confirmation after payment.
                 completedBooking = booking
 
                 let dateFormatter = DateFormatter()
@@ -144,15 +144,17 @@ struct BookingFlowView: View {
             }
         case .confirmation:
             if let booking = completedBooking {
-                BookingConfirmedView(booking: booking) {
+                BookingConfirmedView(booking: booking, onProceedToReceipt: {
                     step = .receipt
-                }
+                })
+                .environment(AppSettings.shared)
             }
         case .receipt:
             if let booking = completedBooking {
                 ReceiptView(booking: booking) {
                     dismiss()
                 }
+                .environment(AppSettings.shared)
             }
         }
     }
@@ -168,7 +170,7 @@ struct BookAppointmentView: View {
     @State private var selectedTime: String = ""
     @State private var displayMonth: Date = Date()
 
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
 
     private var accent: Color { appSettings.themeBrand }
     private var dark: Color { appSettings.themeText }

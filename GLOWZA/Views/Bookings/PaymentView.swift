@@ -7,7 +7,7 @@ struct PaymentView: View {
 
     @State private var showCardEntry = false
     @State private var selectedCardIndex: Int? = nil
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
 
     private var service: SalonService { draft.service ?? draft.salon.services[0] }
     private var total: Double { service.price }
@@ -335,7 +335,7 @@ struct CardEntryView: View {
     let onBack: () -> Void
     let onContinue: () -> Void
 
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
     @State private var showAddCard = false
     @State private var savedCards: [(last4: String, brand: String)] = [
         (last4: "4242", brand: "Visa"),
@@ -573,7 +573,7 @@ struct AddCardFormView: View {
     @Binding var isShowing: Bool
     let onCardAdded: (String) -> Void
 
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
     @State private var cardNumber = ""
     @State private var cardHolder = ""
     @State private var expiryDate = ""
