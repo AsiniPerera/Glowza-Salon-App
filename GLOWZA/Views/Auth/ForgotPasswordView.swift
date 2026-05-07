@@ -130,7 +130,7 @@ struct ForgotPasswordView: View {
                     .frame(height: 55)
                     .frame(maxWidth: .infinity)
                     .background(isButtonEnabled ? accent : Color(hex: "D4829E"))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                     .disabled(!isButtonEnabled || isLoading)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 14)
@@ -151,7 +151,7 @@ struct ForgotPasswordView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
                         if onBack != nil {
                             onBack?()
@@ -159,10 +159,14 @@ struct ForgotPasswordView: View {
                             dismiss()
                         }
                     }) {
-                        Image(systemName: "chevron.left")
-                            .glowzaFont(size: 17, weight: .semibold)
-                            .foregroundColor(accent)
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(accent)
                     }
+                    .fixedSize()
                 }
             }
             .alert("Password Reset Successful", isPresented: $showSuccess) {

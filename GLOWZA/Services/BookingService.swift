@@ -126,13 +126,14 @@ final class BookingService {
     
     // MARK: - Add Review
     func addReview(bookingId: String, rating: Double, review: String) async throws {
+        let data: [String: Any] = [
+            "rating": rating,
+            "review": review,
+            "status": "completed"
+        ]
         try await db.collection(collectionName)
             .document(bookingId)
-            .updateData([
-                "rating": rating,
-                "review": review,
-                "status": "completed"
-            ])
+            .setData(data, merge: true)
     }
     
     // MARK: - Cancel Booking

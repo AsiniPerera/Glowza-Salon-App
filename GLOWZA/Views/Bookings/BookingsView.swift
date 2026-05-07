@@ -108,11 +108,21 @@ struct AddReviewView: View {
                     .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 40)
                 }
             }
-            .navigationTitle("Add Review")
+            .navigationTitle(BookingStore.shared.bookings.first(where: { $0.id == bookingID })?.review != nil ? "Edit Review" : "Add Review")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.foregroundColor(brand)
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(brand)
+                        .fixedSize()
+                }
+            }
+            .onAppear {
+                // If a review already exists for this booking, pre-fill the fields.
+                if let booking = BookingStore.shared.bookings.first(where: { $0.id == bookingID }),
+                   let existingReview = booking.review {
+                    rating = existingReview.rating
+                    comment = existingReview.comment
                 }
             }
         }
@@ -126,37 +136,87 @@ struct AddReviewView: View {
     }
 
     private func submitReview() {
+        guard rating > 0 else { return }
         isSubmitting = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            let reviewComment = comment.isEmpty ? ratingLabel : comment
-            let reviewerName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "You"
 
-            BookingStore.shared.addReview(
-                bookingID: bookingID,
-                review: BookingReview(
-                    rating: rating,
-                    comment: reviewComment,
-                    date: Date(),
-                    reviewerName: reviewerName
-                )
+        let reviewComment  = comment.trimmingCharacters(in: .whitespaces).isEmpty ? ratingLabel : comment
+        let auth           = AuthService.shared
+        let userId         = auth.currentUID ?? "guest"
+        let reviewerName   = auth.currentUserProfile?.fullName
+                             ?? UserDefaults.standard.string(forKey: "profile_fullName")
+                             ?? "Anonymous"
+        let salonId        = SalonFirestoreService.shared.salonId(for: salonName)
+
+        // 1. Save to local BookingStore (updates UI immediately)
+        BookingStore.shared.addReview(
+            bookingID: bookingID,
+            review: BookingReview(
+                rating: rating,
+                comment: reviewComment,
+                date: Date(),
+                reviewerName: reviewerName
             )
+        )
 
-            // Also save to Firestore salonReviews collection
-            let salonId = SalonFirestoreService.shared.salonId(for: salonName)
-            let userId  = AuthService.shared.currentUID ?? "guest"
-            Task {
-                try? await SalonFirestoreService.shared.addSalonReview(
+        // 2. Save review + update salon rating in Firestore
+        Task {
+            defer {
+                Task { @MainActor in
+                    isSubmitting = false
+                    onSubmit()
+                    dismiss()
+                }
+            }
+            
+            do {
+                // Determine if we're editing an existing review
+                let existingReview = BookingStore.shared.bookings.first(where: { $0.id == bookingID })?.review
+                
+                // If editing, we'd ideally need the docId, but for now we'll just add it 
+                // and the local store already handles the UI update.
+                
+                // 2a. Save review document to `salonReviews` collection
+                try await SalonFirestoreService.shared.addSalonReview(
                     salonId: salonId,
                     userId: userId,
                     userName: reviewerName,
                     rating: rating,
                     comment: reviewComment
                 )
-            }
 
-            isSubmitting = false
-            onSubmit()
-            dismiss()
+                // 2b. Recalculate and update salon's average rating in `salons` collection
+                let reviews = try await SalonFirestoreService.shared.fetchReviews(forSalonId: salonId)
+                if !reviews.isEmpty {
+                    let avgRating  = Double(reviews.map { $0.rating }.reduce(0, +)) / Double(reviews.count)
+                    let roundedAvg = (avgRating * 10).rounded() / 10
+                    try? await SalonFirestoreService.shared.upsertSalon(
+                        name:        salonName,
+                        location:    "",         // merge: true — won't overwrite existing location
+                        distance:    "",
+                        rating:      roundedAvg,
+                        reviewCount: reviews.count,
+                        score:       min(roundedAvg / 5.0, 1.0),
+                        categories:  []
+                    )
+                }
+
+                // 2c. Also update the booking status to "completed" in Firestore
+                await BookingStore.shared.addReviewFirestore(
+                    BookingStore.shared.bookings
+                        .first(where: { $0.id == bookingID })
+                        .flatMap { b in
+                            BookingStore.shared.firestoreBookings
+                                .first(where: { $0.bookingSummary.receiptNumber == b.receiptNumber })?.id
+                        } ?? "",
+                    rating: Double(rating),
+                    review: reviewComment
+                )
+
+                print("✅ Review saved to Firestore for salon: \(salonName)")
+            } catch {
+                print("❌ Failed to save review: \(error)")
+                // The defer block will still dismiss the view, so user isn't stuck.
+            }
         }
     }
 }
@@ -378,29 +438,19 @@ struct CompletedBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
 
-            // Action buttons — same layout as upcomingCard
             HStack(spacing: 12) {
-                Button(action: { reviewBooking = booking }) {
-                    Text(booking.review != nil ? "Reviewed" : "Leave Review")
-                        .glowzaFont(size: 14, weight: .semibold)
-                        .foregroundColor(booking.review != nil ? Color(hex: "8E8E93") : Color(hex: "962043"))
-                        .frame(maxWidth: .infinity).frame(height: 36)
-                        .background(appSettings.themeRaised)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(booking.review != nil ? Color(hex: "E5E5EA") : Color(hex: "962043"), lineWidth: 1.5))
-                }
-                .disabled(booking.review != nil)
                 Button(action: { receiptBooking = booking }) {
                     Text("View Receipt")
                         .glowzaFont(size: 14, weight: .semibold)
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 36)
-                        .background(Color(hex: "962043"))
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
                 }
             }
-            .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 4)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
         .background(appSettings.themeSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

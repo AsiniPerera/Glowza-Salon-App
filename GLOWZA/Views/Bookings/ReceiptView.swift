@@ -2,9 +2,6 @@ import SwiftUI
 import MapKit
 import PDFKit
 
-private let brand = Color(hex: "962043")
-
-// MARK: - Receipt View
 struct ReceiptView: View {
 
     let booking: Booking
@@ -12,6 +9,7 @@ struct ReceiptView: View {
 
     @Environment(\.openURL) private var openURL
     private var appSettings: AppSettings { AppSettings.shared }
+    private var brand: Color { appSettings.themeBrand }
     @State private var showShareSheet = false
     @State private var receiptFileURL: URL? = nil
 
@@ -27,20 +25,22 @@ struct ReceiptView: View {
 
                     detailCard
 
-                    VStack(spacing: 12) {
-                        HStack(spacing: 12) {
-                            squareActionButton(
+                    HStack(spacing: 14) {
+                        squareActionButton(
                             title: "Download Receipt",
                             icon: "arrow.down.doc.fill",
                             action: prepareReceiptFile
-                            )
+                        )
 
-                            squareActionButton(
+                        squareActionButton(
                             title: "Get Directions",
                             icon: "map.fill",
                             action: openDirections
-                            )
-                        }
+                        )
+                    }
+                    .padding(.horizontal, 2)
+
+                    VStack(spacing: 12) {
 
                         actionButton(
                             title: "Back to Home",
@@ -79,11 +79,11 @@ struct ReceiptView: View {
 
             Text("Booking Confirmed")
                 .glowzaFont(size: 30, weight: .bold, design: .rounded)
-                .foregroundColor(Color(hex: "1F2126"))
+                .foregroundColor(appSettings.themeText)
 
             Text("Your booking is confirmed")
                 .glowzaFont(size: 16, weight: .regular)
-                .foregroundColor(Color(hex: "8E8E93"))
+                .foregroundColor(appSettings.themeTextSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -94,10 +94,10 @@ struct ReceiptView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Booking Summary")
                         .glowzaFont(size: 18, weight: .semibold)
-                        .foregroundColor(Color(hex: "1F2126"))
+                        .foregroundColor(appSettings.themeText)
                     Text("Receipt #\(booking.receiptNumber)")
                         .glowzaFont(size: 13, weight: .semibold)
-                        .foregroundColor(Color(hex: "8E8E93"))
+                        .foregroundColor(appSettings.themeTextSecondary)
                 }
                 Spacer()
             }
@@ -112,24 +112,24 @@ struct ReceiptView: View {
             }
         }
         .padding(16)
-        .background(Color(hex: "F5F5F7"))
+        .background(appSettings.themeSurface)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color(hex: "E9E9EB"), lineWidth: 1)
+                .stroke(appSettings.themeBorder, lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
+        .shadow(color: Color.black.opacity(appSettings.isDarkMode ? 0.2 : 0.04), radius: 8, y: 3)
     }
 
     private func detailRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .glowzaFont(size: 14).foregroundColor(Color(hex: "8E8E93").opacity(0.7))
+                .glowzaFont(size: 14).foregroundColor(appSettings.themeTextSecondary.opacity(0.7))
                 .frame(width: 28)
-            Text(label).glowzaFont(size: 13).foregroundColor(Color(hex: "8E8E93"))
+            Text(label).glowzaFont(size: 13).foregroundColor(appSettings.themeTextSecondary)
             Spacer()
             Text(value)
-                .glowzaFont(size: 13, weight: .semibold).foregroundColor(Color(hex: "1F2126"))
+                .glowzaFont(size: 13, weight: .semibold).foregroundColor(appSettings.themeText)
         }
     }
 
@@ -153,19 +153,15 @@ struct ReceiptView: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .glowzaFont(size: 15, weight: .semibold)
+                    .glowzaFont(size: 14, weight: .semibold)
                 Text(title)
-                    .glowzaFont(size: 15, weight: .semibold)
+                    .glowzaFont(size: 13, weight: .bold)
             }
-            .foregroundColor(brand)
+            .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color(hex: "F5F5F7"))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(brand, lineWidth: 1.5)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(height: 52)
+            .background(brand.opacity(0.9))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 

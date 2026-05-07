@@ -109,8 +109,16 @@ struct AppUpdatesView: View {
             .navigationTitle("App Updates")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }.foregroundColor(accent)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(accent)
+                    }
+                    .fixedSize()
                 }
             }
         }
@@ -211,8 +219,16 @@ struct TermsConditionsView: View {
             .navigationTitle("Terms & Conditions")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }.foregroundColor(accent)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(accent)
+                    }
+                    .fixedSize()
                 }
             }
         }

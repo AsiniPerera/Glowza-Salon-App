@@ -71,7 +71,7 @@ struct SecondaryButton: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .stroke(hotPink, lineWidth: 1.5)
-                )
+                    )
         }
     }
 }
@@ -104,7 +104,7 @@ struct StandardSearchBar: View {
         .padding(.horizontal, 14)
         .frame(height: 46)
         .background(Color.glowzaCardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

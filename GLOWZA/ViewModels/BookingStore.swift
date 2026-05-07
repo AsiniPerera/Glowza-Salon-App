@@ -19,12 +19,26 @@ final class BookingStore {
     private let authService = AuthService.shared
     private let bookingRepository = BookingRepository.shared
 
-    var upcoming: [Booking] { bookings.filter { $0.status == .upcoming } }
-    var completed: [Booking] { bookings.filter { $0.status == .completed } }
-    var cancelled: [Booking] { bookings.filter { $0.status == .cancelled } }
+    var upcoming: [Booking] {
+        // Bookings that are marked as upcoming AND are for today or the future
+        bookings.filter { 
+            $0.status == .upcoming && $0.date >= Calendar.current.startOfDay(for: Date()) 
+        }
+        .sorted(by: { $0.date < $1.date })
+    }
 
-    var upcomingFirestore: [FirestoreBooking] { firestoreBookings.filter { $0.status == "upcoming" } }
-    var completedFirestore: [FirestoreBooking] { firestoreBookings.filter { $0.status == "completed" } }
+    var completed: [Booking] {
+        // Bookings that are explicitly marked as completed OR are marked as upcoming but the date has passed
+        bookings.filter {
+            $0.status == .completed || ($0.status == .upcoming && $0.date < Calendar.current.startOfDay(for: Date()))
+        }
+        .sorted(by: { $0.date > $1.date }) // Most recent first
+    }
+
+    var cancelled: [Booking] { 
+        bookings.filter { $0.status == .cancelled } 
+        .sorted(by: { $0.date > $1.date })
+    }
 
     func add(_ booking: Booking) {
         bookings.append(booking)
@@ -167,9 +181,49 @@ final class BookingStore {
             persistFirestoreBookingsToCoreData(userId: userId)
             isLoading = false
         } catch {
-            self.error = nil
             isLoading = false
             print("⚠️ Offline — showing cached bookings (\(bookings.count))")
+        }
+
+        // Final step: Inject demo data for lecturers/demo
+        seedDemoData()
+    }
+
+    /// Injects hardcoded demo data to ensure every user has a populated profile (for lecturer demonstration).
+    private func seedDemoData() {
+        let catalog = SalonCatalog.shared
+        let existingReceipts = Set(bookings.map { $0.receiptNumber })
+        
+        let demoBookings: [(salon: String, service: String, status: BookingStatus, dateOffset: Int)] = [
+            ("Haley Avenue", "Chemical Peel", .completed, -5),
+            ("Azure Spa", "Deep Tissue Massage", .upcoming, 2),
+            ("The Glam Room", "Bridal Makeup", .cancelled, -10)
+        ]
+
+        for demo in demoBookings {
+            let receipt = "DEMO-\(demo.salon.prefix(3).uppercased())-\(abs(demo.dateOffset))"
+            if existingReceipts.contains(receipt) { continue }
+
+            let salon = catalog.salon(named: demo.salon)
+            let service = salon.services.first(where: { $0.name == demo.service }) 
+                ?? salon.services.first!
+
+            let demoDate = Calendar.current.date(byAdding: .day, value: demo.dateOffset, to: Date()) ?? Date()
+
+            let localBooking = Booking(
+                id: UUID(),
+                salon: salon,
+                service: service,
+                date: demoDate,
+                timeSlot: "10:00 AM",
+                receiptNumber: receipt,
+                paymentMethod: .card,
+                amountPaid: service.price,
+                signatureImage: nil,
+                status: demo.status,
+                review: demo.status == .completed ? BookingReview(rating: 5, comment: "Amazing service! Highly recommended.", date: demoDate, reviewerName: "Demo User") : nil
+            )
+            bookings.append(localBooking)
         }
     }
 

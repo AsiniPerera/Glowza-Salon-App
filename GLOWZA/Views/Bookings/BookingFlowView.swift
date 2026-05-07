@@ -252,9 +252,8 @@ struct BookAppointmentView: View {
 
     private var serviceSelectionHeader: some View {
         Text("Select Date & Time")
-            .glowzaFont(size: 16, weight: .semibold)
-            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
-            .tracking(1.4)
+            .glowzaFont(size: 28, weight: .bold)
+            .foregroundColor(appSettings.themeText)
             .padding(.top, 6)
     }
 
@@ -405,7 +404,7 @@ struct BookAppointmentView: View {
     }
 
     private var timeSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("Available Times")
                 .glowzaFont(size: 15, weight: .regular)
                 .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))

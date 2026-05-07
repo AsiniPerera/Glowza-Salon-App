@@ -26,9 +26,16 @@ struct TreatmentTrackingView: View {
             .navigationTitle("Treatment History")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
                         .foregroundColor(brand)
+                    }
+                    .fixedSize()
                 }
             }
         }

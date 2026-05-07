@@ -61,8 +61,8 @@ struct PaymentView: View {
                     // MARK: Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Payment")
-                            .glowzaFont(size: 16, weight: .semibold)
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 28, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
                         Text("Select payment method")
                             .glowzaFont(size: 15)
                             .foregroundColor(Color(hex: "8E8E93"))
@@ -95,7 +95,7 @@ struct PaymentView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
                     .background(Color(hex: "F2F2F7"))
-                    .cornerRadius(14)
+                    .cornerRadius(25)
                     .padding(.horizontal, 24)
 
                     Spacer().frame(height: 28)
@@ -146,9 +146,9 @@ struct PaymentView: View {
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
                                 .background(draft.paymentMethod == .card ? Color.glowzaPrimary.opacity(0.06) : appSettings.themeSurface)
-                                .cornerRadius(14)
+                                .cornerRadius(25)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .stroke(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
                                                 lineWidth: draft.paymentMethod == .card ? 1.5 : 1)
                                 )
@@ -200,10 +200,10 @@ struct PaymentView: View {
                     Text(confirmButtonText)
                         .glowzaFont(size: 16, weight: .semibold)
                         .foregroundColor(.white)
+                        .frame(width: 330, height: 55)
+                        .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 }
-                .frame(width: 330, height: 55)
-                .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
-                .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 .disabled(!canConfirm)
                 .padding(.top, 16)
                 .padding(.bottom, 32)
@@ -252,9 +252,9 @@ struct PaymentView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
-            .cornerRadius(14)
+            .cornerRadius(25)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 25)
                     .stroke(isSelected ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
                             lineWidth: isSelected ? 1.5 : 1)
             )
@@ -379,8 +379,8 @@ struct CardEntryView: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Select Card")
-                                .glowzaFont(size: 34, weight: .bold)
-                                .foregroundColor(Color(hex: "1C1C1E"))
+                                .glowzaFont(size: 28, weight: .bold)
+                                .foregroundColor(appSettings.themeText)
                             Text("Choose how to pay LKR \(Int(total))")
                                 .glowzaFont(size: 15)
                                 .foregroundColor(Color(hex: "8E8E93"))
@@ -419,9 +419,9 @@ struct CardEntryView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
                             .background(appSettings.themeSurface)
-                            .cornerRadius(14)
+                            .cornerRadius(25)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 14)
+                                RoundedRectangle(cornerRadius: 25)
                                     .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
                             )
                         }
@@ -480,9 +480,9 @@ struct CardEntryView: View {
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
                             .background(Color(hex: "F9F9F9"))
-                            .cornerRadius(14)
+                            .cornerRadius(25)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 14)
+                                RoundedRectangle(cornerRadius: 25)
                                     .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
                             )
                         }
@@ -502,10 +502,10 @@ struct CardEntryView: View {
                         Text(selectedCardIndex != nil ? "Continue" : "Select a Card")
                             .glowzaFont(size: 16, weight: .semibold)
                             .foregroundColor(.white)
+                            .frame(width: 330, height: 55)
+                            .background(selectedCardIndex != nil ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                     }
-                    .frame(width: 330, height: 55)
-                    .background(selectedCardIndex != nil ? Color.glowzaPrimary : Color(hex: "D4829E"))
-                    .cornerRadius(14)
                     .disabled(selectedCardIndex == nil)
                     .padding(.top, 16)
                     .padding(.bottom, 32)
@@ -555,9 +555,9 @@ struct CardEntryView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
-            .cornerRadius(14)
+            .cornerRadius(25)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 25)
                     .stroke(isSelected ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
                             lineWidth: isSelected ? 1.5 : 1)
             )
@@ -615,8 +615,8 @@ struct AddCardFormView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Add Card")
-                            .glowzaFont(size: 34, weight: .bold)
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 28, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
                         Text("Enter your card details")
                             .glowzaFont(size: 15)
                             .foregroundColor(Color(hex: "8E8E93"))
@@ -769,7 +769,7 @@ struct AddCardFormView: View {
                 }
                 .frame(width: 330, height: 55)
                 .background(isFormValid ? Color.glowzaPrimary : Color(hex: "D4829E"))
-                .cornerRadius(14)
+                .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 .disabled(!isFormValid || isSaving)
                 .padding(.top, 16)
                 .padding(.bottom, 32)

@@ -4,23 +4,23 @@ import FirebaseAuth
 
 @main
 struct GLOWZAApp: App {
-    
+
     init() {
-        // Initialize Core Data first
+        // 1. Core Data
         _ = CoreDataStack.shared
-        print("Core Data stack initialized")
-        
-        // Then Firebase
+
+        // 2. Firebase
         FirebaseApp.configure()
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ZStack {
                 RootView()
                     .environment(TreatmentComparisonStore.shared)
                     .environment(AppSettings.shared)
-                
+                    .environment(AuthService.shared) // global auth state
+
                 // Notification overlay
                 NotificationContainer()
                     .zIndex(999)
@@ -37,133 +37,99 @@ private enum Screen {
 
 // MARK: - Root Navigation Controller
 struct RootView: View {
-    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @State private var screen: Screen = .splash
-    @State private var isAuthenticated = false
+    @Environment(AuthService.self) private var authService
     @Environment(AppSettings.self) private var settings
-    @State private var authService = AuthService.shared
-    /// Detects iOS system "Increase Contrast" accessibility setting (Accessibility → Display & Text Size)
     @Environment(\.colorSchemeContrast) private var systemContrast
 
     var body: some View {
         ZStack {
-            if isAuthenticated {
-                // User is signed in, show main app
+            switch screen {
+
+            // ── Splash: always goes to Landing — user must always login ─────
+            case .splash:
+                SplashView(onFinished: {
+                    withAnimation { screen = .landing }
+                })
+                .transition(.opacity)
+                .zIndex(5)
+
+            // ── Landing: Sign In / Create Account options ─────────────────────
+            case .landing:
+                LandingView(
+                    onLogin:  { withAnimation { screen = .login } },
+                    onCreate: { withAnimation { screen = .createAccount } },
+                    onGuest:  { withAnimation { screen = .main } }
+                )
+                .transition(.opacity)
+                .zIndex(4)
+
+            case .onboarding:
+                OnboardingView()
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing),
+                        removal:   .move(edge: .leading)
+                    ))
+                    .zIndex(4)
+
+            // ── Login: enter credentials → Firebase sign in ────────────────────
+            case .login:
+                SignInView(
+                    onSignIn:         { withAnimation { screen = .main } },
+                    onCreateAccount:  { withAnimation { screen = .createAccount } },
+                    onBack:           { withAnimation { screen = .landing } },
+                    onForgotPassword: { withAnimation { screen = .forgotPassword } }
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .zIndex(3)
+
+            // ── Create Account: register → then must login ────────────────────
+            case .createAccount:
+                CreateAccountView(
+                    onCreateAccount: { withAnimation { screen = .login } }, // → must login after registering
+                    onSignIn:        { withAnimation { screen = .login } },
+                    onBack:          { withAnimation { screen = .landing } }
+                )
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .zIndex(3)
+
+            case .forgotPassword:
+                ForgotPasswordView(onBack: { withAnimation { screen = .login } })
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                    .zIndex(3)
+
+            // ── Main Dashboard ─────────────────────────────────────────────────
+            case .main:
                 MainTabView()
                     .transition(.opacity)
                     .zIndex(2)
-            } else {
-                // User is not signed in, show auth screens
-                switch screen {
-
-                case .splash:
-                    SplashView(
-                        onFinished: { withAnimation { screen = .landing } }
-                    )
-                    .transition(.opacity)
-                    .zIndex(5)
-
-                case .landing:
-                    LandingView(
-                        onLogin:  { withAnimation { screen = .login } },
-                        onCreate: { withAnimation { screen = .createAccount } },
-                        onGuest:  { withAnimation { isAuthenticated = true } }
-                    )
-                    .transition(.opacity)
-                    .zIndex(4)
-
-                case .onboarding:
-                    OnboardingView()
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing),
-                            removal:   .move(edge: .leading)
-                        ))
-                        .zIndex(4)
-
-                case .login:
-                    SignInView(
-                        onSignIn:        { withAnimation { isAuthenticated = true } },
-                        onCreateAccount: { withAnimation { screen = .createAccount } },
-                        onForgotPassword: { withAnimation { screen = .forgotPassword } }
-                    )
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                    .zIndex(3)
-
-                case .createAccount:
-                    CreateAccountView(
-                        onCreateAccount: { withAnimation { isAuthenticated = true } },
-                        onSignIn: { withAnimation { screen = .login } },
-                        onBack: { withAnimation { screen = .landing } }
-                    )
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
-                    .zIndex(3)
-
-                case .forgotPassword:
-                    ForgotPasswordView(onBack: { withAnimation { screen = .login } })
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .zIndex(3)
-
-                case .main:
-                    MainTabView()
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                        .zIndex(1)
-                }
             }
         }
         .glowzaHighContrastStyle(enabled: settings.isHighContrast)
-
         .animation(.easeInOut(duration: 0.4), value: screen)
-        // Auto-enable HC when the user has "Increase Contrast" on in iOS Accessibility settings
         .onChange(of: systemContrast) { _, val in
             if val == .increased && !settings.isHighContrast {
                 settings.isHighContrast = true
             }
         }
-        .onChange(of: isAuthenticated) { _, newValue in
-            if newValue {
-                withAnimation { screen = .main }
-                Task { await FavouritesStore.shared.load() }
-            }
-        }
+        // Sign out notification → go back to login
         .onReceive(NotificationCenter.default.publisher(for: .glowzaSignOut)) { _ in
-            withAnimation {
-                isAuthenticated = false
-                screen = .login
-            }
+            withAnimation { screen = .login }
         }
         .onOpenURL { url in
             guard url.scheme?.lowercased() == "glowza" else { return }
-
             if url.host == "quick-book" {
-                let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-                let salonName = components?
-                    .queryItems?
-                    .first(where: { $0.name == "salon" })?
-                    .value?
-                    .removingPercentEncoding
-                    ?? "Haley Avenue"
-
-                if !isAuthenticated {
-                    withAnimation {
-                        isAuthenticated = true
-                        screen = .main
-                    }
-                }
-
+                let salonName = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                    .queryItems?.first(where: { $0.name == "salon" })?
+                    .value?.removingPercentEncoding ?? "Haley Avenue"
+                screen = .main
                 NotificationCenter.default.post(name: .glowzaGoToHomeTab, object: nil)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     NotificationCenter.default.post(name: .glowzaQuickBookRequested, object: salonName)
                 }
             } else if url.host == "bookings" {
                 let showUpcoming = url.path.lowercased().contains("upcoming")
-
-                if !isAuthenticated {
-                    withAnimation {
-                        isAuthenticated = true
-                        screen = .main
-                    }
-                }
-
+                screen = .main
                 NotificationCenter.default.post(name: .glowzaGoToBookingsTab, object: nil)
                 if showUpcoming {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

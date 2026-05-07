@@ -222,7 +222,7 @@ struct HomeView: View {
                     .font(.system(size: 13, weight: .regular, design: .rounded))
                     .foregroundColor(secondaryText)
                 Text(profileName.components(separatedBy: " ").first ?? profileName)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(primaryText)
             }
 
@@ -750,9 +750,13 @@ struct SalonMapView: View {
                 .navigationTitle("Salons Near You")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { dismiss() }
-                            .foregroundColor(brand)
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: { dismiss() }) {
+                            Text("Close")
+                                .font(.system(size: 16, weight: .semibold))
+                                .fixedSize()
+                                .foregroundColor(brand)
+                        }
                     }
                 }
         }

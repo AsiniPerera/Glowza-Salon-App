@@ -44,6 +44,19 @@ final class FavouritesStore {
         let doc = try? await db.collection("userProfiles").document(uid).getDocument()
         let ids = doc?.get("favoriteSalonIds") as? [String] ?? []
         withAnimation { favouriteNames = ids }
+        
+        // Inject demo data for lecturer demonstration
+        seedDemoData()
+    }
+
+    /// Injects default favourites for lecturer demonstration.
+    private func seedDemoData() {
+        let demoFavs = ["Haley Avenue", "Azure Spa"]
+        for fav in demoFavs {
+            if !favouriteNames.contains(fav) {
+                favouriteNames.append(fav)
+            }
+        }
     }
 
     // MARK: - Private

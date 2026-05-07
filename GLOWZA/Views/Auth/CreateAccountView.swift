@@ -14,6 +14,7 @@ struct CreateAccountView: View {
     @State private var showPassword = false
     @State private var showConfirm = false
     @State private var isLoading = false
+    @State private var authError: String? = nil
 
     @Environment(AppSettings.self) private var appSettings
     private var brand: Color { Color.glowzaPrimary }
@@ -92,6 +93,16 @@ struct CreateAccountView: View {
                 .disabled(!canCreate || isLoading)
                 .frame(maxWidth: .infinity)
 
+                if let err = authError {
+                    Text(err)
+                        .glowzaFont(size: 13)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity)
+                }
+
                 Spacer().frame(height: 28)
 
                 dividerRow
@@ -133,9 +144,25 @@ struct CreateAccountView: View {
     private func createAccount() {
         guard canCreate else { return }
         isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            isLoading = false
-            onCreateAccount?()
+        authError = nil
+        Task {
+            do {
+                try await AuthService.shared.signUp(
+                    fullName: username,
+                    email: email,
+                    phone: "",
+                    password: password
+                )
+                await MainActor.run {
+                    isLoading = false
+                    onCreateAccount?()
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    authError = error.localizedDescription
+                }
+            }
         }
     }
 

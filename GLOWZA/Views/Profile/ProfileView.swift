@@ -24,7 +24,8 @@ struct ProfileView: View {
 
     @State private var avatarData: Data?               = UserDefaults.standard.data(forKey: "profile_avatarData")
     @State private var selectedPhoto: PhotosPickerItem? = nil
-    @State private var displayName: String             = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini Perera"
+    @State private var displayName: String             = UserDefaults.standard.string(forKey: "profile_fullName") ?? ""
+    @State private var isSavingAvatar                  = false
 
     private var brand: Color { appSettings.themeBrand }
 
@@ -163,20 +164,16 @@ struct ProfileView: View {
             }
             .background(appSettings.themePage.ignoresSafeArea())
             .navigationBarHidden(true)
-            .photosPicker(isPresented: .constant(false), selection: $selectedPhoto, matching: .images)
-            .onChange(of: selectedPhoto) { _, item in
-                Task {
-                    if let data = try? await item?.loadTransferable(type: Data.self) {
-                        await MainActor.run {
-                            avatarData = data
-                            UserDefaults.standard.set(data, forKey: "profile_avatarData")
-                        }
-                    }
-                }
+            .onAppear { refreshProfileFromAuthService() }
+            .onReceive(NotificationCenter.default.publisher(for: .glowzaProfileUpdated)) { _ in
+                refreshProfileFromAuthService()
             }
         }
         .sheet(isPresented: $showFavourites)       { FavouriteSalonsView().environment(appSettings) }
-        .sheet(isPresented: $showEditProfile)      { EditProfileView(displayName: $displayName, avatarData: $avatarData) }
+        .sheet(isPresented: $showEditProfile)      {
+            EditProfileView(displayName: $displayName, avatarData: $avatarData)
+                .environment(appSettings)
+        }
         .sheet(isPresented: $showChangePassword)   { ChangePasswordView() }
         .sheet(isPresented: $showTreatmentHistory) { TreatmentTrackingView() }
         .sheet(isPresented: $showSecurity)         { SecurityPrivacyView() }
@@ -190,6 +187,37 @@ struct ProfileView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+    }
+
+    // MARK: - Load profile from AuthService (Firestore source of truth)
+    private func refreshProfileFromAuthService() {
+        let auth = AuthService.shared
+
+        // Name: AuthService → UserDefaults fallback
+        if let profile = auth.currentUserProfile {
+            displayName = profile.fullName
+            UserDefaults.standard.set(profile.fullName, forKey: "profile_fullName")
+        } else if let saved = UserDefaults.standard.string(forKey: "profile_fullName"), !saved.isEmpty {
+            displayName = saved
+        }
+
+        // Avatar: local cache first (fast), Firestore fetch in background
+        if let cached = UserDefaults.standard.data(forKey: "profile_avatarData") {
+            avatarData = cached
+        }
+
+        // Background fetch latest avatar from Firestore
+        Task {
+            if let uid = auth.currentUID {
+                let db = try? await FirestoreAvatarLoader.loadAvatar(uid: uid)
+                if let data = db {
+                    await MainActor.run {
+                        avatarData = data
+                        UserDefaults.standard.set(data, forKey: "profile_avatarData")
+                    }
+                }
+            }
         }
     }
 

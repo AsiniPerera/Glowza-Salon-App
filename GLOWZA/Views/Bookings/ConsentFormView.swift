@@ -50,7 +50,7 @@ struct ConsentFormView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     Text("Final Consent Form")
-                        .glowzaFont(size: 16, weight: .semibold)
+                        .glowzaFont(size: 28, weight: .bold)
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
                     signatureSection

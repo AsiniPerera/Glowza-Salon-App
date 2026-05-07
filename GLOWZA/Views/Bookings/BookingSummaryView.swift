@@ -44,7 +44,7 @@ struct BookingSummaryView: View {
                     // Title section
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Booking Summary")
-                            .glowzaFont(size: 34, weight: .bold)
+                            .glowzaFont(size: 28, weight: .bold)
                             .foregroundColor(appSettings.themeText)
                         Text("Review your appointment details before payment")
                             .glowzaFont(size: 17)

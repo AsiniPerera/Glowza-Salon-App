@@ -14,9 +14,10 @@ struct EditProfileView: View {
     @State private var phone: String   = ""
     @State private var dob: String     = ""
     @State private var skinType: String = ""
-    @State private var showPhotoPicker = false
+    @State private var showPhotoPicker  = false
     @State private var selectedPhoto: PhotosPickerItem? = nil
-    @State private var showSavedBanner = false
+    @State private var showSavedBanner  = false
+    @State private var isSavingAvatar   = false   // shows spinner while uploading avatar
     @State private var nameError: String? = nil
 
     private let skinTypes = ["Normal", "Oily", "Dry", "Combination", "Sensitive"]
@@ -72,21 +73,37 @@ struct EditProfileView: View {
                                         .foregroundColor(.white)
                                 }
                                 .offset(x: 4, y: 4)
+
+                                // Saving indicator while avatar uploads
+                                if isSavingAvatar {
+                                    ProgressView()
+                                        .tint(accent)
+                                        .frame(width: 20, height: 20)
+                                        .offset(x: 4, y: 4)
+                                }
                             }
                         }
                         .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhoto, matching: .images)
-                        .onChange(of: selectedPhoto) { item in
+                        .onChange(of: selectedPhoto) { _, item in
                             Task {
-                                if let raw = try? await item?.loadTransferable(type: Data.self),
-                                   let uiImage = UIImage(data: raw),
-                                   let compressed = uiImage.jpegData(compressionQuality: 0.5) {
-                                    await MainActor.run {
-                                        avatarData = compressed
-                                        UserDefaults.standard.set(compressed, forKey: "profile_avatarData")
+                                guard let item else { return }
+                                isSavingAvatar = true
+                                do {
+                                    if let raw = try await item.loadTransferable(type: Data.self),
+                                       let uiImage = UIImage(data: raw),
+                                       let compressed = uiImage.jpegData(compressionQuality: 0.7) {
+                                        await MainActor.run {
+                                            avatarData = compressed
+                                            UserDefaults.standard.set(compressed, forKey: "profile_avatarData")
+                                        }
+                                        try await AuthService.shared.updateProfileAvatarData(compressed)
+                                        NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
+                                        print("✅ Avatar saved to Firestore")
                                     }
-                                    try? await AuthService.shared.updateProfileAvatarData(compressed)
-                                    NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
+                                } catch {
+                                    print("❌ Avatar upload failed: \(error)")
                                 }
+                                await MainActor.run { isSavingAvatar = false }
                             }
                         }
                         .padding(.top, 8)
@@ -213,11 +230,18 @@ struct EditProfileView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.foregroundColor(accent)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(accent)
+                    }
+                    .fixedSize()
                 }
             }
         }
@@ -246,34 +270,55 @@ struct EditProfileView: View {
     }
 
     private func loadSaved() {
-        name     = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini Perera"
+        // Priority 1: live data from AuthService (populated from Firestore after login)
+        let auth = AuthService.shared
+        if let profile = auth.currentUserProfile {
+            name     = profile.fullName
+            email    = profile.email
+            phone    = profile.phone
+            skinType = profile.skinType.isEmpty ? "Normal" : profile.skinType
+            dob      = UserDefaults.standard.string(forKey: "profile_dob") ?? ""
+            return
+        }
+        // Priority 2: locally cached UserDefaults (fast offline fallback)
+        name     = UserDefaults.standard.string(forKey: "profile_fullName") ?? ""
         email    = UserDefaults.standard.string(forKey: "profile_email")    ?? ""
         phone    = UserDefaults.standard.string(forKey: "profile_phone")    ?? ""
         dob      = UserDefaults.standard.string(forKey: "profile_dob")      ?? ""
-        skinType = UserDefaults.standard.string(forKey: "profile_skinType") ?? "Combination"
+        skinType = UserDefaults.standard.string(forKey: "profile_skinType") ?? "Normal"
     }
 
     private func saveProfile() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { nameError = "Name cannot be empty"; return }
         nameError = nil
+
+        // 1. Save to UserDefaults immediately (offline-safe)
         UserDefaults.standard.set(trimmed,   forKey: "profile_fullName")
         UserDefaults.standard.set(email,     forKey: "profile_email")
         UserDefaults.standard.set(phone,     forKey: "profile_phone")
         UserDefaults.standard.set(dob,       forKey: "profile_dob")
         UserDefaults.standard.set(skinType,  forKey: "profile_skinType")
 
+        // 2. Update parent binding immediately so ProfileView name updates
+        displayName = trimmed
+
+        // 3. Save to Firestore `users` + `userProfiles` collections
         Task {
-            try? await AuthService.shared.updateUserProfile(
-                fullName: trimmed,
-                email: email,
-                phone: phone,
-                skinType: skinType,
-                dateOfBirth: dob
-            )
+            do {
+                try await AuthService.shared.updateUserProfile(
+                    fullName: trimmed,
+                    email: email,
+                    phone: phone,
+                    skinType: skinType,
+                    dateOfBirth: dob.isEmpty ? nil : dob
+                )
+                print("✅ Profile saved to Firestore")
+            } catch {
+                print("❌ Profile save failed: \(error)")
+            }
         }
 
-        displayName = trimmed
         NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
         withAnimation { showSavedBanner = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

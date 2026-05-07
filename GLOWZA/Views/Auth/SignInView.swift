@@ -15,6 +15,7 @@ struct SignInView: View {
     @State private var password = ""
     @State private var showPassword = false
     @State private var isLoading = false
+    @State private var emailAuthError: String? = nil
 
     @Environment(AppSettings.self) private var appSettings
     private var brand: Color { Color.glowzaPrimary }
@@ -96,6 +97,16 @@ struct SignInView: View {
                 }
                 .disabled(!canSignIn || isLoading)
                 .frame(maxWidth: .infinity)
+
+                if let err = emailAuthError {
+                    Text(err)
+                        .glowzaFont(size: 13)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity)
+                }
 
                 Spacer().frame(height: 16)
 
@@ -207,9 +218,20 @@ struct SignInView: View {
     private func signIn() {
         guard canSignIn else { return }
         isLoading = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            isLoading = false
-            onSignIn?()
+        emailAuthError = nil
+        Task {
+            do {
+                try await AuthService.shared.signIn(email: email, password: password)
+                await MainActor.run {
+                    isLoading = false
+                    onSignIn?()
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    emailAuthError = error.localizedDescription
+                }
+            }
         }
     }
 }

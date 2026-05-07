@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 // MARK: - Change Password View
 struct ChangePasswordView: View {
@@ -14,6 +15,7 @@ struct ChangePasswordView: View {
     @State private var showConfirm      = false
     @State private var errorMessage: String? = nil
     @State private var showSuccess      = false
+    @State private var isUpdating       = false   // true while Firebase call is in progress
 
     private var accent: Color { appSettings.themeBrand }
     private var dark: Color { appSettings.themeText }
@@ -22,7 +24,7 @@ struct ChangePasswordView: View {
 
     private var passwordsMatch: Bool   { newPassword == confirmPassword }
     private var newIsStrong: Bool      { newPassword.count >= 8 }
-    private var canSubmit: Bool        { !currentPassword.isEmpty && newIsStrong && passwordsMatch }
+    private var canSubmit: Bool        { !currentPassword.isEmpty && newIsStrong && passwordsMatch && !isUpdating }
 
     var body: some View {
         NavigationStack {
@@ -83,12 +85,18 @@ struct ChangePasswordView: View {
                 // Bottom button
                 VStack(spacing: 0) {
                     Button(action: submit) {
-                        Text("Update Password")
-                            .glowzaFont(size: 15, weight: .semibold)
-                            .foregroundColor(.white)
-                            .frame(width: 330, height: 55)
-                            .background(canSubmit ? accent : Color(hex: "D4829E"))
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        Group {
+                            if isUpdating {
+                                ProgressView().tint(.white)
+                            } else {
+                                Text("Update Password")
+                                    .glowzaFont(size: 15, weight: .semibold)
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .frame(width: 330, height: 55)
+                        .background(canSubmit ? accent : Color(hex: "D4829E"))
+                        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                     }
                     .disabled(!canSubmit)
                     .frame(maxWidth: .infinity)
@@ -99,8 +107,16 @@ struct ChangePasswordView: View {
             .navigationTitle("Change Password")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }.foregroundColor(accent)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Cancel")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(accent)
+                        .fixedSize()
+                    }
                 }
             }
             .alert("Password Updated", isPresented: $showSuccess) {
@@ -153,11 +169,55 @@ struct ChangePasswordView: View {
         }
     }
 
+    // MARK: - Firebase Auth Password Update
     private func submit() {
         guard canSubmit else { return }
-        // Simulate password update (integrate with real auth as needed)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            showSuccess = true
+        errorMessage = nil
+        isUpdating = true
+
+        Task {
+            do {
+                guard let user = Auth.auth().currentUser,
+                      let email = user.email else {
+                    await MainActor.run {
+                        errorMessage = "Could not find your account. Please sign in again."
+                        isUpdating = false
+                    }
+                    return
+                }
+
+                // Step 1: Re-authenticate with current password (required by Firebase)
+                let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
+                try await user.reauthenticate(with: credential)
+
+                // Step 2: Update to the new password
+                try await user.updatePassword(to: newPassword)
+
+                print("✅ Password updated in Firebase Auth")
+
+                await MainActor.run {
+                    isUpdating = false
+                    showSuccess = true
+                }
+
+            } catch let error as NSError {
+                await MainActor.run {
+                    isUpdating = false
+                    // Map Firebase error codes to friendly messages
+                    switch error.code {
+                    case AuthErrorCode.wrongPassword.rawValue:
+                        errorMessage = "Current password is incorrect."
+                    case AuthErrorCode.weakPassword.rawValue:
+                        errorMessage = "New password is too weak. Use at least 8 characters."
+                    case AuthErrorCode.requiresRecentLogin.rawValue:
+                        errorMessage = "Session expired. Please sign out and sign in again."
+                    case AuthErrorCode.networkError.rawValue:
+                        errorMessage = "No internet connection. Please try again."
+                    default:
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            }
         }
     }
 }
