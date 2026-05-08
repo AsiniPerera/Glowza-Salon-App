@@ -65,6 +65,8 @@ struct SalonDetailView: View {
             bookingDraft = BookingDraft(salon: salon)
         }
         .task {
+            await FavouritesStore.shared.load()
+            isFavourited = FavouritesStore.shared.favouriteNames.contains(salonName)
             await SalonFirestoreService.shared.seedMockReviews()
             await fetchFirestoreReviews()
         }
@@ -189,7 +191,12 @@ struct SalonDetailView: View {
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
-                Button(action: { isFavourited.toggle() }) {
+                Button(action: {
+                    isFavourited.toggle()
+                    Task {
+                        await FavouritesStore.shared.toggle(salonName)
+                    }
+                }) {
                     Image(systemName: isFavourited ? "heart.fill" : "heart")
                         .font(.system(size: 15))
                         .foregroundColor(isFavourited ? brand : Color(hex: "1A1A1A"))
@@ -454,13 +461,31 @@ struct SalonDetailView: View {
     }
 
     private func reviewRow(_ review: FirestoreSalonReview) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
+        let imageIndex: Int
+        if let idx = mockUsers.firstIndex(of: review.userName) {
+            imageIndex = idx + 1
+        } else {
+            imageIndex = abs(review.userName.hashValue) % 10 + 1
+        }
+        let imageName = "r\(imageIndex)"
+        
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 ZStack {
-                    Circle().fill(brand.opacity(0.12)).frame(width: 40, height: 40)
-                    Text(String(review.userName.prefix(1)))
-                        .glowzaFont(size: 16, weight: .bold)
-                        .foregroundColor(brand)
+                    
+                    if UIImage(named: imageName) != nil {
+                        Image(imageName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                    } else {
+                        Circle().fill(brand.opacity(0.12)).frame(width: 40, height: 40)
+                        Text(String(review.userName.prefix(1)))
+                            .glowzaFont(size: 16, weight: .bold)
+                            .foregroundColor(brand)
+                    }
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(review.userName)

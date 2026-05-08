@@ -88,66 +88,19 @@ struct SplashView: View {
 
     var body: some View {
         ZStack {
-            // ── Light pink-white gradient background ──────────────────────
-            LinearGradient(
-                colors: [Color(hex: "FFFFFF"), Color(hex: "FFF0F5"), Color(hex: "FFE4ED"), Color(hex: "FFF0F5"), Color(hex: "FFFFFF")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.white.ignoresSafeArea()
 
-            // ── Soft pink radial bloom ────────────────────────────────────
-            RadialGradient(
-                colors: [brand.opacity(0.12), pink.opacity(0.18), .clear],
-                center: .center, startRadius: 10, endRadius: 280
-            )
-            .frame(width: 600, height: 600)
-            .blur(radius: 20)
-
-            // ── Blush accent blob top-left ────────────────────────────────
-            Circle()
-                .fill(pink.opacity(0.30))
-                .frame(width: 280, height: 280)
-                .offset(x: -140, y: -320)
-                .blur(radius: 60)
-
-            // ── Blush accent blob bottom-right ────────────────────────────
-            Circle()
-                .fill(pink.opacity(0.22))
-                .frame(width: 220, height: 220)
-                .offset(x: 150, y: 320)
-                .blur(radius: 50)
-
-            // ── Floating particles ────────────────────────────────────────
-            ParticleField(brand: brand, pink: pink)
-                .opacity(particleOpacity)
-
-            // ── Expanding ripple rings ────────────────────────────────────
-            RippleRing(ringSize: 230, color: brand.opacity(0.50), scale: r1Scale, opacity: r1Opacity)
-            RippleRing(ringSize: 315, color: pink.opacity(0.70),  scale: r2Scale, opacity: r2Opacity)
-            RippleRing(ringSize: 400, color: brand.opacity(0.30), scale: r3Scale, opacity: r3Opacity)
 
             // ── Logo + brand text ─────────────────────────────────────────
             VStack(spacing: 28) {
                 ZStack {
-                    // Soft pink glow bloom behind logo
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [pink.opacity(0.55), pink.opacity(0.20), .clear],
-                                center: .center, startRadius: 10, endRadius: 105
-                            )
-                        )
-                        .frame(width: 210, height: 210)
-                        .blur(radius: 18)
-                        .scaleEffect(logoScale)
 
                     // Logo + shimmer scan (clipped together)
                     ZStack {
                         Image("logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 155, height: 155)
+                            .frame(width: 250, height: 250)
                             .opacity(logoOpacity)
 
                         LinearGradient(
@@ -155,12 +108,13 @@ struct SplashView: View {
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 65, height: 155)
+                        .frame(width: 80, height: 250)
                         .offset(x: shimmerX)
                         .blendMode(.overlay)
                         .opacity(logoOpacity)
                     }
-                    .frame(width: 155, height: 155)
+                    .frame(width: 250, height: 250)
+
                     .clipped()
                     .scaleEffect(logoScale)
                 }
@@ -248,24 +202,7 @@ struct LandingView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(hex: "FFFFFF"), Color(hex: "FFF0F5"), Color(hex: "FFE4ED"), Color(hex: "FFF0F5"), Color(hex: "FFFFFF")],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            // Soft pink blobs
-            Circle()
-                .fill(pink.opacity(0.15))
-                .frame(width: 320, height: 320)
-                .offset(x: -140, y: -260)
-                .blur(radius: 50)
-            Circle()
-                .fill(pink.opacity(0.10))
-                .frame(width: 220, height: 220)
-                .offset(x: 160, y: 250)
-                .blur(radius: 45)
+            Color.white.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()

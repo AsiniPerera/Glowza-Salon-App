@@ -7,7 +7,8 @@ private var brand: Color { Color.glowzaPrimary }
 struct FaceIDAuthView: View {
     @StateObject private var viewModel = AuthViewModel()
     @State private var isDetecting = false
-    @State private var showDetectionUI = false
+    @State private var showDetectionUI = true
+
     @State private var successAnimation = false
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
@@ -22,7 +23,8 @@ struct FaceIDAuthView: View {
         ZStack {
             pageBackground.ignoresSafeArea()
 
-            if showDetectionUI && viewModel.isAuthenticating {
+            if showDetectionUI {
+
                 // Creative Face ID Detection UI
                 detectionScreen
                     .transition(.opacity)
@@ -46,6 +48,10 @@ struct FaceIDAuthView: View {
                 }
             }
         }
+        .onAppear {
+            viewModel.authenticate()
+        }
+
     }
 
     private var initialScreen: some View {

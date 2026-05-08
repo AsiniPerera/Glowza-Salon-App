@@ -16,6 +16,8 @@ struct SignInView: View {
     @State private var showPassword = false
     @State private var isLoading = false
     @State private var emailAuthError: String? = nil
+    @State private var showFaceIDAuth = false
+
 
     @Environment(AppSettings.self) private var appSettings
     private var brand: Color { Color.glowzaPrimary }
@@ -117,7 +119,8 @@ struct SignInView: View {
                 Spacer().frame(height: 16)
 
                 // Face ID button
-                Button(action: { viewModel.authenticate() }) {
+                Button(action: { showFaceIDAuth = true }) {
+
                     HStack(spacing: 10) {
                         if viewModel.isAuthenticating {
                             ProgressView().tint(brand)
@@ -152,6 +155,15 @@ struct SignInView: View {
                         .frame(maxWidth: .infinity)
                 }
 
+                Spacer().frame(height: 20)
+
+                HStack(spacing: 12) {
+                    socialIcon(label: "f", labelColor: Color(hex: "1877F2"))
+                    socialIcon(label: "G", labelColor: Color(hex: "DB4437"))
+                    socialIcon(sfSymbol: "apple.logo", labelColor: Color.glowzaTextPrimary)
+                }
+                .padding(.horizontal, 24)
+
                 Spacer().frame(height: 36)
 
                 // Footer
@@ -173,7 +185,14 @@ struct SignInView: View {
         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
             if authenticated { onSignIn?() }
         }
+        .fullScreenCover(isPresented: $showFaceIDAuth) {
+            FaceIDAuthView(onAuthSuccess: {
+                showFaceIDAuth = false
+                onSignIn?()
+            })
+        }
     }
+
 
     // MARK: - Helpers
 
@@ -214,6 +233,28 @@ struct SignInView: View {
             Rectangle().fill(Color(hex: "E5E5EA")).frame(height: 1)
         }
     }
+
+    @ViewBuilder
+    private func socialIcon(label: String? = nil, sfSymbol: String? = nil, labelColor: Color) -> some View {
+        Button(action: {}) {
+            Group {
+                if let symbol = sfSymbol {
+                    Image(systemName: symbol)
+                        .glowzaFont(size: 20, weight: .medium)
+                        .foregroundColor(labelColor)
+                } else {
+                    Text(label ?? "")
+                        .glowzaFont(size: 20, weight: .bold)
+                        .foregroundColor(labelColor)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(Color(hex: "F2F2F7"))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
 
     private func signIn() {
         guard canSignIn else { return }

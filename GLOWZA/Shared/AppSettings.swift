@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 // MARK: - App Font Size
 
@@ -80,12 +81,26 @@ final class AppSettings {
 		didSet { UserDefaults.standard.set(fontSizeScale.rawValue, forKey: "app_fontSizeScale") }
 	}
 
+	var isVoiceOverEnabled: Bool {
+		didSet { UserDefaults.standard.set(isVoiceOverEnabled, forKey: "app_voiceOverEnabled") }
+	}
+
+	private let synthesizer = AVSpeechSynthesizer()
+
+	func speak(_ text: String) {
+		guard isVoiceOverEnabled else { return }
+		let utterance = AVSpeechUtterance(string: text)
+		utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+		synthesizer.speak(utterance)
+	}
+
 	/// Convenience: current scale factor for font sizing.
 	var fontMultiplier: CGFloat { fontSizeScale.fontMultiplier }
 
 	private init() {
 		isDarkMode      = UserDefaults.standard.bool(forKey: "app_darkMode")
 		isHighContrast  = UserDefaults.standard.bool(forKey: "app_highContrast")
+		isVoiceOverEnabled = UserDefaults.standard.bool(forKey: "app_voiceOverEnabled")
 		fontSizeScale   = GlowzaFontSize(rawValue: UserDefaults.standard.string(forKey: "app_fontSizeScale") ?? "") ?? .normal
 	}
 

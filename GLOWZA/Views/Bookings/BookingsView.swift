@@ -317,10 +317,10 @@ struct UpcomingBookingsView: View {
                 
                 Button(action: { cancelTarget = booking }) {
                     Text("Cancel")
-                        .glowzaFont(size: 11, weight: .semibold)
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "962043"))
-                        .padding(.horizontal, 10)
-                        .frame(height: 26)
+                        .padding(.horizontal, 24)
+                        .frame(height: 32)
                         .background(appSettings.themeRaised)
                         .clipShape(Capsule())
                         .overlay(
@@ -410,10 +410,10 @@ struct CompletedBookingsView: View {
 
                 Button(action: { onRebook(booking) }) {
                     Text("Rebook")
-                        .glowzaFont(size: 11, weight: .semibold)
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "962043"))
-                        .padding(.horizontal, 10)
-                        .frame(height: 26)
+                        .padding(.horizontal, 24)
+                        .frame(height: 32)
                         .background(appSettings.themeRaised)
                         .clipShape(Capsule())
                         .overlay(
@@ -501,10 +501,10 @@ struct CancelledBookingsView: View {
                 
                 Button(action: { onRebook(booking) }) {
                     Text("Rebook")
-                        .glowzaFont(size: 11, weight: .semibold)
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "962043"))
-                        .padding(.horizontal, 10)
-                        .frame(height: 26)
+                        .padding(.horizontal, 24)
+                        .frame(height: 32)
                         .background(appSettings.themeRaised)
                         .clipShape(Capsule())
                         .overlay(

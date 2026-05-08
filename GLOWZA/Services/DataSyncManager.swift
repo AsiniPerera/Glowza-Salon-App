@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import Network
+import FirebaseFirestore
 
 // MARK: - Offline-first Data Sync Manager
 // Core Data is the single local cache; Firestore is the remote source of truth.
@@ -29,6 +30,23 @@ final class DataSyncManager {
             }
         }
         monitor.start(queue: monitorQueue)
+        
+        // Populate default data if empty (Offline support)
+        populateDefaultDataIfEmpty()
+    }
+    
+    /// Populates Core Data with default salons from Catalog if empty.
+    func populateDefaultDataIfEmpty() {
+        do {
+            let existing = try salonRepository.fetchAllSalons()
+            if existing.isEmpty {
+                let defaultSalons = SalonCatalog.shared.salons
+                try salonRepository.upsertSalons(defaultSalons)
+                print("Core Data populated with default salons.")
+            }
+        } catch {
+            print("Failed to populate default data: \(error)")
+        }
     }
 
     // MARK: - Offline Bootstrap
@@ -102,7 +120,36 @@ final class DataSyncManager {
             }
         }
 
-        // 3. Cache static catalog salons to Core Data for offline access
+        // 3. Sync notifications from Firestore → Core Data
+        let notificationRepo = NotificationRepository.shared
+        do {
+            let db = Firestore.firestore()
+            let snapshot = try await db.collection("notifications")
+                .whereField("userId", isEqualTo: userId)
+                .order(by: "createdAt", descending: true)
+                .limit(to: 50)
+                .getDocuments()
+            
+            for doc in snapshot.documents {
+                let data = doc.data()
+                guard let title = data["title"] as? String,
+                      let subtitle = data["subtitle"] as? String else { continue }
+                let icon = data["icon"] as? String ?? "bell.fill"
+                let type = data["type"] as? String ?? "info"
+                
+                try? notificationRepo.saveNotificationToCore(
+                    title: title,
+                    subtitle: subtitle,
+                    icon: icon,
+                    type: type,
+                    userId: userId
+                )
+            }
+        } catch {
+            print("⚠️ Notification sync failed: \(error)")
+        }
+
+        // 4. Cache static catalog salons to Core Data for offline access
         try? salonRepository.upsertSalons(SalonCatalog.shared.salons)
     }
 

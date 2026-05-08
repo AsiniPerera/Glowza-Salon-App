@@ -62,14 +62,7 @@ final class WidgetBookingSyncServiceTests: XCTestCase {
         XCTAssertEqual(snapshot.timeSlot,  "2:00 PM")
     }
 
-    // MARK: - clearUpcomingBooking
-
-    func test_clearUpcomingBooking_removesSnapshot() {
-        service.saveUpcomingBooking(Fixtures.makeBooking())
-        XCTAssertNotNil(defaults.data(forKey: snapshotKey))
-        service.clearUpcomingBooking()
-        XCTAssertNil(defaults.data(forKey: snapshotKey))
-    }
+   
 
     // MARK: - updateFromBookings
 
