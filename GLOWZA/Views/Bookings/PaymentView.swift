@@ -7,6 +7,7 @@ struct PaymentView: View {
 
     @State private var showCardEntry = false
     @State private var selectedCardIndex: Int? = nil
+    private var appSettings: AppSettings { AppSettings.shared }
 
     private var service: SalonService { draft.service ?? draft.salon.services[0] }
     private var total: Double { service.price }
@@ -36,7 +37,7 @@ struct PaymentView: View {
 
     private var mainPaymentView: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            appSettings.themePage.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -48,7 +49,7 @@ struct PaymentView: View {
                                 .fill(Color(hex: "F2F2F7"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
+                                .glowzaFont(size: 14, weight: .semibold)
                                 .foregroundColor(Color(hex: "1C1C1E"))
                         }
                     }
@@ -60,10 +61,10 @@ struct PaymentView: View {
                     // MARK: Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Payment")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 28, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
                         Text("Select payment method")
-                            .font(.system(size: 15))
+                            .glowzaFont(size: 15)
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
                     .padding(.horizontal, 24)
@@ -74,27 +75,27 @@ struct PaymentView: View {
                     HStack(alignment: .center, spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("TOTAL DUE")
-                                .font(.system(size: 11, weight: .semibold))
+                                .glowzaFont(size: 11, weight: .semibold)
                                 .foregroundColor(Color(hex: "8E8E93"))
                                 .tracking(0.5)
                             Text("LKR \(Int(total))")
-                                .font(.system(size: 26, weight: .bold))
+                                .glowzaFont(size: 26, weight: .bold)
                                 .foregroundColor(.glowzaPrimary)
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 3) {
                             Text(service.name)
-                                .font(.system(size: 14, weight: .semibold))
+                                .glowzaFont(size: 14, weight: .semibold)
                                 .foregroundColor(Color(hex: "1C1C1E"))
                             Text(service.duration)
-                                .font(.system(size: 13))
+                                .glowzaFont(size: 13)
                                 .foregroundColor(Color(hex: "8E8E93"))
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 14)
                     .background(Color(hex: "F2F2F7"))
-                    .cornerRadius(14)
+                    .cornerRadius(25)
                     .padding(.horizontal, 24)
 
                     Spacer().frame(height: 28)
@@ -102,7 +103,7 @@ struct PaymentView: View {
                     // MARK: Payment method selection
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Payment Method")
-                            .font(.system(size: 11, weight: .semibold))
+                            .glowzaFont(size: 11, weight: .semibold)
                             .foregroundColor(Color(hex: "8E8E93"))
                             .tracking(0.5)
                             .padding(.horizontal, 24)
@@ -119,15 +120,15 @@ struct PaymentView: View {
                                             .fill(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
                                             .frame(width: 48, height: 48)
                                         Image(systemName: "creditcard.fill")
-                                            .font(.system(size: 20, weight: .semibold))
+                                            .glowzaFont(size: 20, weight: .semibold)
                                             .foregroundColor(draft.paymentMethod == .card ? .white : Color.glowzaPrimary)
                                     }
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text("Credit / Debit Card")
-                                            .font(.system(size: 15, weight: .semibold))
+                                            .glowzaFont(size: 15, weight: .semibold)
                                             .foregroundColor(Color(hex: "1C1C1E"))
                                         Text("Visa, Mastercard, AMEX")
-                                            .font(.system(size: 12))
+                                            .glowzaFont(size: 12)
                                             .foregroundColor(Color(hex: "8E8E93"))
                                     }
                                     Spacer()
@@ -144,10 +145,10 @@ struct PaymentView: View {
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
-                                .background(draft.paymentMethod == .card ? Color.glowzaPrimary.opacity(0.06) : Color.white)
-                                .cornerRadius(14)
+                                .background(draft.paymentMethod == .card ? Color.glowzaPrimary.opacity(0.06) : appSettings.themeSurface)
+                                .cornerRadius(25)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
+                                    RoundedRectangle(cornerRadius: 25)
                                         .stroke(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
                                                 lineWidth: draft.paymentMethod == .card ? 1.5 : 1)
                                 )
@@ -197,17 +198,17 @@ struct PaymentView: View {
                 Divider().opacity(0.5)
                 Button(action: confirmPayment) {
                     Text(confirmButtonText)
-                        .font(.system(size: 16, weight: .semibold))
+                        .glowzaFont(size: 16, weight: .semibold)
                         .foregroundColor(.white)
+                        .frame(width: 330, height: 55)
+                        .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 }
-                .frame(width: 330, height: 55)
-                .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
-                .cornerRadius(14)
                 .disabled(!canConfirm)
                 .padding(.top, 16)
                 .padding(.bottom, 32)
             }
-            .background(Color.white)
+            .background(appSettings.themeSurface)
         }
         .navigationBarHidden(true)
     }
@@ -222,16 +223,16 @@ struct PaymentView: View {
                         .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
                         .frame(width: 48, height: 48)
                     Image(systemName: method.icon)
-                        .font(.system(size: 20, weight: .semibold))
+                        .glowzaFont(size: 20, weight: .semibold)
                         .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(method.rawValue)
-                        .font(.system(size: 15, weight: .semibold))
+                        .glowzaFont(size: 15, weight: .semibold)
                         .foregroundColor(Color(hex: "1C1C1E"))
                     Text(methodSubtitle(method))
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "8E8E93"))
                 }
 
@@ -251,9 +252,9 @@ struct PaymentView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
-            .cornerRadius(14)
+            .cornerRadius(25)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 25)
                     .stroke(isSelected ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
                             lineWidth: isSelected ? 1.5 : 1)
             )
@@ -269,15 +270,15 @@ struct PaymentView: View {
                     .fill(color.opacity(0.12))
                     .frame(width: 36, height: 36)
                 Image(systemName: icon)
-                    .font(.system(size: 16, weight: .semibold))
+                    .glowzaFont(size: 16, weight: .semibold)
                     .foregroundColor(color)
             }
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .glowzaFont(size: 14, weight: .semibold)
                     .foregroundColor(Color(hex: "1C1C1E"))
                 Text(text)
-                    .font(.system(size: 13))
+                    .glowzaFont(size: 13)
                     .foregroundColor(Color(hex: "8E8E93"))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -333,7 +334,8 @@ struct CardEntryView: View {
     @Binding var selectedCardIndex: Int?
     let onBack: () -> Void
     let onContinue: () -> Void
-    
+
+    private var appSettings: AppSettings { AppSettings.shared }
     @State private var showAddCard = false
     @State private var savedCards: [(last4: String, brand: String)] = [
         (last4: "4242", brand: "Visa"),
@@ -344,7 +346,7 @@ struct CardEntryView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            appSettings.themePage.ignoresSafeArea()
             
             if showAddCard {
                 AddCardFormView(
@@ -366,7 +368,7 @@ struct CardEntryView: View {
                                     .fill(Color(hex: "F2F2F7"))
                                     .frame(width: 36, height: 36)
                                 Image(systemName: "chevron.left")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .glowzaFont(size: 14, weight: .semibold)
                                     .foregroundColor(Color(hex: "1C1C1E"))
                             }
                         }
@@ -377,10 +379,10 @@ struct CardEntryView: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Select Card")
-                                .font(.system(size: 34, weight: .bold))
-                                .foregroundColor(Color(hex: "1C1C1E"))
+                                .glowzaFont(size: 28, weight: .bold)
+                                .foregroundColor(appSettings.themeText)
                             Text("Choose how to pay LKR \(Int(total))")
-                                .font(.system(size: 15))
+                                .glowzaFont(size: 15)
                                 .foregroundColor(Color(hex: "8E8E93"))
                         }
                         .padding(.horizontal, 24)
@@ -395,31 +397,31 @@ struct CardEntryView: View {
                                         .fill(Color.black)
                                         .frame(width: 48, height: 48)
                                     Image(systemName: "apple.logo")
-                                        .font(.system(size: 20, weight: .semibold))
+                                        .glowzaFont(size: 20, weight: .semibold)
                                         .foregroundColor(.white)
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text("Apple Pay")
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .glowzaFont(size: 15, weight: .semibold)
                                         .foregroundColor(Color(hex: "1C1C1E"))
                                     Text("Fast and secure")
-                                        .font(.system(size: 12))
+                                        .glowzaFont(size: 12)
                                         .foregroundColor(Color(hex: "8E8E93"))
                                 }
                                 
                                 Spacer()
                                 
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .glowzaFont(size: 14, weight: .semibold)
                                     .foregroundColor(Color(hex: "C7C7CC"))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
-                            .background(Color.white)
-                            .cornerRadius(14)
+                            .background(appSettings.themeSurface)
+                            .cornerRadius(25)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 14)
+                                RoundedRectangle(cornerRadius: 25)
                                     .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
                             )
                         }
@@ -432,7 +434,7 @@ struct CardEntryView: View {
                         if !savedCards.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("SAVED CARDS")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .glowzaFont(size: 11, weight: .semibold)
                                     .foregroundColor(Color(hex: "8E8E93"))
                                     .tracking(0.5)
                                     .padding(.horizontal, 24)
@@ -456,31 +458,31 @@ struct CardEntryView: View {
                                         .fill(Color(hex: "F2F2F7"))
                                         .frame(width: 48, height: 48)
                                     Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 20, weight: .semibold))
+                                        .glowzaFont(size: 20, weight: .semibold)
                                         .foregroundColor(.glowzaPrimary)
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text("Add New Card")
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .glowzaFont(size: 15, weight: .semibold)
                                         .foregroundColor(Color(hex: "1C1C1E"))
                                     Text("Visa, Mastercard, AMEX")
-                                        .font(.system(size: 12))
+                                        .glowzaFont(size: 12)
                                         .foregroundColor(Color(hex: "8E8E93"))
                                 }
                                 
                                 Spacer()
                                 
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .glowzaFont(size: 14, weight: .semibold)
                                     .foregroundColor(Color(hex: "C7C7CC"))
                             }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 12)
                             .background(Color(hex: "F9F9F9"))
-                            .cornerRadius(14)
+                            .cornerRadius(25)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 14)
+                                RoundedRectangle(cornerRadius: 25)
                                     .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
                             )
                         }
@@ -498,17 +500,17 @@ struct CardEntryView: View {
                     Divider().opacity(0.5)
                     Button(action: onContinue) {
                         Text(selectedCardIndex != nil ? "Continue" : "Select a Card")
-                            .font(.system(size: 16, weight: .semibold))
+                            .glowzaFont(size: 16, weight: .semibold)
                             .foregroundColor(.white)
+                            .frame(width: 330, height: 55)
+                            .background(selectedCardIndex != nil ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                     }
-                    .frame(width: 330, height: 55)
-                    .background(selectedCardIndex != nil ? Color.glowzaPrimary : Color(hex: "D4829E"))
-                    .cornerRadius(14)
                     .disabled(selectedCardIndex == nil)
                     .padding(.top, 16)
                     .padding(.bottom, 32)
                 }
-                .background(Color.white)
+                .background(appSettings.themeSurface)
             }
         }
         .navigationBarHidden(true)
@@ -524,16 +526,16 @@ struct CardEntryView: View {
                         .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
                         .frame(width: 48, height: 48)
                     Image(systemName: "creditcard.fill")
-                        .font(.system(size: 20, weight: .semibold))
+                        .glowzaFont(size: 20, weight: .semibold)
                         .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(card.brand)
-                        .font(.system(size: 15, weight: .semibold))
+                        .glowzaFont(size: 15, weight: .semibold)
                         .foregroundColor(Color(hex: "1C1C1E"))
                     Text("•••• •••• •••• \(card.last4)")
-                        .font(.system(size: 13, design: .monospaced))
+                        .glowzaFont(size: 13, design: .monospaced)
                         .foregroundColor(Color(hex: "8E8E93"))
                 }
                 
@@ -553,9 +555,9 @@ struct CardEntryView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
-            .cornerRadius(14)
+            .cornerRadius(25)
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: 25)
                     .stroke(isSelected ? Color.glowzaPrimary : Color(hex: "E5E5EA"),
                             lineWidth: isSelected ? 1.5 : 1)
             )
@@ -570,7 +572,8 @@ struct AddCardFormView: View {
     @Binding var draft: BookingDraft
     @Binding var isShowing: Bool
     let onCardAdded: (String) -> Void
-    
+
+    private var appSettings: AppSettings { AppSettings.shared }
     @State private var cardNumber = ""
     @State private var cardHolder = ""
     @State private var expiryDate = ""
@@ -589,7 +592,7 @@ struct AddCardFormView: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.white.ignoresSafeArea()
+            appSettings.themePage.ignoresSafeArea()
             
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -601,7 +604,7 @@ struct AddCardFormView: View {
                                 .fill(Color(hex: "F2F2F7"))
                                 .frame(width: 36, height: 36)
                             Image(systemName: "chevron.left")
-                                .font(.system(size: 14, weight: .semibold))
+                                .glowzaFont(size: 14, weight: .semibold)
                                 .foregroundColor(Color(hex: "1C1C1E"))
                         }
                     }
@@ -612,10 +615,10 @@ struct AddCardFormView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Add Card")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 28, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
                         Text("Enter your card details")
-                            .font(.system(size: 15))
+                            .glowzaFont(size: 15)
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
                     .padding(.horizontal, 24)
@@ -624,17 +627,17 @@ struct AddCardFormView: View {
                     
                     VStack(alignment: .leading, spacing: 14) {
                         Text("CARD INFORMATION")
-                            .font(.system(size: 11, weight: .semibold))
+                            .glowzaFont(size: 11, weight: .semibold)
                             .foregroundColor(Color(hex: "8E8E93"))
                             .tracking(0.5)
                         
                         // Cardholder
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Cardholder Name")
-                                .font(.system(size: 13, weight: .medium))
+                                .glowzaFont(size: 13, weight: .medium)
                                 .foregroundColor(Color(hex: "8E8E93"))
                             TextField("As it appears on card", text: $cardHolder)
-                                .font(.system(size: 16))
+                                .glowzaFont(size: 16)
                                 .focused($focusedField, equals: .name)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 14)
@@ -649,19 +652,19 @@ struct AddCardFormView: View {
                         // Card number
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Card Number")
-                                .font(.system(size: 13, weight: .medium))
+                                .glowzaFont(size: 13, weight: .medium)
                                 .foregroundColor(Color(hex: "8E8E93"))
                             HStack {
                                 TextField("0000  0000  0000  0000", text: $cardNumber)
                                     .keyboardType(.numberPad)
-                                    .font(.system(size: 16, design: .monospaced))
+                                    .glowzaFont(size: 16, design: .monospaced)
                                     .focused($focusedField, equals: .number)
                                     .onChange(of: cardNumber) { val in
                                         cardNumber = String(val.filter { $0.isNumber }.prefix(16))
                                     }
                                 Spacer()
                                 Image(systemName: "creditcard")
-                                    .font(.system(size: 18))
+                                    .glowzaFont(size: 18)
                                     .foregroundColor(cardNumber.isEmpty ? Color(hex: "C7C7CC") : .glowzaPrimary)
                             }
                             .padding(.horizontal, 14)
@@ -678,11 +681,11 @@ struct AddCardFormView: View {
                         HStack(spacing: 14) {
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Expiry Date")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .glowzaFont(size: 13, weight: .medium)
                                     .foregroundColor(Color(hex: "8E8E93"))
                                 TextField("MM / YY", text: $expiryDate)
                                     .keyboardType(.numberPad)
-                                    .font(.system(size: 16, design: .monospaced))
+                                    .glowzaFont(size: 16, design: .monospaced)
                                     .focused($focusedField, equals: .expiry)
                                     .onChange(of: expiryDate) { val in
                                         let d = String(val.filter { $0.isNumber }.prefix(4))
@@ -704,19 +707,19 @@ struct AddCardFormView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("CVV")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .glowzaFont(size: 13, weight: .medium)
                                     .foregroundColor(Color(hex: "8E8E93"))
                                 HStack {
                                     TextField("CVV", text: $cvv)
                                         .keyboardType(.numberPad)
-                                        .font(.system(size: 16, design: .monospaced))
+                                        .glowzaFont(size: 16, design: .monospaced)
                                         .focused($focusedField, equals: .cvv)
                                         .onChange(of: cvv) { val in
                                             cvv = String(val.filter { $0.isNumber }.prefix(3))
                                         }
                                     Spacer()
                                     Image(systemName: "lock.fill")
-                                        .font(.system(size: 14))
+                                        .glowzaFont(size: 14)
                                         .foregroundColor(cvv.isEmpty ? Color(hex: "C7C7CC") : .glowzaPrimary)
                                 }
                                 .padding(.horizontal, 14)
@@ -733,10 +736,10 @@ struct AddCardFormView: View {
                         // Security
                         HStack(spacing: 8) {
                             Image(systemName: "lock.shield.fill")
-                                .font(.system(size: 13))
+                                .glowzaFont(size: 13)
                                 .foregroundColor(.glowzaPrimary)
                             Text("Your card details are encrypted")
-                                .font(.system(size: 12))
+                                .glowzaFont(size: 12)
                                 .foregroundColor(Color(hex: "8E8E93"))
                         }
                         .padding(.top, 4)
@@ -755,23 +758,23 @@ struct AddCardFormView: View {
                         HStack(spacing: 10) {
                             ProgressView().tint(.white)
                             Text("Saving…")
-                                .font(.system(size: 16, weight: .semibold))
+                                .glowzaFont(size: 16, weight: .semibold)
                                 .foregroundColor(.white)
                         }
                     } else {
                         Text("Save & Continue")
-                            .font(.system(size: 16, weight: .semibold))
+                            .glowzaFont(size: 16, weight: .semibold)
                             .foregroundColor(.white)
                     }
                 }
                 .frame(width: 330, height: 55)
                 .background(isFormValid ? Color.glowzaPrimary : Color(hex: "D4829E"))
-                .cornerRadius(14)
+                .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 .disabled(!isFormValid || isSaving)
                 .padding(.top, 16)
                 .padding(.bottom, 32)
             }
-            .background(Color.white)
+            .background(appSettings.themeSurface)
         }
         .navigationBarHidden(true)
     }

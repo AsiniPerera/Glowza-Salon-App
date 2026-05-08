@@ -1,6 +1,6 @@
 import SwiftUI
 
-private let brand = Color(hex: "962043")
+private var brand: Color { Color.glowzaPrimary }
 private let hotPink = Color(hex: "962043")
 
 // MARK: - Onboarding Data Model
@@ -20,7 +20,7 @@ struct OnboardingView: View {
     @State private var currentIndex = 0
     @Environment(AppSettings.self) private var appSettings
 
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
+    private var pageBackground: Color { appSettings.themePage }
 
     private let pages: [OnboardingPage] = [
         OnboardingPage(
@@ -97,8 +97,8 @@ struct OnboardingPageView: View {
     @State private var txtOpacity: CGFloat = 0
     @Environment(AppSettings.self) private var appSettings
 
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var heroBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var pageBackground: Color { appSettings.themePage }
+    private var heroBackground: Color { appSettings.themeSurface }
 
     var body: some View {
         ZStack {
@@ -128,13 +128,13 @@ struct OnboardingPageView: View {
                                 .frame(width: 80, height: 80)
                                 .shadow(color: brand.opacity(0.30), radius: 18, x: 0, y: 8)
                             Image(systemName: page.icon)
-                                .font(.system(size: 34, weight: .medium))
+                                .glowzaFont(size: 34, weight: .medium)
                                 .foregroundColor(.white)
                         }
 
                         // Badge
                         Label(page.badge, systemImage: "checkmark.seal.fill")
-                            .font(.system(size: 12, weight: .semibold))
+                            .glowzaFont(size: 12, weight: .semibold)
                             .foregroundColor(brand)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 7)
@@ -150,16 +150,16 @@ struct OnboardingPageView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(page.titleLine1)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                            .glowzaFont(size: 18, weight: .semibold)
+                            .foregroundColor(appSettings.themeText)
 
                         Text(page.titleLine2)
-                            .font(.system(size: 18, weight: .semibold))
+                            .glowzaFont(size: 18, weight: .semibold)
                             .foregroundColor(brand)
                     }
 
                     Text(page.subtitle)
-                        .font(.system(size: 15))
+                        .glowzaFont(size: 15)
                         .foregroundColor(Color(hex: "8E8E93"))
                         .lineSpacing(5)
                         .fixedSize(horizontal: false, vertical: true)
@@ -175,9 +175,9 @@ struct OnboardingPageView: View {
                 Button(action: onNext) {
                     HStack(spacing: 8) {
                         Text(isLast ? "Get Started" : "Continue")
-                            .font(.system(size: 15, weight: .semibold))
+                            .glowzaFont(size: 15, weight: .semibold)
                         Image(systemName: isLast ? "sparkles" : "arrow.right")
-                            .font(.system(size: 13, weight: .semibold))
+                            .glowzaFont(size: 13, weight: .semibold)
                     }
                     .foregroundColor(.white)
                     .frame(width: 330, height: 55)

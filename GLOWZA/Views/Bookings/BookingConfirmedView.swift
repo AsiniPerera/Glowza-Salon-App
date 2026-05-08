@@ -1,10 +1,10 @@
 import SwiftUI
 
-// MARK: - Booking Confirmed (full-screen success screen shown immediately after payment)
+// MARK: - Booking Confirmed (Thank you & Booking Summary screen)
 struct BookingConfirmedView: View {
 
     let booking: Booking
-    let onViewReceipt: () -> Void
+    let onProceedToReceipt: () -> Void
 
     @State private var checkScale: CGFloat = 0.3
     @State private var checkOpacity: Double = 0.0
@@ -15,16 +15,12 @@ struct BookingConfirmedView: View {
     @State private var contentOpacity: Double = 0.0
     @State private var contentOffset: CGFloat = 28
 
-    @Environment(AppSettings.self) private var appSettings
-
-    private let brand = Color(hex: "962043")
-    private let gold  = Color(hex: "C6A769")
-    private let teal  = Color(hex: "00A878")
+    private var brand: Color { Color.glowzaPrimary }
+    private let surfaceColor = Color(hex: "F9F9F9")
 
     var body: some View {
         ZStack {
-            (appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color(hex: "F9F9F9"))
-                .ignoresSafeArea()
+            surfaceColor.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()
@@ -32,28 +28,28 @@ struct BookingConfirmedView: View {
                 // ── Animated hero ──────────────────────────────────────
                 ZStack {
                     Circle()
-                        .stroke(teal.opacity(0.12), lineWidth: 1)
+                        .stroke(brand.opacity(0.12), lineWidth: 1)
                         .frame(width: 170, height: 170)
                         .scaleEffect(ring2Scale)
                         .opacity(ring2Opacity)
 
                     Circle()
-                        .stroke(teal.opacity(0.28), lineWidth: 1.8)
+                        .stroke(brand.opacity(0.28), lineWidth: 1.8)
                         .frame(width: 126, height: 126)
                         .scaleEffect(ring1Scale)
                         .opacity(ring1Opacity)
 
                     Circle()
-                        .fill(teal.opacity(0.10))
+                        .fill(brand.opacity(0.10))
                         .frame(width: 90, height: 90)
 
                     Circle()
-                        .stroke(teal, lineWidth: 2.5)
+                        .stroke(brand, lineWidth: 2.5)
                         .frame(width: 90, height: 90)
 
                     Image(systemName: "checkmark")
                         .font(.system(size: 38, weight: .bold))
-                        .foregroundColor(teal)
+                        .foregroundColor(brand)
                 }
                 .scaleEffect(checkScale)
                 .opacity(checkOpacity)
@@ -63,63 +59,52 @@ struct BookingConfirmedView: View {
                 // ── Title ──────────────────────────────────────────────
                 VStack(spacing: 8) {
                     Text("Thank You!")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(hex: "1F2126"))
                     Text("Your booking is confirmed")
-                        .font(.system(size: 15))
+                        .font(.system(size: 15, weight: .regular))
                         .foregroundColor(Color(hex: "8E8E93"))
                 }
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
 
-                Spacer().frame(height: 30)
+                Spacer().frame(height: 15)
+
+                Text("Receipt #\(booking.receiptNumber)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "8E8E93"))
+                    .opacity(contentOpacity)
+                    .offset(y: contentOffset)
+
+                Spacer().frame(height: 15)
 
                 // ── Details card ───────────────────────────────────────
                 VStack(spacing: 0) {
-                    detailRow(icon: "sparkles",       label: "Treatment",  value: booking.service.name,          color: brand)
+                    detailRow(icon: "sparkles", label: "Treatment", value: booking.service.name, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "building.2.fill", label: "Salon",      value: booking.salon.name,            color: brand)
+                    detailRow(icon: "building.2.fill", label: "Salon", value: booking.salon.name, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "calendar",        label: "Date",       value: formattedDate,                 color: brand)
+                    detailRow(icon: "calendar", label: "Date", value: formattedDate, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "clock.fill",      label: "Time",       value: booking.timeSlot,              color: brand)
+                    detailRow(icon: "clock.fill", label: "Time", value: booking.timeSlot, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "creditcard.fill", label: "Amount Paid",value: "LKR \(Int(booking.amountPaid))", color: teal)
+                    detailRow(icon: "creditcard.fill", label: "Amount Paid", value: "LKR \(Int(booking.amountPaid))", color: brand)
                 }
-                .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+                .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [gold.opacity(0.55), gold.opacity(0.18)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.2
-                        )
-                )
-                .shadow(color: Color.black.opacity(appSettings.isDarkMode ? 0.30 : 0.06),
-                        radius: 18, x: 0, y: 6)
+                .shadow(color: Color.black.opacity(0.06), radius: 18, x: 0, y: 6)
                 .padding(.horizontal, 24)
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
 
-                Spacer().frame(height: 14)
-
-                Text("Receipt #\(booking.receiptNumber)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "8E8E93"))
-                    .opacity(contentOpacity)
-
                 Spacer()
 
                 // ── View Receipt button ────────────────────────────────
-                Button(action: onViewReceipt) {
+                Button(action: onProceedToReceipt) {
                     HStack(spacing: 8) {
                         Image(systemName: "doc.text.fill")
                             .font(.system(size: 15, weight: .semibold))
-                        Text("View Receipt")
+                        Text("View Receipt & Download")
                             .font(.system(size: 17, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -139,25 +124,21 @@ struct BookingConfirmedView: View {
 
     // MARK: - Animation
     private func animateIn() {
-        // Checkmark springs in
         withAnimation(.spring(response: 0.52, dampingFraction: 0.65).delay(0.08)) {
-            checkScale   = 1.0
+            checkScale = 1.0
             checkOpacity = 1.0
         }
-        // Inner ring expands
         withAnimation(.easeOut(duration: 0.7).delay(0.28)) {
-            ring1Scale   = 1.0
+            ring1Scale = 1.0
             ring1Opacity = 1.0
         }
-        // Outer ring expands and fades out (pulse effect)
         withAnimation(.easeOut(duration: 0.95).delay(0.44)) {
-            ring2Scale   = 1.0
+            ring2Scale = 1.0
             ring2Opacity = 0.0
         }
-        // Content slides up
         withAnimation(.easeOut(duration: 0.48).delay(0.32)) {
             contentOpacity = 1.0
-            contentOffset  = 0
+            contentOffset = 0
         }
     }
 
@@ -179,7 +160,7 @@ struct BookingConfirmedView: View {
                     .tracking(0.3)
                 Text(value)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1C1C1E"))
+                    .foregroundColor(Color(hex: "1F2126"))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }

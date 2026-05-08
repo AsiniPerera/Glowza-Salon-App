@@ -34,13 +34,13 @@ struct ConsentFormView: View {
     @State private var canvasView = PKCanvasView()
     @State private var isAgreed = false
     @State private var hasSignature = false
-    @Environment(AppSettings.self) private var appSettings
+    private var appSettings: AppSettings { AppSettings.shared }
 
-    private let accent = Color(hex: "962043")
-    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color(hex: "EEEAE5") }
-    private var bottomBarBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var accent: Color { appSettings.themeBrand }
+    private var dark: Color { appSettings.themeText }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var bottomBarBackground: Color { appSettings.themeSurface }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -50,7 +50,7 @@ struct ConsentFormView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     Text("Final Consent Form")
-                        .font(.system(size: 16, weight: .semibold))
+                        .glowzaFont(size: 28, weight: .bold)
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
                     signatureSection
@@ -69,7 +69,7 @@ struct ConsentFormView: View {
         HStack {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
+                    .glowzaFont(size: 20, weight: .semibold)
                     .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "5F6168"))
             }
             Spacer()
@@ -81,15 +81,15 @@ struct ConsentFormView: View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Treatment Consent Form")
-                    .font(.system(size: 14, weight: .bold))
+                    .glowzaFont(size: 14, weight: .bold)
                     .foregroundColor(dark)
                     .tracking(3)
                 Text("REF: GZ-2024-089")
-                    .font(.system(size: 12, weight: .medium))
+                    .glowzaFont(size: 12, weight: .medium)
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "666A72"))
                     .tracking(1.6)
                 Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
-                    .font(.system(size: 14))
+                    .glowzaFont(size: 14)
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52"))
                     .lineSpacing(6)
             }
@@ -107,12 +107,12 @@ struct ConsentFormView: View {
                                 .fill(accent)
                                 .frame(width: 22, height: 22)
                             Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .bold))
+                                .glowzaFont(size: 12, weight: .bold)
                                 .foregroundColor(.white)
                         }
                     }
                     Text("I have read and agree to the treatment consent terms above, and confirm that this signature is my own.")
-                        .font(.system(size: 13))
+                        .glowzaFont(size: 13)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "4A4C52"))
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
@@ -124,13 +124,13 @@ struct ConsentFormView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text("Electronic Signature")
-                        .font(.system(size: 14, weight: .semibold))
+                        .glowzaFont(size: 14, weight: .semibold)
                         .foregroundColor(dark)
                         .tracking(2.2)
                     Spacer()
                     Button(action: { canvasView.drawing = PKDrawing() }) {
                         Text("CLEAR")
-                            .font(.system(size: 11))
+                            .glowzaFont(size: 11)
                             .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "777A81"))
                             .tracking(2)
                     }
@@ -145,7 +145,7 @@ struct ConsentFormView: View {
                     if !hasSignature {
                         VStack(spacing: 12) {
                             Text("Sign here (optional)")
-                                .font(.system(size: 20))
+                                .glowzaFont(size: 20)
                                 .foregroundColor(Color(hex: "D0D0D3"))
                                 .italic()
                             Rectangle()
@@ -177,7 +177,7 @@ struct ConsentFormView: View {
                     onConfirm()
                 }) {
                     Text("Next")
-                        .font(.system(size: 15, weight: .semibold))
+                        .glowzaFont(size: 15, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(width: 330, height: 55)
                         .background(accent)

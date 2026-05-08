@@ -69,12 +69,6 @@ struct AIBeautyResult {
 
 // MARK: - AI Beauty Engine
 
-/// ML-powered analysis pipeline:
-///  • Data      → loaded from BeautyDataStore JSON (no hardcoded instances)
-///  • NLP       → Apple NLTokenizer for tokenisation
-///  • Model     → SkinConcernClassifier.mlmodel  (local CoreML file, DictVectorizer + OvR-LR)
-///  • Fallback  → Apple NLEmbedding (word2vec cosine-similarity) if model not in bundle
-///  • Scoring   → CoreML class-probabilities (primary) or embedding similarity (fallback)
 final class AIBeautyEngine {
 
     static let shared = AIBeautyEngine()

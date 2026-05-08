@@ -79,6 +79,11 @@ final class DataSyncManager {
     // MARK: - Full Firestore → Core Data sync (use after sign-in on a new device)
     func syncFirestoreToCoreData(userId: String) async {
         let userName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Guest"
+
+        // 1. Push static salon catalog to Firestore (merge: true — safe to re-run)
+        await SalonFirestoreService.shared.uploadSalonCatalog()
+
+        // 2. Sync bookings from Firestore → Core Data
         if let fbBookings = try? await BookingService.shared.fetchUserBookings(userId: userId) {
             let existing = Set((try? bookingRepository.fetchBookingsFromCore(userId: userId))?.map { $0.receiptNumber } ?? [])
             for fb in fbBookings where !existing.contains(fb.bookingSummary.receiptNumber) {
@@ -96,7 +101,8 @@ final class DataSyncManager {
                 )
             }
         }
-        // Also cache static catalog salons
+
+        // 3. Cache static catalog salons to Core Data for offline access
         try? salonRepository.upsertSalons(SalonCatalog.shared.salons)
     }
 

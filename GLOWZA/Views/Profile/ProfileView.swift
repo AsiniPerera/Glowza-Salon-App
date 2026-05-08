@@ -4,38 +4,34 @@ import PhotosUI
 // MARK: - Profile View
 struct ProfileView: View {
 
-    // App-wide settings
     @Environment(AppSettings.self) private var appSettings
 
-    // Toggles
-    @State private var isFaceIDEnabled      = true
-    @State private var pushNotifications    = true
-    @State private var voiceOverSupport     = true
+    @State private var isFaceIDEnabled   = true
+    @State private var pushNotifications = true
+    @State private var voiceOverSupport  = true
 
-    // Sheet navigation
     @State private var showEditProfile      = false
     @State private var showChangePassword   = false
     @State private var showTreatmentHistory = false
     @State private var showSecurity         = false
     @State private var showAppUpdates       = false
     @State private var showTerms            = false
+    @State private var showFontSizeSettings = false
     @State private var showSignOutAlert     = false
+    @State private var showFavourites       = false
 
-    // Avatar / name
-    @State private var avatarData: Data?    = UserDefaults.standard.data(forKey: "profile_avatarData")
-    @State private var showPhotoPicker      = false
+    private var favourites: FavouritesStore { FavouritesStore.shared }
+
+    @State private var avatarData: Data?               = UserDefaults.standard.data(forKey: "profile_avatarData")
     @State private var selectedPhoto: PhotosPickerItem? = nil
-    @State private var displayName: String  = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini Perera"
+    @State private var displayName: String             = UserDefaults.standard.string(forKey: "profile_fullName") ?? ""
+    @State private var isSavingAvatar                  = false
 
-    private var brand: Color { appSettings.isHighContrast ? Color(hex: "FF66B2") : Color(hex: "962043") }
-    private var pageBackground: Color { appSettings.isHighContrast ? .black : .white }
-    private var primaryText: Color { appSettings.isHighContrast ? .white : Color(hex: "1C1C1E") }
-    private var secondaryText: Color { appSettings.isHighContrast ? .white.opacity(0.78) : Color(hex: "8E8E93") }
-    private var dividerColor: Color { appSettings.isHighContrast ? .white : Color(hex: "E5E5EA") }
+    private var brand: Color { appSettings.themeBrand }
 
     private var avatarImage: UIImage? {
-        guard let data = avatarData else { return nil }
-        return UIImage(data: data)
+        guard let d = avatarData else { return nil }
+        return UIImage(data: d)
     }
 
     private var initials: String {
@@ -45,63 +41,145 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    profileCard
+                VStack(alignment: .leading, spacing: 0) {
 
-                    sectionBlock(title: "Account Settings") {
-                        navRow(icon: "person",               label: "Edit Profile")       { showEditProfile      = true }
-                        navRow(icon: "lock",                 label: "Change Password")    { showChangePassword   = true }
-                        navRow(icon: "clock.arrow.circlepath", label: "Treatment History") { showTreatmentHistory = true }
+                    // MARK: Page title
+                    Text("Profile")
+                        .glowzaFont(size: 28, weight: .bold)
+                        .foregroundColor(appSettings.themeText)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 8)
+
+                    // MARK: Avatar card
+                    VStack(spacing: 14) {
+                        avatarView(size: 80)
+                        Text(displayName)
+                            .glowzaFont(size: 18, weight: .semibold)
+                            .foregroundColor(appSettings.themeText)
                     }
-                    sectionBlock(title: "Security & Privacy") {
-                        navRow(icon: "checkmark.shield",     label: "Security & Privacy") { showSecurity         = true }
-                        toggleRow(icon: "faceid",            label: "Face ID",             value: $isFaceIDEnabled)
-                    }
-                    sectionBlock(title: "Notifications") {
-                        toggleRow(icon: "bell",              label: "Push Notifications",  value: $pushNotifications)
-                    }
-                    sectionBlock(title: "Accessibility") {
-                        toggleRow(icon: "mic",               label: "VoiceOver Support",   value: $voiceOverSupport)
-                        toggleRow(icon: "eye",  label: "High Contrast Mode", value: Binding(get: { appSettings.isHighContrast }, set: { appSettings.isHighContrast = $0 }))
-                        toggleRow(icon: "moon", label: "Dark Mode",           value: Binding(get: { appSettings.isDarkMode },      set: { appSettings.isDarkMode = $0 }))
-                    }
-                    sectionBlock(title: "General") {
-                        navRow(icon: "gearshape",            label: "App Updates")        { showAppUpdates       = true }
-                        navRow(icon: "doc.text",             label: "Terms & Conditions") { showTerms            = true }
-                        navRow(
-                            icon: "rectangle.portrait.and.arrow.right",
-                            label: "Sign Out",
-                            foreground: .red,
-                            showChevron: false
-                        ) {
-                            showSignOutAlert = true
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+                    .background(appSettings.themeSurface)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .hcBorder(radius: 16)
+                    .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
+
+                    // MARK: Favourites
+                    sectionLabel("Favourites")
+                    profileCard {
+                        navButton(
+                            title: "Favourite Salons",
+                            icon: "heart.fill",
+                            color: .red
+                        ) { showFavourites = true }
+                        .overlay(alignment: .trailing) {
+                            if !favourites.favouriteNames.isEmpty {
+                                Text("\(favourites.favouriteNames.count)")
+                                    .glowzaFont(size: 12, weight: .bold)
+                                    .foregroundColor(.white)
+                                    .frame(minWidth: 20, minHeight: 20)
+                                    .padding(.horizontal, 6)
+                                    .background(Color.red)
+                                    .clipShape(Capsule())
+                                    .padding(.trailing, 36)
+                            }
                         }
                     }
 
-                    Spacer().frame(height: 32)
+                    // MARK: Account
+                    sectionLabel("Account")
+                    profileCard {
+                        navButton(title: "Edit Profile",      icon: "person.crop.circle.fill", color: brand)   { showEditProfile = true }
+                        cardDivider
+                        navButton(title: "Change Password",   icon: "lock.fill",               color: .purple) { showChangePassword = true }
+                        cardDivider
+                        navButton(title: "Treatment History", icon: "clock.arrow.circlepath",  color: .teal)   { showTreatmentHistory = true }
+                    }
+
+                    // MARK: Security
+                    sectionLabel("Security")
+                    profileCard {
+                        navButton(title: "Security & Privacy", icon: "checkmark.shield.fill", color: .green) { showSecurity = true }
+                        cardDivider
+                        toggleRow(title: "Face ID",
+                                  icon: "faceid",
+                                  color: Color(red: 0, green: 0.55, blue: 1),
+                                  isOn: $isFaceIDEnabled)
+                    }
+
+                    // MARK: Preferences
+                    sectionLabel("Preferences")
+                    profileCard {
+                        toggleRow(title: "Push Notifications", icon: "bell.badge.fill",        color: .red,    isOn: $pushNotifications)
+                        cardDivider
+                        toggleRow(title: "VoiceOver Support",  icon: "speaker.wave.2.fill",    color: .orange, isOn: $voiceOverSupport)
+                        cardDivider
+                        toggleRow(title: "High Contrast",      icon: "circle.lefthalf.filled", color: .pink,
+                                  isOn: Binding(get: { appSettings.isHighContrast },
+                                                set: { appSettings.isHighContrast = $0 }))
+                        cardDivider
+                        toggleRow(title: "Dark Mode",          icon: "moon.fill",              color: .indigo,
+                                  isOn: Binding(get: { appSettings.isDarkMode },
+                                                set: { appSettings.isDarkMode = $0 }))
+                        cardDivider
+                        fontSizeNavRow
+                    }
+
+                    // MARK: General
+                    sectionLabel("General")
+                    profileCard {
+                        navButton(title: "App Updates",        icon: "arrow.down.app.fill", color: .cyan)              { showAppUpdates = true }
+                        cardDivider
+                        navButton(title: "Terms & Conditions", icon: "doc.text.fill",       color: Color(.systemGray)) { showTerms = true }
+                    }
+
+                    // MARK: Sign Out
+                    Button(action: { showSignOutAlert = true }) {
+                        HStack(spacing: 12) {
+                            iconBadge(icon: "rectangle.portrait.and.arrow.right", color: .red)
+                            Text("Sign Out")
+                                .glowzaFont(size: 15, weight: .medium)
+                                .foregroundStyle(.red)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .glowzaFont(size: 12, weight: .semibold)
+                                .foregroundStyle(Color(.tertiaryLabel))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(appSettings.themeSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .hcBorder(radius: 16)
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer().frame(height: 40)
                 }
             }
-            .background(pageBackground.ignoresSafeArea())
+            .background(appSettings.themePage.ignoresSafeArea())
             .navigationBarHidden(true)
+            .onAppear { refreshProfileFromAuthService() }
+            .onReceive(NotificationCenter.default.publisher(for: .glowzaProfileUpdated)) { _ in
+                refreshProfileFromAuthService()
+            }
         }
-        .sheet(isPresented: $showEditProfile) {
+        .sheet(isPresented: $showFavourites)       { FavouriteSalonsView().environment(appSettings) }
+        .sheet(isPresented: $showEditProfile)      {
             EditProfileView(displayName: $displayName, avatarData: $avatarData)
+                .environment(appSettings)
         }
-        .sheet(isPresented: $showChangePassword) {
-            ChangePasswordView()
-        }
-        .sheet(isPresented: $showTreatmentHistory) {
-            TreatmentTrackingView()
-        }
-        .sheet(isPresented: $showSecurity) {
-            SecurityPrivacyView()
-        }
-        .sheet(isPresented: $showAppUpdates) {
-            AppUpdatesView()
-        }
-        .sheet(isPresented: $showTerms) {
-            TermsConditionsView()
-        }
+        .sheet(isPresented: $showChangePassword)   { ChangePasswordView() }
+        .sheet(isPresented: $showTreatmentHistory) { TreatmentTrackingView() }
+        .sheet(isPresented: $showSecurity)         { SecurityPrivacyView() }
+        .sheet(isPresented: $showAppUpdates)       { AppUpdatesView() }
+        .sheet(isPresented: $showTerms)            { TermsConditionsView() }
+        .sheet(isPresented: $showFontSizeSettings)  { FontSizeSettingsView().environment(appSettings).preferredColorScheme(appSettings.colorScheme) }
         .alert("Sign Out", isPresented: $showSignOutAlert) {
             Button("Sign Out", role: .destructive) {
                 NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
@@ -112,141 +190,156 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Profile Card
-    private var profileCard: some View {
-        VStack(spacing: 12) {
-            Text("Profile")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(primaryText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 24)
+    // MARK: - Load profile from AuthService (Firestore source of truth)
+    private func refreshProfileFromAuthService() {
+        let auth = AuthService.shared
 
-            Button(action: { showPhotoPicker = true }) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(brand, lineWidth: 3)
-                        .frame(width: 100, height: 100)
-                    if let ui = avatarImage {
-                        Image(uiImage: ui)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 94, height: 94)
-                            .clipShape(Circle())
-                    } else {
-                        Circle()
-                            .fill(appSettings.isHighContrast ? Color.black : Color(hex: "F2F2F7"))
-                            .frame(width: 94, height: 94)
-                        Text(initials)
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(brand)
+        // Name: AuthService → UserDefaults fallback
+        if let profile = auth.currentUserProfile {
+            displayName = profile.fullName
+            UserDefaults.standard.set(profile.fullName, forKey: "profile_fullName")
+        } else if let saved = UserDefaults.standard.string(forKey: "profile_fullName"), !saved.isEmpty {
+            displayName = saved
+        }
+
+        // Avatar: local cache first (fast), Firestore fetch in background
+        if let cached = UserDefaults.standard.data(forKey: "profile_avatarData") {
+            avatarData = cached
+        }
+
+        // Background fetch latest avatar from Firestore
+        Task {
+            if let uid = auth.currentUID {
+                let db = try? await FirestoreAvatarLoader.loadAvatar(uid: uid)
+                if let data = db {
+                    await MainActor.run {
+                        avatarData = data
+                        UserDefaults.standard.set(data, forKey: "profile_avatarData")
                     }
                 }
             }
-            .frame(maxWidth: .infinity)
-            .photosPicker(isPresented: $showPhotoPicker, selection: $selectedPhoto, matching: .images)
-            .onChange(of: selectedPhoto) { item in
-                Task {
-                    if let data = try? await item?.loadTransferable(type: Data.self) {
-                        await MainActor.run {
-                            avatarData = data
-                            UserDefaults.standard.set(data, forKey: "profile_avatarData")
-                        }
-                    }
-                }
-            }
-
-            Text(displayName)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(primaryText)
-                .padding(.bottom, 20)
-        }
-        .frame(maxWidth: .infinity)
-        .background(pageBackground)
-    }
-
-    // MARK: - Section Block
-    private func sectionBlock<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(secondaryText)
-                .textCase(.uppercase)
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 8)
-            VStack(spacing: 0) {
-                content()
-            }
-            .background(pageBackground)
         }
     }
 
-    // MARK: - Nav Row
-    private func navRow(
-        icon: String,
-        label: String,
-        foreground: Color = Color(hex: "1C1C1E"),
-        showChevron: Bool = true,
-        action: @escaping () -> Void
-    ) -> some View {
+    // MARK: - Card helpers
+
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .glowzaFont(size: 13, weight: .semibold)
+            .foregroundColor(appSettings.themeTextSecondary)
+            .textCase(.uppercase)
+            .tracking(0.5)
+            .padding(.horizontal, 28)
+            .padding(.top, 8)
+            .padding(.bottom, 6)
+    }
+
+    private func profileCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(appSettings.themeSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .hcBorder(radius: 16)
+        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 4)
+    }
+
+    private var cardDivider: some View {
+        Rectangle()
+            .fill(appSettings.themeDivider)
+            .frame(height: 0.5)
+            .padding(.leading, 58)
+    }
+
+    // MARK: - Row builders
+
+    private func navButton(title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(foreground == .red ? .red : secondaryText)
-                    .frame(width: 28)
-                Text(label)
-                    .font(.system(size: 16))
-                    .foregroundColor(foreground)
+            HStack(spacing: 12) {
+                iconBadge(icon: icon, color: color)
+                Text(title)
+                    .glowzaFont(size: 15, weight: .medium)
+                    .foregroundColor(appSettings.themeText)
                 Spacer()
-                if showChevron {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(secondaryText)
-                }
+                Image(systemName: "chevron.right")
+                    .glowzaFont(size: 12, weight: .semibold)
+                    .foregroundColor(appSettings.themeTextSecondary)
             }
-            .padding(.horizontal, 20)
-            .frame(height: 52)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
         .buttonStyle(.plain)
-        .overlay {
-            if appSettings.isHighContrast {
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .stroke(Color.white, lineWidth: 3)
-            }
+    }
+
+    private func toggleRow(title: String, icon: String, color: Color, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            iconBadge(icon: icon, color: color)
+            Toggle(title, isOn: isOn)
+                .glowzaFont(size: 15, weight: .medium)
+                .foregroundColor(appSettings.themeText)
+                .tint(brand)
         }
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(dividerColor).frame(height: appSettings.isHighContrast ? 1 : 0.5).padding(.leading, 62)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    private var fontSizeNavRow: some View {
+        Button(action: { showFontSizeSettings = true }) {
+            HStack(spacing: 12) {
+                iconBadge(icon: "textformat.size", color: Color(.sRGB, red: 88/255, green: 86/255, blue: 214/255))
+                Text("Font Size")
+                    .glowzaFont(size: 15, weight: .medium)
+                    .foregroundColor(appSettings.themeText)
+                Spacer()
+                Text(appSettings.fontSizeScale.label)
+                    .glowzaFont(size: 13, weight: .medium)
+                    .foregroundColor(appSettings.themeTextSecondary)
+                Image(systemName: "chevron.right")
+                    .glowzaFont(size: 12, weight: .semibold)
+                    .foregroundColor(appSettings.themeTextSecondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func avatarView(size: CGFloat) -> some View {
+        ZStack {
+            if let ui = avatarImage {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(brand.opacity(0.12))
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Text(initials)
+                            .glowzaFont(size: size * 0.34, weight: .bold)
+                            .foregroundStyle(brand)
+                    )
+            }
         }
     }
 
-    // MARK: - Toggle Row
-    private func toggleRow(icon: String, label: String, value: Binding<Bool>) -> some View {
-        HStack(spacing: 14) {
+    private func iconBadge(icon: String, color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(color)
+                .frame(width: 30, height: 30)
             Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(secondaryText)
-                .frame(width: 28)
-            Text(label)
-                .font(.system(size: 16))
-                .foregroundColor(primaryText)
-            Spacer()
-            Toggle("", isOn: value).tint(brand).labelsHidden()
-        }
-        .padding(.horizontal, 20)
-        .frame(height: 52)
-        .overlay {
-            if appSettings.isHighContrast {
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .stroke(Color.white, lineWidth: 3)
-            }
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(dividerColor).frame(height: appSettings.isHighContrast ? 1 : 0.5).padding(.leading, 62)
+                .glowzaFont(size: 14, weight: .semibold)
+                .foregroundStyle(.white)
         }
     }
 }
 
-#Preview { ProfileView() }
-
+#Preview {
+    ProfileView()
+        .environment(AppSettings.shared)
+}

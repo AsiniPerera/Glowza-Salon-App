@@ -1,99 +1,231 @@
 import SwiftUI
 
-// MARK: - Glowza Splash Screen (simplified, 3s)
+// MARK: - Splash helpers
+
+private struct RippleRing: View {
+    let ringSize: CGFloat
+    let color: Color
+    let scale: CGFloat
+    let opacity: CGFloat
+
+    var body: some View {
+        Circle()
+            .stroke(color, lineWidth: 1.2)
+            .frame(width: ringSize, height: ringSize)
+            .scaleEffect(scale)
+            .opacity(opacity)
+    }
+}
+
+private struct SParticle: Identifiable {
+    let id: Int; let x, y, size, drift: CGFloat; let isGold: Bool
+}
+
+private struct ParticleField: View {
+    let brand: Color; let pink: Color
+    @State private var drifting = false
+
+    private let pts: [SParticle] = [
+        .init(id:  0, x: -140, y: -320, size: 3, drift: -14, isGold: false),
+        .init(id:  1, x:   80, y: -350, size: 2, drift: -10, isGold: true ),
+        .init(id:  2, x: -170, y: -180, size: 4, drift: -16, isGold: false),
+        .init(id:  3, x:  160, y: -200, size: 3, drift: -12, isGold: true ),
+        .init(id:  4, x:  -90, y:  -80, size: 5, drift: -18, isGold: false),
+        .init(id:  5, x:  170, y:   20, size: 2, drift:  -9, isGold: true ),
+        .init(id:  6, x: -160, y:  100, size: 3, drift: -15, isGold: false),
+        .init(id:  7, x:  130, y:  160, size: 4, drift: -11, isGold: true ),
+        .init(id:  8, x:  -50, y:  220, size: 2, drift: -13, isGold: false),
+        .init(id:  9, x:  150, y:  280, size: 3, drift: -16, isGold: true ),
+        .init(id: 10, x: -120, y:  340, size: 5, drift: -10, isGold: false),
+        .init(id: 11, x:   60, y:  380, size: 2, drift: -14, isGold: true ),
+        .init(id: 12, x: -180, y:   50, size: 3, drift: -12, isGold: false),
+        .init(id: 13, x:   20, y: -250, size: 4, drift: -17, isGold: true ),
+        .init(id: 14, x:  -30, y:  120, size: 2, drift:  -9, isGold: false),
+        .init(id: 15, x:  110, y: -120, size: 3, drift: -15, isGold: true ),
+        .init(id: 16, x: -100, y: -280, size: 4, drift: -11, isGold: false),
+        .init(id: 17, x:  170, y:  -60, size: 2, drift: -13, isGold: true ),
+        .init(id: 18, x:  -60, y:  300, size: 5, drift: -16, isGold: false),
+        .init(id: 19, x:   90, y:  220, size: 3, drift: -10, isGold: true )
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(pts) { p in
+                Circle()
+                    .fill(p.isGold ? pink.opacity(0.65) : brand.opacity(0.28))
+                    .frame(width: p.size, height: p.size)
+                    .blur(radius: p.size * 0.4)
+                    .offset(x: p.x, y: p.y + (drifting ? p.drift : 0))
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true)) {
+                drifting = true
+            }
+        }
+    }
+}
+
+// MARK: - Glowza Splash Screen
+
 struct SplashView: View {
 
     var onFinished: (() -> Void)? = nil
 
-    @State private var logoScale: CGFloat = 0.75
-    @State private var logoOpacity: CGFloat = 0
-    @State private var titleOffset: CGFloat = 20
-    @State private var titleOpacity: CGFloat = 0
-    @State private var waveScale: CGFloat = 0.95
-    @State private var waveOpacity: CGFloat = 0.35
-
-    @Environment(AppSettings.self) private var appSettings
+    @State private var logoScale:       CGFloat = 0.3
+    @State private var logoOpacity:     CGFloat = 0
+    @State private var particleOpacity: CGFloat = 0
+    @State private var titleOpacity:    CGFloat = 0
+    @State private var titleOffset:     CGFloat = 24
+    @State private var subtitleOpacity: CGFloat = 0
+    @State private var shimmerX:        CGFloat = -240
+    @State private var r1Scale:  CGFloat = 0.25; @State private var r1Opacity: CGFloat = 0.85
+    @State private var r2Scale:  CGFloat = 0.25; @State private var r2Opacity: CGFloat = 0.78
+    @State private var r3Scale:  CGFloat = 0.25; @State private var r3Opacity: CGFloat = 0.68
 
     private let brand = Color(hex: "962043")
-    private var bg: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color(hex: "FAFAFA") }
+    private let pink  = Color(hex: "F4A0BB")
 
     var body: some View {
         ZStack {
-            bg.ignoresSafeArea()
+            // ── Light pink-white gradient background ──────────────────────
+            LinearGradient(
+                colors: [Color(hex: "FFFFFF"), Color(hex: "FFF0F5"), Color(hex: "FFE4ED"), Color(hex: "FFF0F5"), Color(hex: "FFFFFF")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-            // Ambient background glow
+            // ── Soft pink radial bloom ────────────────────────────────────
+            RadialGradient(
+                colors: [brand.opacity(0.12), pink.opacity(0.18), .clear],
+                center: .center, startRadius: 10, endRadius: 280
+            )
+            .frame(width: 600, height: 600)
+            .blur(radius: 20)
+
+            // ── Blush accent blob top-left ────────────────────────────────
             Circle()
-                .fill(brand.opacity(0.1))
-                .frame(width: 420, height: 420)
-                .offset(x: -120, y: -270)
-                .blur(radius: 70)
-            Circle()
-                .fill(brand.opacity(0.08))
-                .frame(width: 320, height: 320)
-                .offset(x: 160, y: 280)
+                .fill(pink.opacity(0.30))
+                .frame(width: 280, height: 280)
+                .offset(x: -140, y: -320)
                 .blur(radius: 60)
 
-            // Centered splash content
-            VStack(spacing: 16) {
+            // ── Blush accent blob bottom-right ────────────────────────────
+            Circle()
+                .fill(pink.opacity(0.22))
+                .frame(width: 220, height: 220)
+                .offset(x: 150, y: 320)
+                .blur(radius: 50)
+
+            // ── Floating particles ────────────────────────────────────────
+            ParticleField(brand: brand, pink: pink)
+                .opacity(particleOpacity)
+
+            // ── Expanding ripple rings ────────────────────────────────────
+            RippleRing(ringSize: 230, color: brand.opacity(0.50), scale: r1Scale, opacity: r1Opacity)
+            RippleRing(ringSize: 315, color: pink.opacity(0.70),  scale: r2Scale, opacity: r2Opacity)
+            RippleRing(ringSize: 400, color: brand.opacity(0.30), scale: r3Scale, opacity: r3Opacity)
+
+            // ── Logo + brand text ─────────────────────────────────────────
+            VStack(spacing: 28) {
                 ZStack {
+                    // Soft pink glow bloom behind logo
                     Circle()
-                        .stroke(brand.opacity(0.2), lineWidth: 1.2)
-                        .frame(width: 170, height: 170)
-                        .scaleEffect(waveScale)
-                        .opacity(waveOpacity)
-
-                    Circle()
-                        .stroke(brand.opacity(0.12), lineWidth: 1)
+                        .fill(
+                            RadialGradient(
+                                colors: [pink.opacity(0.55), pink.opacity(0.20), .clear],
+                                center: .center, startRadius: 10, endRadius: 105
+                            )
+                        )
                         .frame(width: 210, height: 210)
-                        .scaleEffect(waveScale * 1.04)
-                        .opacity(waveOpacity * 0.8)
-
-                    Image("logo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 190, height: 190)
+                        .blur(radius: 18)
                         .scaleEffect(logoScale)
+
+                    // Logo + shimmer scan (clipped together)
+                    ZStack {
+                        Image("logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 155, height: 155)
+                            .opacity(logoOpacity)
+
+                        LinearGradient(
+                            colors: [.clear, .white.opacity(0.55), .clear],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: 65, height: 155)
+                        .offset(x: shimmerX)
+                        .blendMode(.overlay)
                         .opacity(logoOpacity)
+                    }
+                    .frame(width: 155, height: 155)
+                    .clipped()
+                    .scaleEffect(logoScale)
                 }
 
-                VStack(spacing: 6) {
+                // Brand name + decorative line + tagline
+                VStack(spacing: 12) {
                     Text("GLOWZA")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(brand)
-                        .tracking(5)
+                        .glowzaFont(size: 40, weight: .bold)
+                        .tracking(9)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [brand, Color(hex: "D63063"), brand],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.clear, pink.opacity(0.80), .clear],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(height: 1)
+                        .padding(.horizontal, 30)
+                        .opacity(subtitleOpacity)
+
                     Text("Premium Salon Experience")
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(Color(hex: "9A9A9F"))
+                        .glowzaFont(size: 13, weight: .light)
+                        .tracking(3.5)
+                        .foregroundColor(brand.opacity(0.50))
+                        .opacity(subtitleOpacity)
                 }
-                .multilineTextAlignment(.center)
                 .offset(y: titleOffset)
                 .opacity(titleOpacity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
         .onAppear { startAnimations() }
     }
 
     private func startAnimations() {
-        withAnimation(.easeOut(duration: 0.8)) {
-            logoScale = 1.0
-            logoOpacity = 1
-        }
+        // Ripple rings expand outward and fade to 0
+        withAnimation(.easeOut(duration: 1.5).delay(0.05)) { r1Scale = 1.45; r1Opacity = 0 }
+        withAnimation(.easeOut(duration: 1.8).delay(0.30)) { r2Scale = 1.45; r2Opacity = 0 }
+        withAnimation(.easeOut(duration: 2.1).delay(0.55)) { r3Scale = 1.45; r3Opacity = 0 }
 
-        withAnimation(.easeOut(duration: 0.7).delay(0.2)) {
-            titleOpacity = 1
-            titleOffset = 0
-        }
+        // Particles fade in
+        withAnimation(.easeIn(duration: 1.2).delay(0.4)) { particleOpacity = 1 }
 
-        withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
-            waveScale = 1.05
-            waveOpacity = 0.0
-        }
+        // Logo springs in with a bounce
+        withAnimation(.spring(response: 0.65, dampingFraction: 0.60).delay(0.28)) { logoScale = 1.0 }
+        withAnimation(.easeOut(duration: 0.45).delay(0.28)) { logoOpacity = 1 }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            withAnimation(.easeInOut(duration: 0.5)) {
-                onFinished?()
-            }
+        // Brand text slides up
+        withAnimation(.easeOut(duration: 0.55).delay(0.75)) { titleOpacity = 1; titleOffset = 0 }
+        withAnimation(.easeOut(duration: 0.50).delay(1.05)) { subtitleOpacity = 1 }
+
+        // Shimmer scan across logo
+        withAnimation(.easeInOut(duration: 0.75).delay(1.35)) { shimmerX = 240 }
+
+        // Dismiss at 3.3 s
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.3) {
+            onFinished?()
         }
     }
 }
@@ -110,21 +242,27 @@ struct LandingView: View {
     @Environment(AppSettings.self) private var appSettings
 
     private let brand = Color(hex: "962043")
-    private var bg: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color(hex: "FAFAFA") }
-    private var secondaryBg: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : brand.opacity(0.08) }
+    private let pink  = Color(hex: "F4A0BB")
+    private var bg: Color { Color(hex: "FFFFFF") }
+    private var secondaryBg: Color { pink.opacity(0.15) }
 
     var body: some View {
         ZStack {
-            bg.ignoresSafeArea()
+            LinearGradient(
+                colors: [Color(hex: "FFFFFF"), Color(hex: "FFF0F5"), Color(hex: "FFE4ED"), Color(hex: "FFF0F5"), Color(hex: "FFFFFF")],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-            // Soft background blobs
+            // Soft pink blobs
             Circle()
-                .fill(brand.opacity(0.06))
+                .fill(pink.opacity(0.15))
                 .frame(width: 320, height: 320)
                 .offset(x: -140, y: -260)
-                .blur(radius: 55)
+                .blur(radius: 50)
             Circle()
-                .fill(brand.opacity(0.04))
+                .fill(pink.opacity(0.10))
                 .frame(width: 220, height: 220)
                 .offset(x: 160, y: 250)
                 .blur(radius: 45)
@@ -142,12 +280,18 @@ struct LandingView: View {
 
                     VStack(spacing: 8) {
                         Text("GLOWZA")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundColor(brand)
+                            .glowzaFont(size: 34, weight: .bold)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [brand, Color(hex: "D63063"), brand],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                             .tracking(6)
                         Text("Your beauty, simplified.")
-                            .font(.system(size: 15, weight: .regular))
-                            .foregroundColor(Color(hex: "9A9A9F"))
+                            .glowzaFont(size: 15, weight: .regular)
+                            .foregroundColor(brand.opacity(0.45))
                     }
                     .multilineTextAlignment(.center)
                 }
@@ -160,7 +304,7 @@ struct LandingView: View {
                 VStack(spacing: 14) {
                     Button(action: { onLogin?() }) {
                         Text("Sign In")
-                            .font(.system(size: 17, weight: .semibold))
+                            .glowzaFont(size: 17, weight: .semibold)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 55)
@@ -170,7 +314,7 @@ struct LandingView: View {
 
                     Button(action: { onCreate?() }) {
                         Text("Create Account")
-                            .font(.system(size: 17, weight: .semibold))
+                            .glowzaFont(size: 17, weight: .semibold)
                             .foregroundColor(brand)
                             .frame(maxWidth: .infinity)
                             .frame(height: 55)
@@ -178,14 +322,14 @@ struct LandingView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(brand.opacity(0.3), lineWidth: 1)
+                                    .stroke(pink.opacity(0.35), lineWidth: 1)
                             )
                     }
 
                     Button(action: { onGuest?() }) {
                         Text("Continue as Guest")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "9A9A9F"))
+                            .glowzaFont(size: 14, weight: .regular)
+                            .foregroundColor(brand.opacity(0.50))
                     }
                     .padding(.top, 2)
                 }

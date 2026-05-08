@@ -8,15 +8,15 @@ struct ContentView: View {
 
             VStack(spacing: 16) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 60))
+                    .glowzaFont(size: 60)
                     .foregroundColor(Color(red: 0.898, green: 0.651, blue: 0.122))
 
                 Text("Glowza")
-                    .font(.system(size: 36, weight: .bold))
+                    .glowzaFont(size: 36, weight: .bold)
                     .foregroundColor(.black)
 
                 Text("Premium Salon Experience")
-                    .font(.system(size: 16))
+                    .glowzaFont(size: 16)
                     .foregroundColor(.gray)
             }
         }

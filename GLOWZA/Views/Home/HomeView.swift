@@ -212,17 +212,17 @@ struct HomeView: View {
                         .fill(Color(hex: "9FD8CE"))
                         .frame(width: 44, height: 44)
                     Text(String(profileName.prefix(1)).uppercased())
-                        .font(.system(size: 19, weight: .bold, design: .rounded))
+                        .glowzaFont(size: 19, weight: .bold, design: .rounded)
                         .foregroundColor(Color(hex: "2E6158"))
                 }
             }
 
             VStack(alignment: .leading, spacing: 1) {
                 Text("Welocme,")
-                    .font(.system(size: 13, weight: .regular, design: .rounded))
+                    .glowzaFont(size: 13, weight: .regular, design: .rounded)
                     .foregroundColor(secondaryText)
                 Text(profileName.components(separatedBy: " ").first ?? profileName)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .glowzaFont(size: 14, weight: .bold, design: .rounded)
                     .foregroundColor(primaryText)
             }
 
@@ -237,7 +237,7 @@ struct HomeView: View {
                     .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
                     .overlay {
                         Image(systemName: "bell.fill")
-                            .font(.system(size: 16, weight: .medium))
+                            .glowzaFont(size: 16, weight: .medium)
                             .foregroundColor(brand)
                     }
             }
@@ -247,10 +247,10 @@ struct HomeView: View {
     private var searchBar: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 16, weight: .medium))
+                .glowzaFont(size: 16, weight: .medium)
                 .foregroundColor(secondaryText)
             TextField("Search salons or city ...", text: $searchText)
-                .font(.system(size: 15, weight: .regular))
+                .glowzaFont(size: 15, weight: .regular)
                 .foregroundColor(primaryText)
                 .autocorrectionDisabled()
         }
@@ -266,10 +266,10 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 11, weight: .semibold))
+                    .glowzaFont(size: 11, weight: .semibold)
                     .foregroundColor(Color.white.opacity(0.9))
                 Text("First Visit Offer")
-                    .font(.system(size: 12, weight: .semibold))
+                    .glowzaFont(size: 12, weight: .semibold)
                     .foregroundColor(Color.white.opacity(0.9))
             }
             .padding(.horizontal, 10)
@@ -278,20 +278,20 @@ struct HomeView: View {
             .clipShape(Capsule())
 
             Text("20% off your")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .glowzaFont(size: 20, weight: .bold, design: .rounded)
                 .foregroundColor(.white)
             Text("first treatment")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .glowzaFont(size: 20, weight: .bold, design: .rounded)
                 .foregroundColor(.white)
                 .padding(.top, -4)
 
             Text("Book now & glow up")
-                .font(.system(size: 12, weight: .regular))
+                .glowzaFont(size: 12, weight: .regular)
                 .foregroundColor(Color.white.opacity(0.75))
 
             Button(action: {}) {
                 Text("Book Now")
-                    .font(.system(size: 13, weight: .semibold))
+                    .glowzaFont(size: 13, weight: .semibold)
                     .foregroundColor(Color(hex: "962043"))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 8)
@@ -325,7 +325,7 @@ struct HomeView: View {
     private var promotionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Special Promotions")
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .glowzaFont(size: 18, weight: .semibold, design: .rounded)
                 .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1B1D21"))
                 .padding(.horizontal, 20)
 
@@ -376,7 +376,7 @@ struct HomeView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Services")
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .glowzaFont(size: 18, weight: .semibold, design: .rounded)
                     .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1B1D21"))
                 Spacer()
                 if selectedServiceID != nil {
@@ -384,7 +384,7 @@ struct HomeView: View {
                         withAnimation(.easeInOut(duration: 0.2)) { selectedServiceID = nil }
                     }) {
                         Text("Clear")
-                            .font(.system(size: 13, weight: .medium))
+                            .glowzaFont(size: 13, weight: .medium)
                             .foregroundColor(brand)
                     }
                 }
@@ -408,12 +408,12 @@ struct HomeView: View {
                                         Circle()
                                             .stroke(isSelected ? brand : brand.opacity(0.3), lineWidth: 1.4)
                                         Image(systemName: service.icon)
-                                            .font(.system(size: 20, weight: .medium))
+                                            .glowzaFont(size: 20, weight: .medium)
                                             .foregroundColor(brand)
                                     }
 
                                 Text(service.name.replacingOccurrences(of: "\n", with: " "))
-                                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                                    .glowzaFont(size: 11, weight: isSelected ? .semibold : .regular)
                                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.72) : Color(hex: "3E3E50"))
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
@@ -434,12 +434,12 @@ struct HomeView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nearby Salons")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .glowzaFont(size: 18, weight: .semibold, design: .rounded)
                         .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1B1D21"))
                     if let svcID = selectedServiceID,
                        let svc = services.first(where: { $0.id == svcID }) {
                         Text("Filtered: \(svc.name.replacingOccurrences(of: "\n", with: " "))")
-                            .font(.system(size: 12, weight: .medium))
+                            .glowzaFont(size: 12, weight: .medium)
                             .foregroundColor(brand)
                     }
                 }
@@ -447,9 +447,9 @@ struct HomeView: View {
                 Button(action: { showMapSheet = true }) {
                     HStack(spacing: 5) {
                         Image(systemName: "map.fill")
-                            .font(.system(size: 12, weight: .medium))
+                            .glowzaFont(size: 12, weight: .medium)
                         Text("Map")
-                            .font(.system(size: 13, weight: .semibold))
+                            .glowzaFont(size: 13, weight: .semibold)
                     }
                     .foregroundColor(brand)
                     .padding(.horizontal, 12)
@@ -462,13 +462,13 @@ struct HomeView: View {
             if filteredSalons.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
-                        .font(.system(size: 32))
+                        .glowzaFont(size: 32)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.3) : Color(hex: "CACDD6"))
                     Text("No salons found")
-                        .font(.system(size: 16, weight: .semibold))
+                        .glowzaFont(size: 16, weight: .semibold)
                         .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "8A8E95"))
                     Text("Try a different search or filter")
-                        .font(.system(size: 14))
+                        .glowzaFont(size: 14)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.5) : Color(hex: "AEAEB2"))
                 }
                 .frame(maxWidth: .infinity)
@@ -502,12 +502,12 @@ private struct SalonRowCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(salon.name)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .glowzaFont(size: 15, weight: .semibold, design: .rounded)
                         .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1F2126"))
                         .lineLimit(1)
                     Spacer()
                     Text(salon.distance)
-                        .font(.system(size: 12, weight: .medium))
+                        .glowzaFont(size: 12, weight: .medium)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.65) : Color(hex: "8A8E95"))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
@@ -517,30 +517,30 @@ private struct SalonRowCard: View {
 
                 HStack(spacing: 4) {
                     Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "962043").opacity(0.55))
                     Text(salon.location)
-                        .font(.system(size: 13))
+                        .glowzaFont(size: 13)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.6) : Color(hex: "8A8E95"))
                         .lineLimit(1)
                 }
 
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(Color(hex: "E4B234"))
                     Text(String(format: "%.1f", salon.rating))
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "2E3036"))
                     Text("(\(salon.reviews))")
-                        .font(.system(size: 12))
+                        .glowzaFont(size: 12)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.45) : Color(hex: "AEAEB2"))
                 }
 
                 HStack(spacing: 5) {
                     ForEach(salon.categories.prefix(3), id: \.self) { cat in
                         Text(cat)
-                            .font(.system(size: 10, weight: .semibold))
+                            .glowzaFont(size: 10, weight: .semibold)
                             .foregroundColor(Color(hex: "962043"))
                             .padding(.horizontal, 7)
                             .padding(.vertical, 3)
@@ -552,7 +552,7 @@ private struct SalonRowCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
+                .glowzaFont(size: 12, weight: .semibold)
                 .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.3) : Color(hex: "CACDD6"))
         }
         .padding(14)
@@ -590,10 +590,10 @@ private struct PromoBannerCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(title)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .glowzaFont(size: 18, weight: .bold, design: .rounded)
                         .foregroundColor(.white)
                     Text(subtitle)
-                        .font(.system(size: 13, weight: .medium))
+                        .glowzaFont(size: 13, weight: .medium)
                         .foregroundColor(.white.opacity(0.9))
                         .lineLimit(2)
                 }
@@ -605,7 +605,7 @@ private struct PromoBannerCard: View {
                     onBooking?()
                 }) {
                     Text("Book Now")
-                        .font(.system(size: 13, weight: .semibold))
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(Color(hex: "962043"))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -628,14 +628,14 @@ private struct PromoBannerCard: View {
                     )
                 VStack(alignment: .center, spacing: -4) {
                     Text(discount)
-                        .font(.system(size: 24, weight: .bold))
+                        .glowzaFont(size: 24, weight: .bold)
                         .foregroundColor(.white)
                     HStack(spacing: 0) {
                         Text("%")
-                            .font(.system(size: 12, weight: .semibold))
+                            .glowzaFont(size: 12, weight: .semibold)
                             .foregroundColor(.white)
                         Text("OFF")
-                            .font(.system(size: 10, weight: .bold))
+                            .glowzaFont(size: 10, weight: .bold)
                             .foregroundColor(.white.opacity(0.95))
                     }
                 }
@@ -691,7 +691,7 @@ struct ReputationRing: View {
                 .stroke(Color(hex: "962043"), style: StrokeStyle(lineWidth: 4, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Text("\(Int(score * 100))%")
-                .font(.system(size: 9, weight: .bold))
+                .glowzaFont(size: 9, weight: .bold)
                 .foregroundColor(Color(hex: "962043"))
         }
         .frame(width: 38, height: 38)
@@ -734,10 +734,10 @@ struct SalonMapView: View {
                 if colomboSalons.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "mappin.slash")
-                            .font(.system(size: 24, weight: .semibold))
+                            .glowzaFont(size: 24, weight: .semibold)
                             .foregroundColor(.white)
                         Text("No salons to show on map")
-                            .font(.system(size: 14, weight: .semibold))
+                            .glowzaFont(size: 14, weight: .semibold)
                             .foregroundColor(.white)
                     }
                     .padding(.horizontal, 16)
@@ -750,9 +750,13 @@ struct SalonMapView: View {
                 .navigationTitle("Salons Near You")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { dismiss() }
-                            .foregroundColor(brand)
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(action: { dismiss() }) {
+                            Text("Close")
+                                .glowzaFont(size: 16, weight: .semibold)
+                                .fixedSize()
+                                .foregroundColor(brand)
+                        }
                     }
                 }
         }
@@ -794,10 +798,10 @@ struct ServiceCategoryCard: View {
                     .fill(isSelected ? brand : brand.opacity(0.08))
                     .frame(width: 44, height: 44)
                 Image(systemName: service.icon)
-                    .font(.system(size: 18))
+                    .glowzaFont(size: 18)
                     .foregroundColor(isSelected ? .white : brand)
             }
-            Text(service.name).font(.system(size: 11)).foregroundColor(Color(hex: "1A1A1A"))
+            Text(service.name).glowzaFont(size: 11).foregroundColor(Color(hex: "1A1A1A"))
         }
     }
 }

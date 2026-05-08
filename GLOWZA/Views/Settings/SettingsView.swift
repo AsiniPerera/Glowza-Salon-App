@@ -10,7 +10,7 @@ struct SettingsView: View {
     @AppStorage("emailNotifications") private var emailNotifications = false
     @AppStorage("faceIDEnabled") private var faceIDEnabled = true
 
-    private let brand = Color(hex: "962043")
+    private var brand: Color { Color.glowzaPrimary }
 
     var body: some View {
         NavigationStack {

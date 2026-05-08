@@ -12,10 +12,10 @@ struct SecurityPrivacyView: View {
     @State private var dataSharing           = UserDefaults.standard.bool(forKey: "sec_dataSharing")
     @State private var showDataDeleteAlert   = false
 
-    private let accent = Color(hex: "962043")
-    private var dark: Color { appSettings.isDarkMode ? .white : Color(hex: "1F2126") }
-    private var pageBackground: Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : .white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : .white }
+    private var accent: Color { appSettings.themeBrand }
+    private var dark: Color { appSettings.themeText }
+    private var pageBackground: Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
 
     var body: some View {
         NavigationStack {
@@ -47,20 +47,20 @@ struct SecurityPrivacyView: View {
                         Button(action: { showDataDeleteAlert = true }) {
                             HStack(spacing: 14) {
                                 Image(systemName: "trash")
-                                    .font(.system(size: 17))
+                                    .glowzaFont(size: 17)
                                     .foregroundColor(.red)
                                     .frame(width: 28)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Delete My Account")
-                                        .font(.system(size: 16))
+                                        .glowzaFont(size: 16)
                                         .foregroundColor(.red)
                                     Text("This action cannot be undone")
-                                        .font(.system(size: 12))
+                                        .glowzaFont(size: 12)
                                         .foregroundColor(Color(hex: "ABABAB"))
                                 }
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .glowzaFont(size: 13, weight: .medium)
                                     .foregroundColor(Color(hex: "C7C7CC"))
                             }
                             .padding(.horizontal, 16)
@@ -77,8 +77,16 @@ struct SecurityPrivacyView: View {
             .navigationTitle("Security & Privacy")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }.foregroundColor(accent)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("Back")
+                        }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(accent)
+                    }
+                    .fixedSize()
                 }
             }
             .alert("Delete Account", isPresented: $showDataDeleteAlert) {
@@ -94,7 +102,7 @@ struct SecurityPrivacyView: View {
     private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .glowzaFont(size: 13, weight: .semibold)
                 .foregroundColor(Color(hex: "8A8D94"))
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)
@@ -112,15 +120,15 @@ struct SecurityPrivacyView: View {
                             value: Binding<Bool>, onChange: @escaping (Bool) -> Void) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 17))
+                .glowzaFont(size: 17)
                 .foregroundColor(Color(hex: "6B6E77"))
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .font(.system(size: 16))
+                    .glowzaFont(size: 16)
                     .foregroundColor(dark)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .glowzaFont(size: 12)
                     .foregroundColor(Color(hex: "ABABAB"))
             }
             Spacer()

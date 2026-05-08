@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 
 // MARK: - Constants
-private let brand = Color(hex: "962043")
+private var brand: Color { Color.glowzaPrimary }
 private let teal = Color(hex: "00A878")
 private let treatmentScopeName = "All Treatments"
 
@@ -106,6 +106,13 @@ struct CompareView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Page title — plain Text, no toolbar pill
+                    Text("Treatment Comparison")
+                        .glowzaFont(size: 28, weight: .bold)
+                        .foregroundColor(appSettings.themeText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 8)
+
                     selectSection
 
                     if store.items.count >= 2 {
@@ -122,9 +129,8 @@ struct CompareView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
             }
-            .background((appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white).ignoresSafeArea())
-            .navigationTitle("Treatment Comparison")
-            .navigationBarTitleDisplayMode(.large)
+            .background((appSettings.themePage).ignoresSafeArea())
+            .navigationBarHidden(true)
         }
     }
 
@@ -134,11 +140,11 @@ struct CompareView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Select Treatments")
-                    .font(.system(size: 15, weight: .semibold))
+                    .glowzaFont(size: 15, weight: .semibold)
                     .foregroundColor(brand)
                 Spacer()
                 Text("\(store.items.count)/10")
-                    .font(.system(size: 12, weight: .semibold))
+                    .glowzaFont(size: 12, weight: .semibold)
                     .foregroundColor(Color(hex: "8A8A8A"))
             }
 
@@ -162,7 +168,7 @@ struct CompareView: View {
         VStack(alignment: .leading, spacing: 8) {
             if store.items.isEmpty {
                 Text("No treatments selected")
-                    .font(.system(size: 12, weight: .medium))
+                    .glowzaFont(size: 12, weight: .medium)
                     .foregroundColor(Color(hex: "9A9A9A"))
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -175,16 +181,16 @@ struct CompareView: View {
                             } label: {
                                 HStack(spacing: 6) {
                                     Text("\(index + 1)")
-                                        .font(.system(size: 11, weight: .bold))
+                                        .glowzaFont(size: 11, weight: .bold)
                                         .foregroundColor(.white)
                                         .frame(width: 18, height: 18)
                                         .background(brand)
                                         .clipShape(Circle())
                                     Text(shortTreatmentName(item.service.name))
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                                        .glowzaFont(size: 12, weight: .semibold)
+                                        .foregroundColor(appSettings.themeText)
                                     Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .bold))
+                                        .glowzaFont(size: 10, weight: .bold)
                                         .foregroundColor(Color(hex: "8A8A8A"))
                                 }
                                 .padding(.horizontal, 10)
@@ -220,8 +226,8 @@ struct CompareView: View {
         } label: {
             ZStack(alignment: .topTrailing) {
                 Text(entry.service.name)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                    .glowzaFont(size: 12, weight: .semibold)
+                    .foregroundColor(appSettings.themeText)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .padding(10)
@@ -231,18 +237,22 @@ struct CompareView: View {
                     ZStack {
                         Circle().fill(brand).frame(width: 20, height: 20)
                         Image(systemName: "checkmark")
-                            .font(.system(size: 9, weight: .bold))
+                            .glowzaFont(size: 9, weight: .bold)
                             .foregroundColor(.white)
                     }
                     .padding(5)
                 }
             }
             .frame(width: 110, height: 68)
-            .background(added ? brand.opacity(0.06) : (appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white))
+            .background(added ? brand.opacity(0.06) : (appSettings.themeSurface))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .hcBorder(radius: 12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(added ? brand : Color(hex: "E0E0E0"), lineWidth: added ? 1.5 : 1)
+                    .strokeBorder(
+                        appSettings.isHighContrast ? Color.clear : (added ? brand : Color(hex: "E0E0E0")),
+                        lineWidth: appSettings.isHighContrast ? 0 : (added ? 1.5 : 1)
+                    )
             )
             .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
         }
@@ -256,8 +266,8 @@ struct CompareView: View {
     private var priceChartCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Price Level")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                .glowzaFont(size: 15, weight: .bold)
+                .foregroundColor(appSettings.themeText)
 
             Chart {
                 ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
@@ -276,7 +286,7 @@ struct CompareView: View {
                     AxisValueLabel {
                         if let d = val.as(Double.self) {
                             Text("\(Int(d / 1000))k")
-                                .font(.system(size: 10))
+                                .glowzaFont(size: 10)
                                 .foregroundStyle(Color(hex: "8A8A8A"))
                         }
                     }
@@ -292,21 +302,22 @@ struct CompareView: View {
             HStack(spacing: 16) {
                 HStack(spacing: 5) {
                     RoundedRectangle(cornerRadius: 3).fill(teal).frame(width: 12, height: 8)
-                    Text("Best Price").font(.system(size: 10))
+                    Text("Best Price").glowzaFont(size: 10)
                 }
                 HStack(spacing: 5) {
                     RoundedRectangle(cornerRadius: 3).fill(brand.opacity(0.8)).frame(width: 12, height: 8)
-                    Text("Standard").font(.system(size: 10))
+                    Text("Standard").glowzaFont(size: 10)
                 }
             }
             .foregroundColor(Color(hex: "8A8A8A"))
         }
         .padding(14)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .background(appSettings.themeSurface)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .hcBorder(radius: 14)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color(hex: "E3E3E8"), lineWidth: 1)
+                .strokeBorder(appSettings.isHighContrast ? Color.clear : Color(hex: "E3E3E8"), lineWidth: appSettings.isHighContrast ? 0 : 1)
         )
     }
 
@@ -315,8 +326,8 @@ struct CompareView: View {
     private var durationTableCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Duration")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                .glowzaFont(size: 15, weight: .bold)
+                .foregroundColor(appSettings.themeText)
 
             VStack(spacing: 0) {
                 HStack {
@@ -325,7 +336,7 @@ struct CompareView: View {
                     Text("Duration Range")
                         .frame(width: 140, alignment: .trailing)
                 }
-                .font(.system(size: 11, weight: .semibold))
+                .glowzaFont(size: 11, weight: .semibold)
                 .foregroundColor(Color(hex: "8A8A8A"))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
@@ -336,14 +347,14 @@ struct CompareView: View {
 
                     HStack {
                         Text(shortTreatmentName(item.service.name))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                            .glowzaFont(size: 12, weight: .medium)
+                            .foregroundColor(appSettings.themeText)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         HStack(spacing: 6) {
                             if isFastest {
                                 Text("Fast")
-                                    .font(.system(size: 10, weight: .bold))
+                                    .glowzaFont(size: 10, weight: .bold)
                                     .foregroundColor(teal)
                                     .padding(.horizontal, 6)
                                     .padding(.vertical, 3)
@@ -351,7 +362,7 @@ struct CompareView: View {
                                     .clipShape(Capsule())
                             }
                             Text(durationRange(item.service))
-                                .font(.system(size: 11, weight: isFastest ? .semibold : .regular))
+                                .glowzaFont(size: 11, weight: isFastest ? .semibold : .regular)
                                 .foregroundColor(isFastest ? teal : Color(hex: "505050"))
                         }
                         .frame(width: 140, alignment: .trailing)
@@ -371,11 +382,12 @@ struct CompareView: View {
             )
         }
         .padding(14)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .background(appSettings.themeSurface)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .hcBorder(radius: 14)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color(hex: "E3E3E8"), lineWidth: 1)
+                .strokeBorder(appSettings.isHighContrast ? Color.clear : Color(hex: "E3E3E8"), lineWidth: appSettings.isHighContrast ? 0 : 1)
         )
     }
 
@@ -384,8 +396,8 @@ struct CompareView: View {
     private var benefitsTableCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Benefits")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                .glowzaFont(size: 15, weight: .bold)
+                .foregroundColor(appSettings.themeText)
 
             VStack(spacing: 0) {
                 HStack {
@@ -394,7 +406,7 @@ struct CompareView: View {
                     Text("Benefits")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .font(.system(size: 11, weight: .semibold))
+                .glowzaFont(size: 11, weight: .semibold)
                 .foregroundColor(Color(hex: "8A8A8A"))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
@@ -406,12 +418,12 @@ struct CompareView: View {
 
                     HStack(alignment: .top, spacing: 8) {
                         Text(shortTreatmentName(item.service.name))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                            .glowzaFont(size: 12, weight: .medium)
+                            .foregroundColor(appSettings.themeText)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         Text(item.service.benefits.joined(separator: "  •  "))
-                            .font(.system(size: 11))
+                            .glowzaFont(size: 11)
                             .foregroundColor(isTop ? teal : Color(hex: "505050"))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .fixedSize(horizontal: false, vertical: true)
@@ -431,11 +443,12 @@ struct CompareView: View {
             )
         }
         .padding(14)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .background(appSettings.themeSurface)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .hcBorder(radius: 14)
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color(hex: "E3E3E8"), lineWidth: 1)
+                .strokeBorder(appSettings.isHighContrast ? Color.clear : Color(hex: "E3E3E8"), lineWidth: appSettings.isHighContrast ? 0 : 1)
         )
     }
 
@@ -444,10 +457,10 @@ struct CompareView: View {
     private var clearBtn: some View {
         Button { withAnimation { store.clear() } } label: {
             Label("Clear All", systemImage: "trash")
-                .font(.system(size: 14, weight: .semibold)).foregroundColor(brand)
+                .glowzaFont(size: 14, weight: .semibold).foregroundColor(brand)
                 .frame(maxWidth: .infinity)
                 .frame(height: 36)
-                .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+                .background(appSettings.themeSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -464,7 +477,7 @@ struct CompareView: View {
         HStack(spacing: 10) {
             Image(systemName: "info.circle.fill").foregroundColor(brand)
             Text("Select \(missingSelectionCount) more treatment\(missingSelectionCount == 1 ? "" : "s") to compare")
-                .font(.system(size: 13, weight: .medium))
+                .glowzaFont(size: 13, weight: .medium)
                 .foregroundColor(Color(hex: "1A1A1A"))
         }
         .padding(14)

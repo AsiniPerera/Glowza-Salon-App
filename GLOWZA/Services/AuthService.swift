@@ -20,6 +20,7 @@ struct GlowzaUserProfile: Codable {
     var email: String
     var phone: String
     var avatarUrl: String?
+    var avatarBase64: String?
     var skinType: String
     var loyaltyPoints: Int
     var favoriteSalonIds: [String]
@@ -49,28 +50,37 @@ final class AuthService {
     private let auth = Auth.auth()
     private let db = Firestore.firestore()
 
+    @ObservationIgnored
+    nonisolated(unsafe) private var authListener: AuthStateDidChangeListenerHandle?
+
+    // MARK: - Published state
     var currentUser: GlowzaUser?
     var currentUserProfile: GlowzaUserProfile?
     var isSignedIn = false
 
-    // MARK: - Sign Up
+    // MARK: - Sign Up (Create Account → saves to Firebase Auth + Firestore)
     func signUp(fullName: String, email: String, phone: String, password: String) async throws {
+        // 1. Create the Firebase Auth user
         let result = try await auth.createUser(withEmail: email, password: password)
         let uid = result.user.uid
 
+        // 2. Set display name
         let changeRequest = result.user.createProfileChangeRequest()
         changeRequest.displayName = fullName
         try await changeRequest.commitChanges()
 
+        // 3. Save basic user doc to Firestore `users` collection
         let glowzaUser = GlowzaUser(uid: uid, fullName: fullName, email: email, phone: phone, createdAt: Date())
         try db.collection(GlowzaUser.collection).document(uid).setData(from: glowzaUser)
 
+        // 4. Save extended profile doc to Firestore `userProfiles` collection
         let userProfile = GlowzaUserProfile(
             uid: uid,
             fullName: fullName,
             email: email,
             phone: phone,
             avatarUrl: nil,
+            avatarBase64: nil,
             skinType: "Normal",
             loyaltyPoints: 0,
             favoriteSalonIds: [],
@@ -79,11 +89,12 @@ final class AuthService {
         )
         try db.collection(GlowzaUserProfile.collection).document(uid).setData(from: userProfile)
 
+        // 5. Update local state
         self.currentUser = glowzaUser
         self.currentUserProfile = userProfile
         cacheProfileToDefaults(userProfile)
-        self.isSignedIn = true
 
+        // 6. Cache to Core Data for offline access
         try? UserProfileRepository.shared.saveOrUpdateProfile(
             userId: uid,
             email: email,
@@ -91,42 +102,60 @@ final class AuthService {
             phone: phone,
             skinType: "Normal"
         )
+
+        // 7. Sign out so the user must explicitly login with their credentials
+        //    (enforces the Create Account → Login → Dashboard flow)
+        try? auth.signOut()
+        self.isSignedIn = false
+        self.currentUser = nil
+        self.currentUserProfile = nil
     }
 
-    // MARK: - Sign In
+    // MARK: - Sign In (Login → validates Firebase Auth + loads Firestore profile)
     func signIn(email: String, password: String) async throws {
+        // 1. Authenticate with Firebase
         let result = try await auth.signIn(withEmail: email, password: password)
         let uid = result.user.uid
 
+        // 2. Load basic user data from Firestore
         let doc = try await db.collection(GlowzaUser.collection).document(uid).getDocument()
-        let glowzaUser = try doc.data(as: GlowzaUser.self)
-        self.currentUser = glowzaUser
+        if doc.exists, let glowzaUser = try? doc.data(as: GlowzaUser.self) {
+            self.currentUser = glowzaUser
+        }
 
+        // 3. Load extended profile from Firestore
         let profileDoc = try await db.collection(GlowzaUserProfile.collection).document(uid).getDocument()
         if let userProfile = try? profileDoc.data(as: GlowzaUserProfile.self) {
             self.currentUserProfile = userProfile
             cacheProfileToDefaults(userProfile)
         }
 
+        // 4. Cache avatar and extra fields locally
         let avatarB64 = profileDoc.get("avatarBase64") as? String
         let dob = profileDoc.get("dateOfBirth") as? String
 
-        if let avatarB64,
-           let imageData = Data(base64Encoded: avatarB64) {
+        if let avatarB64, let imageData = Data(base64Encoded: avatarB64) {
             UserDefaults.standard.set(imageData, forKey: "profile_avatarData")
         }
 
+        // 5. Sync to Core Data
         try? UserProfileRepository.shared.saveOrUpdateProfile(
             userId: uid,
-            email: glowzaUser.email,
-            name: glowzaUser.fullName,
-            phone: glowzaUser.phone,
+            email: currentUser?.email ?? email,
+            name: currentUser?.fullName ?? auth.currentUser?.displayName ?? "User",
+            phone: currentUser?.phone,
             skinType: currentUserProfile?.skinType,
             dateOfBirth: dob,
             avatarBase64: avatarB64
         )
 
+        // 6. Mark as signed in
         self.isSignedIn = true
+
+        // 7. Background sync: push salons to Firestore + pull bookings to Core Data
+        Task.detached(priority: .utility) { [uid] in
+            await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
+        }
     }
 
     // MARK: - Sign Out
@@ -135,6 +164,28 @@ final class AuthService {
         currentUser = nil
         currentUserProfile = nil
         isSignedIn = false
+    }
+
+    // MARK: - Check & Listen to Auth State (called once on app launch)
+    /// Sets up a real-time Firebase listener. This means:
+    /// - If the user already has a saved session, isSignedIn → true immediately
+    /// - If the user logs out from any screen, isSignedIn → false automatically
+    func checkAuthState() {
+        authListener = auth.addStateDidChangeListener { [weak self] _, firebaseUser in
+            guard let self = self else { return }
+            Task { @MainActor in
+                if let firebaseUser = firebaseUser {
+                    // User has an active session
+                    self.isSignedIn = true
+                    await self.loadProfileFromCache(uid: firebaseUser.uid)
+                } else {
+                    // No active session
+                    self.isSignedIn = false
+                    self.currentUser = nil
+                    self.currentUserProfile = nil
+                }
+            }
+        }
     }
 
     // MARK: - Update User Profile
@@ -185,7 +236,7 @@ final class AuthService {
     func fetchCurrentUserProfile() async throws -> GlowzaUser? {
         guard let uid = auth.currentUser?.uid else { return nil }
         let doc = try await db.collection(GlowzaUser.collection).document(uid).getDocument()
-        return try doc.data(as: GlowzaUser.self)
+        return try? doc.data(as: GlowzaUser.self)
     }
 
     func fetchUserProfileExtended() async throws -> GlowzaUserProfile? {
@@ -195,7 +246,6 @@ final class AuthService {
     }
 
     // MARK: - Update Profile Avatar
-    /// Stores avatar image as base64 in Firestore and Core Data.
     func updateProfileAvatarData(_ imageData: Data) async throws {
         guard let uid = auth.currentUser?.uid else { throw AuthError.notSignedIn }
         let base64 = imageData.base64EncodedString()
@@ -205,6 +255,7 @@ final class AuthService {
             "updatedAt": Timestamp()
         ], merge: true)
 
+        currentUserProfile?.avatarBase64 = base64
         UserDefaults.standard.set(imageData, forKey: "profile_avatarData")
 
         try? UserProfileRepository.shared.saveOrUpdateProfile(
@@ -215,56 +266,51 @@ final class AuthService {
         )
     }
 
-    // MARK: - Check Authentication State (called on app launch)
-    func checkAuthState() {
-        guard auth.currentUser != nil else {
-            isSignedIn = false
-            currentUser = nil
-            currentUserProfile = nil
-            return
-        }
-
-        isSignedIn = true
-
-        Task {
-            do {
-                // Bootstrap from Core Data immediately (offline-safe)
-                if let uid = auth.currentUser?.uid,
-                   let cached = try? UserProfileRepository.shared.fetchProfile(userId: uid) {
-                    UserDefaults.standard.set(cached.name, forKey: "profile_fullName")
-                    UserDefaults.standard.set(cached.email, forKey: "profile_email")
-                    if let phone = cached.phone {
-                        UserDefaults.standard.set(phone, forKey: "profile_phone")
-                    }
-                    if let b64 = cached.avatarBase64,
-                       let data = Data(base64Encoded: b64),
-                       UserDefaults.standard.data(forKey: "profile_avatarData") == nil {
-                        UserDefaults.standard.set(data, forKey: "profile_avatarData")
-                    }
-                }
-
-                self.currentUser = try await fetchCurrentUserProfile()
-                if let profile = try await fetchUserProfileExtended() {
-                    self.currentUserProfile = profile
-                    cacheProfileToDefaults(profile)
-                }
-
-                if let uid = auth.currentUser?.uid {
-                    let profileDoc = try await db.collection(GlowzaUserProfile.collection).document(uid).getDocument()
-                    if let avatarBase64 = profileDoc.get("avatarBase64") as? String,
-                       let imageData = Data(base64Encoded: avatarBase64) {
-                        UserDefaults.standard.set(imageData, forKey: "profile_avatarData")
-                    }
-                }
-            } catch {
-                print("Error fetching user profile: \(error)")
-            }
-        }
-    }
-
     // MARK: - Helpers
     var currentUID: String? { auth.currentUser?.uid }
     var currentUserName: String? { auth.currentUser?.displayName }
+
+    deinit {
+        if let handle = authListener {
+            auth.removeStateDidChangeListener(handle)
+        }
+    }
+
+    // MARK: - Private: Load profile from Core Data cache, then refresh from Firestore
+    private func loadProfileFromCache(uid: String) async {
+        // Step 1: Load immediately from Core Data (fast, works offline)
+        if let cached = try? UserProfileRepository.shared.fetchProfile(userId: uid) {
+            UserDefaults.standard.set(cached.name, forKey: "profile_fullName")
+            UserDefaults.standard.set(cached.email, forKey: "profile_email")
+            if let phone = cached.phone {
+                UserDefaults.standard.set(phone, forKey: "profile_phone")
+            }
+            if let b64 = cached.avatarBase64, let data = Data(base64Encoded: b64) {
+                UserDefaults.standard.set(data, forKey: "profile_avatarData")
+            }
+        }
+
+        // Step 2: Refresh from Firestore in background
+        do {
+            self.currentUser = try await fetchCurrentUserProfile()
+            if let profile = try await fetchUserProfileExtended() {
+                self.currentUserProfile = profile
+                cacheProfileToDefaults(profile)
+            }
+            // Sync fresh data back to Core Data
+            if let user = self.currentUser {
+                try? UserProfileRepository.shared.saveOrUpdateProfile(
+                    userId: uid,
+                    email: user.email,
+                    name: user.fullName,
+                    phone: user.phone,
+                    skinType: currentUserProfile?.skinType
+                )
+            }
+        } catch {
+            print("AuthService: Failed to refresh profile from Firestore — \(error)")
+        }
+    }
 
     private func cacheProfileToDefaults(_ profile: GlowzaUserProfile) {
         UserDefaults.standard.set(profile.fullName, forKey: "profile_fullName")
