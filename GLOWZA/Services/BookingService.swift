@@ -126,6 +126,10 @@ final class BookingService {
     
     // MARK: - Add Review
     func addReview(bookingId: String, rating: Double, review: String) async throws {
+        guard !bookingId.isEmpty else {
+            print(" bookingId is empty in addReview. Skipping Firestore update.")
+            return
+        }
         let data: [String: Any] = [
             "rating": rating,
             "review": review,
@@ -151,7 +155,7 @@ final class BookingService {
             .getDocuments()
         guard let doc = snap.documents.first else { return }
         try await doc.reference.updateData(["status": status])
-        print("✅ Status updated to '\(status)' for receipt \(receiptNumber)")
+        print("Status updated to '\(status)' for receipt \(receiptNumber)")
     }
 
     // MARK: - Add Review by Receipt Number (fallback)
@@ -166,7 +170,7 @@ final class BookingService {
             "review": review,
             "status": "completed"
         ])
-        print("✅ Review saved for receipt \(receiptNumber)")
+        print(" Review saved for receipt \(receiptNumber)")
     }
 
     // MARK: - Add Salon Review to salonReviews collection

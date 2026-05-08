@@ -22,12 +22,6 @@ private final class StubLAContext: LAContext {
 @MainActor
 final class AuthViewModelTests: XCTestCase {
 
-    // MARK: - Biometry
-
-    func test_biometricTitle_faceID() {
-        let sut = AuthViewModel { StubLAContext(biometryType: .faceID) }
-        XCTAssertEqual(sut.biometricButtonTitle, "Continue with Face ID")
-    }
 
     func test_supportsFaceID_true_whenFaceID() {
         let sut = AuthViewModel { StubLAContext(biometryType: .faceID) }

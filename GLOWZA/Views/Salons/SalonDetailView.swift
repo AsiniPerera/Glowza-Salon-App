@@ -28,20 +28,26 @@ struct SalonDetailView: View {
         SalonCatalog.shared.salon(named: salonName)
     }
 
-    private var reviews: [BookingReview] {
-        // Prefer live Firestore reviews
-        if !firestoreReviews.isEmpty {
-            return firestoreReviews.map { fr in
-                BookingReview(rating: fr.rating, comment: fr.comment, date: fr.createdAt, reviewerName: fr.userName)
-            }
+    private var displayReviews: [FirestoreSalonReview] {
+        var allReviews = firestoreReviews
+        let dummyReviews = sampleReviews.map { br in
+            FirestoreSalonReview(id: br.id.uuidString, salonId: "", userId: "", userName: br.reviewerName, rating: br.rating, comment: br.comment, createdAt: br.date, userAvatarBase64: nil)
         }
-        let real = BookingStore.shared.reviews(forSalon: salonName)
-        return real.isEmpty ? sampleReviews : real
+        allReviews.append(contentsOf: dummyReviews)
+        return allReviews
     }
 
     private let sampleReviews: [BookingReview] = [
         BookingReview(rating: 5, comment: "Absolutely loved the facial treatment! Skin is glowing.", date: Date(), reviewerName: "Dilnoza R."),
         BookingReview(rating: 4, comment: "Professional staff, clean environment. Will return.", date: Date(), reviewerName: "Amara S."),
+        BookingReview(rating: 5, comment: "Best chemical peel I've ever had. Highly recommend!", date: Date(), reviewerName: "Priya K."),
+        BookingReview(rating: 4, comment: "Great service, but a bit of a wait. Overall good experience.", date: Date(), reviewerName: "John D."),
+        BookingReview(rating: 5, comment: "Luxury at its best. The ambiance is so relaxing.", date: Date(), reviewerName: "Sarah W."),
+        BookingReview(rating: 5, comment: "Expert stylists who really listen to what you want.", date: Date(), reviewerName: "Michael B."),
+        BookingReview(rating: 4, comment: "The laser treatment was virtually painless. Amazing!", date: Date(), reviewerName: "Elena G."),
+        BookingReview(rating: 5, comment: "Incredible results in just one session. Love it!", date: Date(), reviewerName: "Raj T."),
+        BookingReview(rating: 4, comment: "Fantastic attention to detail and very friendly staff.", date: Date(), reviewerName: "Sophia L."),
+        BookingReview(rating: 5, comment: "The best salon experience in Colombo, hands down.", date: Date(), reviewerName: "Kevin M.")
     ]
 
     var body: some View {
@@ -63,16 +69,18 @@ struct SalonDetailView: View {
         .navigationBarHidden(true)
         .onAppear {
             bookingDraft = BookingDraft(salon: salon)
-        }
-        .task {
-            await SalonFirestoreService.shared.seedMockReviews()
-            await fetchFirestoreReviews()
+            Task {
+                await FavouritesStore.shared.load()
+                isFavourited = FavouritesStore.shared.favouriteNames.contains(salonName)
+                await SalonFirestoreService.shared.seedMockReviews()
+                await fetchFirestoreReviews()
+            }
         }
         .fullScreenCover(isPresented: $showBookingFlow) {
             BookingFlowView(draft: bookingDraft)
         }
         .sheet(isPresented: $showReviewSheet) {
-            SalonReviewSheet(salonName: salonName, reviewToEdit: reviewToEdit) {
+            SalonReviewSheet(salonName: salonName, reviewToEdit: reviewToEdit, existingReviews: displayReviews) {
                 Task { await fetchFirestoreReviews() }
             }
         }
@@ -189,7 +197,12 @@ struct SalonDetailView: View {
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
-                Button(action: { isFavourited.toggle() }) {
+                Button(action: {
+                    isFavourited.toggle()
+                    Task {
+                        await FavouritesStore.shared.toggle(salonName)
+                    }
+                }) {
                     Image(systemName: isFavourited ? "heart.fill" : "heart")
                         .font(.system(size: 15))
                         .foregroundColor(isFavourited ? brand : Color(hex: "1A1A1A"))
@@ -438,14 +451,14 @@ struct SalonDetailView: View {
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
 
-            if firestoreReviews.isEmpty {
+            if displayReviews.isEmpty {
                 Text("No reviews yet. Be the first to review!")
                     .glowzaFont(size: 14)
                     .foregroundColor(.gray)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
             } else {
-                ForEach(firestoreReviews.prefix(10)) { review in
+                ForEach(displayReviews.prefix(10)) { review in
                     reviewRow(review)
                     Divider().padding(.horizontal, 20)
                 }
@@ -454,16 +467,58 @@ struct SalonDetailView: View {
     }
 
     private func reviewRow(_ review: FirestoreSalonReview) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
+        
+        let imageName: String
+        var customImage: UIImage? = nil
+        
+        // Always use the current profile image if the review belongs to the current user
+        if review.userId == AuthService.shared.currentUID,
+           let currentAvatar = AuthService.shared.currentUserProfile?.avatarBase64, !currentAvatar.isEmpty,
+           let data = Data(base64Encoded: currentAvatar),
+           let uiImage = UIImage(data: data) {
+            customImage = uiImage
+            imageName = ""
+        } else if let base64 = review.userAvatarBase64, !base64.isEmpty,
+           let data = Data(base64Encoded: base64),
+           let uiImage = UIImage(data: data) {
+            customImage = uiImage
+            imageName = ""
+        } else if review.userName == "Anuki" {
+            imageName = "r5"
+        } else if let idx = mockUsers.firstIndex(of: review.userName) {
+            imageName = "r\(idx + 1)"
+        } else {
+            let idx = abs(review.userName.hashValue) % 10 + 1
+            imageName = "r\(idx)"
+        }
+        
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
                 ZStack {
-                    Circle().fill(brand.opacity(0.12)).frame(width: 40, height: 40)
-                    Text(String(review.userName.prefix(1)))
-                        .glowzaFont(size: 16, weight: .bold)
-                        .foregroundColor(brand)
+                    if let uiImage = customImage {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                    } else if UIImage(named: imageName) != nil {
+                        Image(imageName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                    } else {
+                        Circle().fill(brand.opacity(0.12)).frame(width: 40, height: 40)
+                        Text(String(review.userName.prefix(1)))
+                            .glowzaFont(size: 16, weight: .bold)
+                            .foregroundColor(brand)
+                    }
                 }
+                let displayName = (review.userId == AuthService.shared.currentUID && AuthService.shared.currentUserProfile != nil) ? AuthService.shared.currentUserProfile!.fullName : review.userName
+                
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(review.userName)
+                    Text(displayName)
                         .glowzaFont(size: 15, weight: .semibold)
                         .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
                     HStack(spacing: 3) {
@@ -579,12 +634,15 @@ struct SalonDetailView: View {
 struct SalonReviewSheet: View {
     let salonName: String
     let reviewToEdit: FirestoreSalonReview?
+    let existingReviews: [FirestoreSalonReview]
     let onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var rating: Int = 5
     @State private var comment: String = ""
     @State private var isSubmitting = false
+    @State private var errorMessage: String? = nil
+    @State private var showErrorAlert = false
 
     private var appSettings: AppSettings { AppSettings.shared }
     private var brand: Color { Color.glowzaPrimary }
@@ -656,6 +714,11 @@ struct SalonReviewSheet: View {
                         .fixedSize()
                 }
             }
+            .alert("Review Error", isPresented: $showErrorAlert, presenting: errorMessage) { _ in
+                Button("OK") { errorMessage = nil }
+            } message: { msg in
+                Text(msg)
+            }
             .onAppear {
                 if let r = reviewToEdit {
                     rating = r.rating
@@ -666,10 +729,21 @@ struct SalonReviewSheet: View {
     }
 
     private func submitReview() {
-        isSubmitting = true
         let salonId = SalonFirestoreService.shared.salonId(for: salonName)
         let userId = AuthService.shared.currentUID ?? "GUEST"
         let userName = AuthService.shared.currentUserName ?? "Anonymous"
+        
+        // Check if user already reviewed (only for new reviews)
+        if reviewToEdit == nil {
+            let hasReviewed = existingReviews.contains { $0.userId == userId && $0.userId != "GUEST" }
+            if hasReviewed {
+                errorMessage = "You have already reviewed this salon. You can edit your existing review instead."
+                showErrorAlert = true
+                return
+            }
+        }
+        
+        isSubmitting = true
         
         Task {
             do {

@@ -7,28 +7,13 @@ struct NotificationsView: View {
     
     @State private var notificationManager = NotificationManager.shared
     
-    private let brand = Color(hex: "962043")
-    
     // MARK: - Computed Colors
-    private var pageBackground: Color {
-        appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white
-    }
-    
-    private var surfaceBackground: Color {
-        appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white
-    }
-    
-    private var primaryText: Color {
-        appSettings.isDarkMode ? Color.white : Color(hex: "1D1F24")
-    }
-    
-    private var secondaryText: Color {
-        appSettings.isDarkMode ? Color.white.opacity(0.6) : Color(hex: "8A8E95")
-    }
-    
-    private var borderColor: Color {
-        appSettings.isDarkMode ? Color.white.opacity(0.12) : Color(hex: "E5E5EA")
-    }
+    private var pageBackground:    Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var primaryText:       Color { appSettings.themeText }
+    private var secondaryText:     Color { appSettings.themeTextSecondary }
+    private var borderColor:       Color { appSettings.themeBorder }
+    private var brand:             Color { appSettings.themeBrand }
     
     var body: some View {
         ZStack {
@@ -73,7 +58,7 @@ struct NotificationsView: View {
                     .frame(maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 0) {
+                        LazyVStack(spacing: 12) {
                             ForEach(groupedNotifications.keys.sorted(by: >), id: \.self) { date in
                                 Section {
                                     ForEach(groupedNotifications[date] ?? []) { notification in
@@ -83,13 +68,12 @@ struct NotificationsView: View {
                                     }
                                 } header: {
                                     Text(dateLabel(date))
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(secondaryText)
                                         .textCase(nil)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.horizontal, 20)
-                                        .padding(.vertical, 12)
-                                        .background(surfaceBackground)
+                                        .padding(.vertical, 8)
                                 }
                             }
                         }
@@ -158,74 +142,70 @@ struct NotificationRow: View {
     let notification: NotificationItem
     let onDismiss: () -> Void
     
-    private let brand = Color(hex: "962043")
-    
-    private var surfaceBackground: Color {
-        appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white
-    }
-    
-    private var primaryText: Color {
-        appSettings.isDarkMode ? Color.white : Color(hex: "1D1F24")
-    }
-    
-    private var secondaryText: Color {
-        appSettings.isDarkMode ? Color.white.opacity(0.6) : Color(hex: "8A8E95")
-    }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var primaryText:       Color { appSettings.themeText }
+    private var secondaryText:     Color { appSettings.themeTextSecondary }
+    private var borderColor:       Color { appSettings.themeBorder }
+    private var brand:             Color { appSettings.themeBrand }
     
     private var accentColor: Color {
         switch notification.type {
-        case .success: return Color(hex: "34C759")
-        case .error: return Color(hex: "FF3B30")
-        case .warning: return Color(hex: "FF9500")
+        case .success: return .green
+        case .error: return .red
+        case .warning: return .orange
         case .info: return brand
         }
     }
     
-    private var borderColor: Color {
-        appSettings.isDarkMode ? Color.white.opacity(0.08) : Color(hex: "F2F2F7")
-    }
-    
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon
+        HStack(alignment: .top, spacing: 12) {
+            // App Icon (Square with rounded corners)
             Image(systemName: notification.icon)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(accentColor)
-                .frame(width: 42, height: 42)
-                .background(accentColor.opacity(0.1))
-                .clipShape(Circle())
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+                .frame(width: 32, height: 32)
+                .background(accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             
             // Content
-            VStack(alignment: .leading, spacing: 2) {
-                Text(notification.title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(primaryText)
-                
-                Text(notification.subtitle)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(secondaryText)
-                    .lineLimit(2)
-            }
-            
-            Spacer()
-            
-            // Time & Dismiss
-            VStack(alignment: .trailing, spacing: 8) {
-                Text(timeAgo(notification.timestamp))
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundColor(secondaryText)
-                
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
+            VStack(alignment: .leading, spacing: 4) {
+                // Header: Title + Time + Dismiss
+                HStack {
+                    Text(notification.title)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(primaryText)
+                    
+                    Spacer()
+                    
+                    Text(timeAgo(notification.timestamp))
+                        .font(.system(size: 12))
                         .foregroundColor(secondaryText)
+                    
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(secondaryText)
+                            .padding(4)
+                            .background(Color.gray.opacity(0.15))
+                            .clipShape(Circle())
+                    }
                 }
+                
+                // Body
+                Text(notification.subtitle)
+                    .font(.system(size: 13))
+                    .foregroundColor(primaryText.opacity(0.9))
+                    .lineLimit(3)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .background(surfaceBackground)
-        .overlay(Divider(), alignment: .bottom)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 5)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
     }
     
     // MARK: - Time Ago Helper

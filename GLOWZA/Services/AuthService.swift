@@ -216,6 +216,15 @@ final class AuthService {
             "phone": phone
         ], merge: true)
 
+        // Update reviews with new name
+        let reviewsSnapshot = try await db.collection("salonReviews")
+            .whereField("userId", isEqualTo: uid)
+            .getDocuments()
+        
+        for doc in reviewsSnapshot.documents {
+            try await doc.reference.updateData(["userName": fullName])
+        }
+
         currentUserProfile?.fullName = fullName
         currentUserProfile?.email = email
         currentUserProfile?.phone = phone

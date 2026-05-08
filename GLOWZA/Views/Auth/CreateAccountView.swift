@@ -25,16 +25,16 @@ struct CreateAccountView: View {
 
                 // Back button
                 Button(action: { onBack?() }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .glowzaFont(size: 15, weight: .semibold)
-                        Text("Back")
-                            .glowzaFont(size: 15, weight: .medium)
-                    }
-                    .foregroundStyle(Color(hex: "962043"))
+                    Image(systemName: "chevron.left")
+                        .glowzaFont(size: 17, weight: .semibold)
+                        .foregroundColor(Color(hex: "3A3A3C"))
+                        .frame(width: 36, height: 36)
+                        .background(Color(hex: "F2F2F7"))
+                        .clipShape(Circle())
                 }
                 .padding(.top, 24)
                 .padding(.horizontal, 24)
+
 
                 Spacer().frame(height: 32)
 

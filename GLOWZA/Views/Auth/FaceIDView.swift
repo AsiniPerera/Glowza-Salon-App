@@ -7,7 +7,8 @@ private var brand: Color { Color.glowzaPrimary }
 struct FaceIDAuthView: View {
     @StateObject private var viewModel = AuthViewModel()
     @State private var isDetecting = false
-    @State private var showDetectionUI = false
+    @State private var showDetectionUI = true
+
     @State private var successAnimation = false
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
@@ -22,7 +23,8 @@ struct FaceIDAuthView: View {
         ZStack {
             pageBackground.ignoresSafeArea()
 
-            if showDetectionUI && viewModel.isAuthenticating {
+            if showDetectionUI {
+
                 // Creative Face ID Detection UI
                 detectionScreen
                     .transition(.opacity)
@@ -40,12 +42,13 @@ struct FaceIDAuthView: View {
         }
         .onChange(of: viewModel.isAuthenticated) { _, newValue in
             if newValue {
-                successAnimation = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    onAuthSuccess()
-                }
+                onAuthSuccess()
             }
         }
+        .onAppear {
+            viewModel.authenticate()
+        }
+
     }
 
     private var initialScreen: some View {
@@ -153,14 +156,14 @@ struct FaceIDAuthView: View {
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
                     Spacer()
-                    ZStack {
-                        Circle()
-                            .fill(successAnimation ? Color.green.opacity(0.1) : brand.opacity(0.1))
-                            .frame(width: 32, height: 32)
-                        Image(systemName: successAnimation ? "checkmark" : "faceid")
-                            .glowzaFont(size: 16, weight: .semibold)
-                            .foregroundColor(successAnimation ? .green : brand)
-                    }
+                        ZStack {
+                            Circle()
+                                .fill(brand.opacity(0.1))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "faceid")
+                                .glowzaFont(size: 16, weight: .semibold)
+                                .foregroundColor(brand)
+                        }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)

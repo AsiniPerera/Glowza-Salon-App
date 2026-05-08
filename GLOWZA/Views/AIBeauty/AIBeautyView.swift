@@ -1,8 +1,6 @@
 import SwiftUI
 import Combine
 
-private var brand: Color { Color.glowzaPrimary }
-
 // MARK: - Chat Message
 struct ChatMessage: Identifiable {
     let id = UUID()
@@ -31,6 +29,8 @@ struct AIBeautyView: View {
     private var dividerColor:      Color { appSettings.themeDivider }
     private var primaryText:       Color { appSettings.themeText }
     private var inputBackground:   Color { appSettings.themeRaised }
+    private var brand:             Color { appSettings.themeBrand }
+    private var secondaryText:     Color { appSettings.themeTextSecondary }
 
     private let bottomID = "chatBottom"
 
@@ -43,7 +43,7 @@ struct AIBeautyView: View {
                         // Title at top of scroll content
                         Text("AI Beauty Agent")
                             .glowzaFont(size: 28, weight: .bold)
-                            .foregroundColor(appSettings.isHighContrast ? appSettings.themeBrand : primaryText)
+                            .foregroundColor(appSettings.isHighContrast ? .white : primaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
                             .padding(.top, 4)
@@ -59,10 +59,10 @@ struct AIBeautyView: View {
                     .padding(.vertical, 16)
                 }
                 .background(pageBackground)
-                .onChange(of: messages.count) { _ in
+                .onChange(of: messages.count) {
                     withAnimation { proxy.scrollTo(bottomID, anchor: .bottom) }
                 }
-                .onChange(of: isTyping) { _ in
+                .onChange(of: isTyping) {
                     withAnimation { proxy.scrollTo(bottomID, anchor: .bottom) }
                 }
             }
@@ -81,7 +81,7 @@ struct AIBeautyView: View {
     private var header: some View {
         Text("AI Beauty Agent")
             .glowzaFont(size: 18, weight: .bold)
-            .foregroundColor(appSettings.isHighContrast ? appSettings.themeBrand : primaryText)
+            .foregroundColor(appSettings.isHighContrast ? .white : primaryText)
             .padding(.horizontal, 20)
             .padding(.top, 14)
             .padding(.bottom, 14)
@@ -98,13 +98,13 @@ struct AIBeautyView: View {
             if msg.isUser { Spacer(minLength: 60) }
             Text(msg.text)
                 .glowzaFont(size: 15, weight: isHC ? .medium : .regular)
-                .foregroundColor(msg.isUser ? .white : primaryText)
+                .foregroundColor(isHC ? .black : (msg.isUser ? .white : primaryText))
                 .lineSpacing(3)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(
                     ZStack {
-                        msg.isUser ? brand : bubbleBackground
+                        isHC ? (msg.isUser ? brand : .white) : (msg.isUser ? brand : bubbleBackground)
                         // Rose tint on AI bubbles in HC — visually distinct from dark mode
                         if isHC && !msg.isUser { rose.opacity(0.12) }
                     }
@@ -160,19 +160,19 @@ struct AIBeautyView: View {
         let rose     = Color(hex: "FF2D55")
         let isEmpty  = inputText.trimmingCharacters(in: .whitespaces).isEmpty
         return HStack(spacing: 12) {
-            TextField("Ask me anything...", text: $inputText, axis: .vertical)
+            TextField("Ask me anything...", text: $inputText, prompt: Text("Ask me anything...").foregroundColor(isHC ? .black : secondaryText), axis: .vertical)
                 .glowzaFont(size: 15)
-                .foregroundColor(primaryText)
+                .foregroundColor(isHC ? .black : primaryText)
                 .lineLimit(1...4)
                 .focused($inputFocused)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(inputBackground)
+                .background(isHC ? .white : inputBackground)
                 .clipShape(Capsule())
-                // White border on input field in HC (element affordance)
+                // Neon border on input field in HC
                 .overlay(
                     Capsule()
-                        .stroke(isHC ? Color.white.opacity(inputFocused ? 1.0 : 0.70) : Color.clear,
+                        .stroke(isHC ? rose.opacity(inputFocused ? 1.0 : 0.70) : Color.clear,
                                 lineWidth: 3)
                 )
 

@@ -1,6 +1,8 @@
 import Foundation
 import UserNotifications
 import SwiftUI
+import FirebaseFirestore
+import FirebaseAuth
 
 // MARK: - Notification Models
 struct NotificationItem: Identifiable, Codable {
@@ -39,6 +41,9 @@ class NotificationManager {
     
     private let historyKey = "glowza_notification_history"
     
+    private let db = Firestore.firestore()
+    private let notificationRepo = NotificationRepository.shared
+    
     private init() {
         loadNotificationHistory()
         requestNotificationPermission()
@@ -46,9 +51,36 @@ class NotificationManager {
     
     // MARK: - Load & Save History
     private func loadNotificationHistory() {
+        // Load from UserDefaults first (fastest)
         if let data = UserDefaults.standard.data(forKey: historyKey),
            let decoded = try? JSONDecoder().decode([NotificationItem].self, from: data) {
             self.notificationHistory = decoded
+        }
+        
+        // Also load from Core Data (offline persistence)
+        let userId = Auth.auth().currentUser?.uid
+        if let cdNotifs = try? notificationRepo.fetchNotificationsFromCore(userId: userId) {
+            let existingIds = Set(notificationHistory.map { $0.id })
+            for cd in cdNotifs {
+                if !existingIds.contains(cd.id) {
+                    let type: NotificationItem.NotificationType = {
+                        switch cd.type {
+                        case "success": return .success
+                        case "error": return .error
+                        case "warning": return .warning
+                        default: return .info
+                        }
+                    }()
+                    let item = NotificationItem(
+                        title: cd.title,
+                        subtitle: cd.subtitle,
+                        icon: cd.icon,
+                        type: type,
+                        timestamp: cd.createdAt
+                    )
+                    notificationHistory.append(item)
+                }
+            }
         }
     }
     
@@ -56,6 +88,35 @@ class NotificationManager {
         if let encoded = try? JSONEncoder().encode(notificationHistory) {
             UserDefaults.standard.set(encoded, forKey: historyKey)
         }
+    }
+    
+    // MARK: - Persist to Core Data & Firestore
+    private func persistNotification(_ item: NotificationItem) {
+        let userId = Auth.auth().currentUser?.uid
+        let typeStr = typeString(item.type)
+        
+        // Save to Core Data
+        try? notificationRepo.saveNotificationToCore(
+            title: item.title,
+            subtitle: item.subtitle,
+            icon: item.icon,
+            type: typeStr,
+            userId: userId
+        )
+        
+        // Save to Firestore
+        guard let uid = userId else { return }
+        let data: [String: Any] = [
+            "id": item.id.uuidString,
+            "title": item.title,
+            "subtitle": item.subtitle,
+            "icon": item.icon,
+            "type": typeStr,
+            "userId": uid,
+            "isRead": false,
+            "createdAt": Timestamp(date: item.timestamp)
+        ]
+        db.collection("notifications").document(item.id.uuidString).setData(data, merge: true)
     }
     
     // MARK: - Dismiss Notification from History
@@ -106,6 +167,7 @@ class NotificationManager {
                 self.notificationHistory.insert(item, at: 0)  // Add to history at top
             }
             self.saveNotificationHistory()
+            self.persistNotification(item)  // Save to Core Data & Firestore
 
             DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
                 if let index = self.notifications.firstIndex(where: { $0.id == item.id }) {

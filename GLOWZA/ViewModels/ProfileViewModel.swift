@@ -97,6 +97,8 @@ final class ProfileViewModel {
                     avatarData = data
                     UserDefaults.standard.set(data, forKey: "profile_avatarData")
                 }
+                // Sync avatar to Firestore
+                try? await AuthService.shared.updateProfileAvatarData(data)
             }
         }
     }

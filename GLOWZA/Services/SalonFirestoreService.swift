@@ -11,6 +11,7 @@ struct FirestoreSalonReview: Codable, Identifiable {
     var rating: Int
     var comment: String
     var createdAt: Date
+    var userAvatarBase64: String?
 }
 
 // MARK: - Firestore Salon Model
@@ -157,7 +158,8 @@ final class SalonFirestoreService {
             "userName": userName,
             "rating": rating,
             "comment": comment,
-            "createdAt": Timestamp()
+            "createdAt": Timestamp(),
+            "userAvatarBase64": AuthService.shared.currentUserProfile?.avatarBase64 ?? ""
         ]
         try await db.collection("salonReviews").document(reviewId).setData(data)
     }

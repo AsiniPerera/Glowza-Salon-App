@@ -115,11 +115,11 @@ struct HomeView: View {
     }
 
     // MARK: - Dark-mode helpers
-    private var pageBackground:    Color { appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white }
-    private var surfaceBackground: Color { appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white }
-    private var primaryText:       Color { appSettings.isDarkMode ? .white : Color(hex: "1D1F24") }
-    private var secondaryText:     Color { appSettings.isDarkMode ? Color.white.opacity(0.6) : Color(hex: "8A8E95") }
-    private var borderColor:       Color { appSettings.isDarkMode ? Color.white.opacity(0.12) : Color(hex: "E5E5EA") }
+    private var pageBackground:    Color { appSettings.themePage }
+    private var surfaceBackground: Color { appSettings.themeSurface }
+    private var primaryText:       Color { appSettings.themeText }
+    private var secondaryText:     Color { appSettings.themeTextSecondary }
+    private var borderColor:       Color { appSettings.themeBorder }
 
     var body: some View {
         NavigationStack {
@@ -162,6 +162,9 @@ struct HomeView: View {
             .task {
                 await syncSalonsToFirestore()
                 refreshProfileHeader()
+            }
+            .onAppear {
+                appSettings.speak("Home screen")
             }
             .onReceive(NotificationCenter.default.publisher(for: .glowzaProfileUpdated)) { _ in
                 refreshProfileHeader()
@@ -249,7 +252,7 @@ struct HomeView: View {
             Image(systemName: "magnifyingglass")
                 .glowzaFont(size: 16, weight: .medium)
                 .foregroundColor(secondaryText)
-            TextField("Search salons or city ...", text: $searchText)
+            TextField("Search salons or city ...", text: $searchText, prompt: Text("Search salons or city ...").foregroundColor(appSettings.isHighContrast ? .white : secondaryText))
                 .glowzaFont(size: 15, weight: .regular)
                 .foregroundColor(primaryText)
                 .autocorrectionDisabled()
@@ -259,6 +262,7 @@ struct HomeView: View {
         .background(surfaceBackground)
         .clipShape(Capsule())
         .overlay(Capsule().stroke(borderColor, lineWidth: 1))
+        .hcBorderCapsule()
         .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
     }
 
@@ -320,13 +324,14 @@ struct HomeView: View {
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .hcBorder(radius: 16)
     }
 
     private var promotionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Special Promotions")
                 .glowzaFont(size: 18, weight: .semibold, design: .rounded)
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1B1D21"))
+                .foregroundColor(primaryText)
                 .padding(.horizontal, 20)
 
             VStack(spacing: 14) {
@@ -377,7 +382,7 @@ struct HomeView: View {
             HStack {
                 Text("Services")
                     .glowzaFont(size: 18, weight: .semibold, design: .rounded)
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1B1D21"))
+                    .foregroundColor(primaryText)
                 Spacer()
                 if selectedServiceID != nil {
                     Button(action: {
@@ -402,19 +407,19 @@ struct HomeView: View {
                         }) {
                             VStack(spacing: 8) {
                                 Circle()
-                                    .fill(isSelected ? brand.opacity(0.14) : surfaceBackground)
+                                    .fill(appSettings.isHighContrast ? .white : (isSelected ? brand.opacity(0.14) : surfaceBackground))
                                     .frame(width: 62, height: 62)
                                     .overlay {
                                         Circle()
-                                            .stroke(isSelected ? brand : brand.opacity(0.3), lineWidth: 1.4)
+                                            .stroke(appSettings.isHighContrast ? brand : (isSelected ? brand : brand.opacity(0.3)), lineWidth: 1.4)
                                         Image(systemName: service.icon)
                                             .glowzaFont(size: 20, weight: .medium)
-                                            .foregroundColor(brand)
+                                            .foregroundColor(appSettings.isHighContrast ? .black : brand)
                                     }
 
                                 Text(service.name.replacingOccurrences(of: "\n", with: " "))
                                     .glowzaFont(size: 11, weight: isSelected ? .semibold : .regular)
-                                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.72) : Color(hex: "3E3E50"))
+                                    .foregroundColor(appSettings.isHighContrast ? .white : (appSettings.isDarkMode ? Color.white.opacity(0.72) : Color(hex: "3E3E50")))
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
                                     .frame(width: 74)
@@ -435,7 +440,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nearby Salons")
                         .glowzaFont(size: 18, weight: .semibold, design: .rounded)
-                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1B1D21"))
+                        .foregroundColor(primaryText)
                     if let svcID = selectedServiceID,
                        let svc = services.first(where: { $0.id == svcID }) {
                         Text("Filtered: \(svc.name.replacingOccurrences(of: "\n", with: " "))")
@@ -556,8 +561,9 @@ private struct SalonRowCard: View {
                 .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.3) : Color(hex: "CACDD6"))
         }
         .padding(14)
-        .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+        .background(appSettings.themeSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .hcBorder(radius: 16)
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
     }
 }
@@ -724,8 +730,25 @@ struct SalonMapView: View {
             ZStack {
                 Map(position: $cameraPosition) {
                     ForEach(colomboSalons) { salon in
-                        Marker(salon.name, coordinate: salon.coordinate)
-                            .tint(brand)
+                        Annotation(salon.name, coordinate: salon.coordinate) {
+                            VStack(spacing: 4) {
+                                Image(mappedSalonImageName(salon.name))
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 44, height: 44)
+                                    .clipShape(Circle())
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                                
+                                Text(salon.name)
+                                    .glowzaFont(size: 11, weight: .semibold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Color.black.opacity(0.75))
+                                    .clipShape(Capsule())
+                            }
+                        }
                     }
                 }
                 .mapStyle(.standard(elevation: .realistic))

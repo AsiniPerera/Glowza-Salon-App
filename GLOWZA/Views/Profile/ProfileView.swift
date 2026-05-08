@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import AVFoundation
 
 // MARK: - Profile View
 struct ProfileView: View {
@@ -8,7 +9,7 @@ struct ProfileView: View {
 
     @State private var isFaceIDEnabled   = true
     @State private var pushNotifications = true
-    @State private var voiceOverSupport  = true
+    @State private var synthesizer = AVSpeechSynthesizer()
 
     @State private var showEditProfile      = false
     @State private var showChangePassword   = false
@@ -115,7 +116,18 @@ struct ProfileView: View {
                     profileCard {
                         toggleRow(title: "Push Notifications", icon: "bell.badge.fill",        color: .red,    isOn: $pushNotifications)
                         cardDivider
-                        toggleRow(title: "VoiceOver Support",  icon: "speaker.wave.2.fill",    color: .orange, isOn: $voiceOverSupport)
+                        toggleRow(title: "VoiceOver Support",  icon: "speaker.wave.2.fill",    color: .orange,
+                                  isOn: Binding(
+                                    get: { appSettings.isVoiceOverEnabled },
+                                    set: { newValue in
+                                        appSettings.isVoiceOverEnabled = newValue
+                                        if newValue {
+                                            speak("VoiceOver support enabled")
+                                        } else {
+                                            speak("VoiceOver support disabled")
+                                        }
+                                    }
+                                  ))
                         cardDivider
                         toggleRow(title: "High Contrast",      icon: "circle.lefthalf.filled", color: .pink,
                                   isOn: Binding(get: { appSettings.isHighContrast },
@@ -164,7 +176,10 @@ struct ProfileView: View {
             }
             .background(appSettings.themePage.ignoresSafeArea())
             .navigationBarHidden(true)
-            .onAppear { refreshProfileFromAuthService() }
+            .onAppear {
+                refreshProfileFromAuthService()
+                appSettings.speak("Profile screen")
+            }
             .onReceive(NotificationCenter.default.publisher(for: .glowzaProfileUpdated)) { _ in
                 refreshProfileFromAuthService()
             }
@@ -191,6 +206,12 @@ struct ProfileView: View {
     }
 
     // MARK: - Load profile from AuthService (Firestore source of truth)
+    private func speak(_ text: String) {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        synthesizer.speak(utterance)
+    }
+
     private func refreshProfileFromAuthService() {
         let auth = AuthService.shared
 
@@ -343,3 +364,4 @@ struct ProfileView: View {
     ProfileView()
         .environment(AppSettings.shared)
 }
+

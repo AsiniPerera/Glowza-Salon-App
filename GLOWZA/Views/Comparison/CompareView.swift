@@ -2,7 +2,6 @@ import SwiftUI
 import Charts
 
 // MARK: - Constants
-private var brand: Color { Color.glowzaPrimary }
 private let teal = Color(hex: "00A878")
 private let treatmentScopeName = "All Treatments"
 
@@ -28,6 +27,7 @@ struct CompareView: View {
 
     @Environment(TreatmentComparisonStore.self) private var store
     @Environment(AppSettings.self) private var appSettings
+    private var brand: Color { appSettings.themeBrand }
 
     // MARK: Data
 
