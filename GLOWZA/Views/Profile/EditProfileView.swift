@@ -49,7 +49,7 @@ struct EditProfileView: View {
                             ZStack(alignment: .bottomTrailing) {
                                 ZStack {
                                     Circle()
-                                        .strokeBorder(accent, lineWidth: 3)
+                                        .strokeBorder(accent, lineWidth: 1.5)
                                         .frame(width: 100, height: 100)
                                     if let ui = avatarImage {
                                         Image(uiImage: ui)
@@ -67,12 +67,12 @@ struct EditProfileView: View {
                                     }
                                 }
                                 ZStack {
-                                    Circle().fill(accent).frame(width: 28, height: 28)
+                                    Circle().fill(accent).frame(width: 26, height: 26)
                                     Image(systemName: "camera.fill")
                                         .glowzaFont(size: 12, weight: .semibold)
                                         .foregroundColor(.white)
                                 }
-                                .offset(x: 4, y: 4)
+                                .offset(x: -4, y: -4)
 
                                 // Saving indicator while avatar uploads
                                 if isSavingAvatar {

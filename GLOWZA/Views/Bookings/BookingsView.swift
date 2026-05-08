@@ -24,19 +24,11 @@ struct AddReviewView: View {
                     VStack(alignment: .leading, spacing: 24) {
 
                         // Salon info
-                        HStack(spacing: 12) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(brand.opacity(0.10)).frame(width: 46, height: 46)
-                                Image(systemName: "building.2.fill")
-                                    .glowzaFont(size: 20).foregroundColor(brand)
-                            }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(salonName)
-                                    .glowzaFont(size: 15, weight: .bold).foregroundColor(appSettings.themeText)
-                                Text(serviceName)
-                                    .glowzaFont(size: 12).foregroundColor(Color(hex: "8A8A8A"))
-                            }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(salonName)
+                                .glowzaFont(size: 15, weight: .bold).foregroundColor(appSettings.themeText)
+                            Text(serviceName)
+                                .glowzaFont(size: 12).foregroundColor(Color(hex: "8A8A8A"))
                         }
 
                         // Star rating
@@ -452,6 +444,16 @@ struct CompletedBookingsView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 38)
                         .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+                }
+                
+                Button(action: { reviewBooking = booking }) {
+                    Text("Review")
+                        .glowzaFont(size: 14, weight: .semibold)
+                        .foregroundColor(brand)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(brand.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
                 }
             }

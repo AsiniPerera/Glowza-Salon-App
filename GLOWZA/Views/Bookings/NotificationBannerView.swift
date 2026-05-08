@@ -9,12 +9,15 @@ struct NotificationBannerView: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            // App Icon (Square with rounded corners)
-            Image("logo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 50, height: 50)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+            // Status Icon
+            ZStack {
+                Circle()
+                    .fill(notification.type == .success ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
+                    .frame(width: 40, height: 40)
+                Image(systemName: notification.icon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(notification.type == .success ? .green : .red)
+            }
             
             // Content
             VStack(alignment: .leading, spacing: 6) {

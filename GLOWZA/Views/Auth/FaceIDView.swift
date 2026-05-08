@@ -42,10 +42,7 @@ struct FaceIDAuthView: View {
         }
         .onChange(of: viewModel.isAuthenticated) { _, newValue in
             if newValue {
-                successAnimation = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                    onAuthSuccess()
-                }
+                onAuthSuccess()
             }
         }
         .onAppear {
@@ -159,14 +156,14 @@ struct FaceIDAuthView: View {
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
                     Spacer()
-                    ZStack {
-                        Circle()
-                            .fill(successAnimation ? Color.green.opacity(0.1) : brand.opacity(0.1))
-                            .frame(width: 32, height: 32)
-                        Image(systemName: successAnimation ? "checkmark" : "faceid")
-                            .glowzaFont(size: 16, weight: .semibold)
-                            .foregroundColor(successAnimation ? .green : brand)
-                    }
+                        ZStack {
+                            Circle()
+                                .fill(brand.opacity(0.1))
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "faceid")
+                                .glowzaFont(size: 16, weight: .semibold)
+                                .foregroundColor(brand)
+                        }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)

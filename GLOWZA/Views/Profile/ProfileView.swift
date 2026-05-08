@@ -364,3 +364,4 @@ struct ProfileView: View {
     ProfileView()
         .environment(AppSettings.shared)
 }
+
