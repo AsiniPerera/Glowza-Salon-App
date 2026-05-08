@@ -65,16 +65,16 @@ struct ReceiptView: View {
         VStack(spacing: 10) {
             ZStack {
                 Circle()
-                    .stroke(Color(hex: "00A878").opacity(0.18), lineWidth: 1.5)
+                    .stroke(brand.opacity(0.18), lineWidth: 1.5)
                     .frame(width: 88, height: 88)
 
                 Circle()
-                    .fill(Color(hex: "00A878").opacity(0.10))
+                    .fill(brand.opacity(0.10))
                     .frame(width: 64, height: 64)
 
                 Image(systemName: "checkmark")
                     .glowzaFont(size: 25, weight: .bold)
-                    .foregroundColor(Color(hex: "00A878"))
+                    .foregroundColor(brand)
             }
 
             Text("Booking Confirmed")
@@ -157,11 +157,18 @@ struct ReceiptView: View {
                 Text(title)
                     .glowzaFont(size: 13, weight: .bold)
             }
-            .foregroundColor(.white)
+            .foregroundColor(brand)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(brand.opacity(0.9))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(
+                Capsule()
+                    .fill(Color.clear)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(brand, lineWidth: 1.5)
+            )
+            .clipShape(Capsule())
         }
     }
 

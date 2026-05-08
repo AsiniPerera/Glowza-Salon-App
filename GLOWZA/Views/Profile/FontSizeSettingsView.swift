@@ -141,7 +141,7 @@ struct FontSizeSettingsView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background(hasChanged ? appSettings.themeBrand : appSettings.themeRaised)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(!hasChanged)

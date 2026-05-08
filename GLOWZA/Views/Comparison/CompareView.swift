@@ -108,9 +108,10 @@ struct CompareView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     // Page title — plain Text, no toolbar pill
                     Text("Treatment Comparison")
-                        .glowzaFont(size: 20, weight: .bold)
+                        .glowzaFont(size: 28, weight: .bold)
                         .foregroundColor(appSettings.themeText)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 8)
 
                     selectSection
 

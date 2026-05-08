@@ -42,12 +42,12 @@ struct AIBeautyView: View {
                     VStack(spacing: 14) {
                         // Title at top of scroll content
                         Text("AI Beauty Agent")
-                            .glowzaFont(size: 20, weight: .bold)
+                            .glowzaFont(size: 28, weight: .bold)
                             .foregroundColor(appSettings.isHighContrast ? appSettings.themeBrand : primaryText)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
                             .padding(.top, 4)
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 8)
 
                         ForEach(messages) { msg in
                             messageBubble(msg)

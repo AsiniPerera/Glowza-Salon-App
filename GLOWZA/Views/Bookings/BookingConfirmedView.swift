@@ -16,7 +16,6 @@ struct BookingConfirmedView: View {
     @State private var contentOffset: CGFloat = 28
 
     private var brand: Color { Color.glowzaPrimary }
-    private let teal = Color(hex: "00A878")
     private let surfaceColor = Color(hex: "F9F9F9")
 
     var body: some View {
@@ -29,28 +28,28 @@ struct BookingConfirmedView: View {
                 // ── Animated hero ──────────────────────────────────────
                 ZStack {
                     Circle()
-                        .stroke(teal.opacity(0.12), lineWidth: 1)
+                        .stroke(brand.opacity(0.12), lineWidth: 1)
                         .frame(width: 170, height: 170)
                         .scaleEffect(ring2Scale)
                         .opacity(ring2Opacity)
 
                     Circle()
-                        .stroke(teal.opacity(0.28), lineWidth: 1.8)
+                        .stroke(brand.opacity(0.28), lineWidth: 1.8)
                         .frame(width: 126, height: 126)
                         .scaleEffect(ring1Scale)
                         .opacity(ring1Opacity)
 
                     Circle()
-                        .fill(teal.opacity(0.10))
+                        .fill(brand.opacity(0.10))
                         .frame(width: 90, height: 90)
 
                     Circle()
-                        .stroke(teal, lineWidth: 2.5)
+                        .stroke(brand, lineWidth: 2.5)
                         .frame(width: 90, height: 90)
 
                     Image(systemName: "checkmark")
                         .font(.system(size: 38, weight: .bold))
-                        .foregroundColor(teal)
+                        .foregroundColor(brand)
                 }
                 .scaleEffect(checkScale)
                 .opacity(checkOpacity)
@@ -69,7 +68,15 @@ struct BookingConfirmedView: View {
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
 
-                Spacer().frame(height: 30)
+                Spacer().frame(height: 15)
+
+                Text("Receipt #\(booking.receiptNumber)")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(hex: "8E8E93"))
+                    .opacity(contentOpacity)
+                    .offset(y: contentOffset)
+
+                Spacer().frame(height: 15)
 
                 // ── Details card ───────────────────────────────────────
                 VStack(spacing: 0) {
@@ -81,7 +88,7 @@ struct BookingConfirmedView: View {
                     Divider().padding(.leading, 52).opacity(0.4)
                     detailRow(icon: "clock.fill", label: "Time", value: booking.timeSlot, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "creditcard.fill", label: "Amount Paid", value: "LKR \(Int(booking.amountPaid))", color: teal)
+                    detailRow(icon: "creditcard.fill", label: "Amount Paid", value: "LKR \(Int(booking.amountPaid))", color: brand)
                 }
                 .background(Color.white)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -89,13 +96,6 @@ struct BookingConfirmedView: View {
                 .padding(.horizontal, 24)
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
-
-                Spacer().frame(height: 14)
-
-                Text("Receipt #\(booking.receiptNumber)")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(hex: "8E8E93"))
-                    .opacity(contentOpacity)
 
                 Spacer()
 

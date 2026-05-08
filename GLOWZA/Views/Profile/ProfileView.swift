@@ -45,7 +45,7 @@ struct ProfileView: View {
 
                     // MARK: Page title
                     Text("Profile")
-                        .glowzaFont(size: 20, weight: .bold)
+                        .glowzaFont(size: 28, weight: .bold)
                         .foregroundColor(appSettings.themeText)
                         .padding(.horizontal, 20)
                         .padding(.top, 16)

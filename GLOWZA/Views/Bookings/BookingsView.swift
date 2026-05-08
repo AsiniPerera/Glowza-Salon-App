@@ -308,10 +308,28 @@ struct UpcomingBookingsView: View {
     private func upcomingCard(_ booking: Booking) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Date header
-            Text(bookingDateLabel(booking))
-                .glowzaFont(size: 12, weight: .medium)
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+            HStack {
+                Text(bookingDateLabel(booking))
+                    .glowzaFont(size: 12, weight: .medium)
+                    .foregroundColor(Color(hex: "8A8A8A"))
+                
+                Spacer()
+                
+                Button(action: { cancelTarget = booking }) {
+                    Text("Cancel")
+                        .glowzaFont(size: 11, weight: .semibold)
+                        .foregroundColor(Color(hex: "962043"))
+                        .padding(.horizontal, 10)
+                        .frame(height: 26)
+                        .background(appSettings.themeRaised)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color(hex: "962043"), lineWidth: 1.2)
+                        )
+                }
+            }
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
 
             Divider().padding(.horizontal, 16)
 
@@ -335,26 +353,14 @@ struct UpcomingBookingsView: View {
 
             // Action buttons
             HStack(spacing: 12) {
-                Button(action: { cancelTarget = booking }) {
-                    Text("Cancel")
-                        .glowzaFont(size: 14, weight: .semibold)
-                        .foregroundStyle(brand)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
-                        .background(appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(.systemBackground))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                .stroke(brand, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
                 Button(action: { receiptBooking = booking }) {
                     Text("View Receipt")
                         .glowzaFont(size: 14, weight: .semibold)
                         .foregroundColor(.white)
-                        .frame(maxWidth: .infinity).frame(height: 36)
-                        .background(Color(hex: "962043"))
-                        .clipShape(Capsule())
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
                 }
             }
             .padding(.horizontal, 16).padding(.bottom, 16).padding(.top, 4)
@@ -463,6 +469,7 @@ struct CompletedBookingsView: View {
 
 struct CancelledBookingsView: View {
     @State private var store = BookingStore.shared
+    let onRebook: (Booking) -> Void
     @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
@@ -485,10 +492,28 @@ struct CancelledBookingsView: View {
     private func cancelledCard(_ booking: Booking) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Date header
-            Text(bookingDateLabel(booking))
-                .glowzaFont(size: 12, weight: .medium)
-                .foregroundColor(Color(hex: "8A8A8A"))
-                .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
+            HStack {
+                Text(bookingDateLabel(booking))
+                    .glowzaFont(size: 12, weight: .medium)
+                    .foregroundColor(Color(hex: "8A8A8A"))
+                
+                Spacer()
+                
+                Button(action: { onRebook(booking) }) {
+                    Text("Rebook")
+                        .glowzaFont(size: 11, weight: .semibold)
+                        .foregroundColor(Color(hex: "962043"))
+                        .padding(.horizontal, 10)
+                        .frame(height: 26)
+                        .background(appSettings.themeRaised)
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(Color(hex: "962043"), lineWidth: 1.2)
+                        )
+                }
+            }
+            .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
 
             Divider().padding(.horizontal, 16)
 
@@ -564,12 +589,12 @@ struct BookingsView: View {
         VStack(spacing: 0) {
                 // Page title
                 Text("Bookings")
-                    .glowzaFont(size: 20, weight: .bold)
+                    .glowzaFont(size: 28, weight: .bold)
                     .foregroundColor(appSettings.themeText)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
-                    .padding(.bottom, 4)
+                    .padding(.bottom, 8)
 
                 Picker("Booking Status", selection: $selectedTab) {
                     ForEach(tabs.indices, id: \.self) { i in
@@ -596,7 +621,13 @@ struct BookingsView: View {
                         }
                     )
                         .tag(1)
-                    CancelledBookingsView()
+                    CancelledBookingsView(onRebook: { booking in
+                        var draft = BookingDraft(salon: booking.salon)
+                        draft.service = booking.service
+                        draft.date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+                        draft.timeSlot = ""
+                        rebookDraft = draft
+                    })
                         .tag(2)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))

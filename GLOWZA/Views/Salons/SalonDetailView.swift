@@ -87,12 +87,13 @@ struct SalonDetailView: View {
         let sId = SalonFirestoreService.shared.salonId(for: salonName)
         let results = (try? await SalonFirestoreService.shared.fetchReviews(forSalonId: sId)) ?? []
         
-        if results.isEmpty {
-            // Fallback to local mock data for demonstration
-            self.firestoreReviews = generateLocalMockReviews(for: sId)
-        } else {
-            self.firestoreReviews = results
+        var allReviews = results
+        if allReviews.count < 10 {
+            let mockReviews = generateLocalMockReviews(for: sId)
+            let needed = 10 - allReviews.count
+            allReviews.append(contentsOf: mockReviews.prefix(needed))
         }
+        self.firestoreReviews = allReviews
     }
 
     private func generateLocalMockReviews(for salonId: String) -> [FirestoreSalonReview] {
