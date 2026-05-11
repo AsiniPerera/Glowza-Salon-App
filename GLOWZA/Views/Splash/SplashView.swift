@@ -185,7 +185,7 @@ struct LandingView: View {
 
                     VStack(spacing: 8) {
                         Text("GLOWZA")
-                            .glowzaFont(size: 34, weight: .bold)
+                            .glowzaFont(.h1, weight: .bold)
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [brand, Color(hex: "D63063"), brand],
@@ -195,7 +195,7 @@ struct LandingView: View {
                             )
                             .tracking(6)
                         Text("Your beauty, simplified.")
-                            .glowzaFont(size: 15, weight: .regular)
+                            .glowzaFont(.body)
                             .foregroundColor(brand.opacity(0.45))
                     }
                     .multilineTextAlignment(.center)
@@ -209,27 +209,13 @@ struct LandingView: View {
                 VStack(spacing: 14) {
                     Button(action: { onLogin?() }) {
                         Text("Sign In")
-                            .glowzaFont(size: 17, weight: .semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 55)
-                            .background(brand)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
+                    .buttonStyle(GlowzaPrimaryButtonStyle())
 
                     Button(action: { onCreate?() }) {
                         Text("Create Account")
-                            .glowzaFont(size: 17, weight: .semibold)
-                            .foregroundColor(brand)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 55)
-                            .background(secondaryBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(pink.opacity(0.35), lineWidth: 1)
-                            )
                     }
+                    .buttonStyle(GlowzaSecondaryButtonStyle())
 
                     Button(action: { onGuest?() }) {
                         Text("Continue as Guest")

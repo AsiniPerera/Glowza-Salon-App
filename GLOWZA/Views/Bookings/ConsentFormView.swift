@@ -50,7 +50,7 @@ struct ConsentFormView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     header
                     Text("Final Consent Form")
-                        .glowzaFont(size: 28, weight: .bold)
+                        .glowzaFont(.h2, weight: .bold)
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
                     signatureSection
@@ -67,11 +67,7 @@ struct ConsentFormView: View {
 
     private var header: some View {
         HStack {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .glowzaFont(size: 20, weight: .semibold)
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "5F6168"))
-            }
+            GlowzaCircleBackButton(action: onBack)
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -81,15 +77,15 @@ struct ConsentFormView: View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Treatment Consent Form")
-                    .glowzaFont(size: 14, weight: .bold)
+                    .glowzaFont(.body, weight: .bold)
                     .foregroundColor(dark)
                     .tracking(3)
                 Text("REF: GZ-2024-089")
-                    .glowzaFont(size: 12, weight: .medium)
+                    .glowzaFont(.caption, weight: .medium)
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "666A72"))
                     .tracking(1.6)
                 Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
-                    .glowzaFont(size: 14)
+                    .glowzaFont(.body)
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52"))
                     .lineSpacing(6)
             }
@@ -112,7 +108,7 @@ struct ConsentFormView: View {
                         }
                     }
                     Text("I have read and agree to the treatment consent terms above, and confirm that this signature is my own.")
-                        .glowzaFont(size: 13)
+                        .glowzaFont(.caption)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "4A4C52"))
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
@@ -124,13 +120,13 @@ struct ConsentFormView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text("Electronic Signature")
-                        .glowzaFont(size: 14, weight: .semibold)
+                        .glowzaFont(.body, weight: .semibold)
                         .foregroundColor(dark)
                         .tracking(2.2)
                     Spacer()
                     Button(action: { canvasView.drawing = PKDrawing() }) {
                         Text("CLEAR")
-                            .glowzaFont(size: 11)
+                            .glowzaFont(.caption, weight: .semibold)
                             .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "777A81"))
                             .tracking(2)
                     }

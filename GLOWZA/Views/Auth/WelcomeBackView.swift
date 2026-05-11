@@ -32,18 +32,10 @@ struct WelcomeBackView: View {
                 .offset(x: 160, y: -200)
 
             // Back button
-            Button(action: { onBack?() }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .glowzaFont(size: 15, weight: .semibold)
-                    Text("Back")
-                        .glowzaFont(size: 15, weight: .medium)
-                }
-                .foregroundStyle(Color(hex: "962043"))
-            }
-            .padding(.top, 60)
-            .padding(.leading, 24)
-            .opacity(onBack != nil ? 1 : 0)
+            GlowzaCircleBackButton(action: { onBack?() })
+                .padding(.top, 60)
+                .padding(.leading, 24)
+                .opacity(onBack != nil ? 1 : 0)
             VStack(spacing: 0) {
                 Spacer()
 

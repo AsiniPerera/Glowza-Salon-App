@@ -50,9 +50,10 @@ struct AppUpdatesView: View {
 
                     // Current version hero
                     VStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .glowzaFont(size: 40)
-                            .foregroundColor(accent)
+                        Image("logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
                         Text("GLOWZA")
                             .glowzaFont(size: 13, weight: .medium)
                             .foregroundColor(Color(hex: "8A8D94"))
@@ -110,15 +111,7 @@ struct AppUpdatesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(accent)
-                    }
-                    .fixedSize()
+                    GlowzaCircleBackButton(action: { dismiss() })
                 }
             }
         }
@@ -220,15 +213,7 @@ struct TermsConditionsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(accent)
-                    }
-                    .fixedSize()
+                    GlowzaCircleBackButton(action: { dismiss() })
                 }
             }
         }

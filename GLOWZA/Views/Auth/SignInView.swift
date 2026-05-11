@@ -159,10 +159,11 @@ struct SignInView: View {
                 Spacer().frame(height: 20)
 
                 HStack(spacing: 12) {
-                    socialIcon(label: "f", labelColor: Color(hex: "1877F2"))
-                    socialIcon(label: "G", labelColor: Color(hex: "DB4437"))
-                    socialIcon(sfSymbol: "apple.logo", labelColor: Color.glowzaTextPrimary)
+                    socialIcon(imageName: "fb", labelColor: Color(hex: "1877F2"))
+                    socialIcon(imageName: "google", labelColor: Color(hex: "DB4437"))
+                    socialIcon(imageName: "apple", labelColor: Color.glowzaTextPrimary)
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.horizontal, 24)
 
                 Spacer().frame(height: 36)
@@ -236,10 +237,15 @@ struct SignInView: View {
     }
 
     @ViewBuilder
-    private func socialIcon(label: String? = nil, sfSymbol: String? = nil, labelColor: Color) -> some View {
+    private func socialIcon(imageName: String? = nil, label: String? = nil, sfSymbol: String? = nil, labelColor: Color) -> some View {
         Button(action: {}) {
             Group {
-                if let symbol = sfSymbol {
+                if let img = imageName {
+                    Image(img)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                } else if let symbol = sfSymbol {
                     Image(systemName: symbol)
                         .glowzaFont(size: 20, weight: .medium)
                         .foregroundColor(labelColor)
@@ -249,10 +255,13 @@ struct SignInView: View {
                         .foregroundColor(labelColor)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(Color(hex: "F2F2F7"))
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .frame(width: 52, height: 52)
+            .background(Color.white)
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .stroke(Color(hex: "E8E8EC"), lineWidth: 1)
+            )
         }
     }
 

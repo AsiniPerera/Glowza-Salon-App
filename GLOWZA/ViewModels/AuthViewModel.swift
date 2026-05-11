@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import LocalAuthentication
+import FirebaseAuth
 
 @MainActor
 final class AuthViewModel: ObservableObject {
@@ -55,7 +56,7 @@ final class AuthViewModel: ObservableObject {
             isAuthenticating = false
             clearFields()
         } catch {
-            authenticationError = error.localizedDescription
+            authenticationError = friendlyMessage(for: error)
             isAuthenticating = false
         }
     }
@@ -63,7 +64,7 @@ final class AuthViewModel: ObservableObject {
     // MARK: - Sign In
     func signIn() async {
         guard !email.isEmpty, !password.isEmpty else {
-            authenticationError = "Email and password are required"
+            authenticationError = "Please enter your email and password."
             return
         }
         
@@ -76,7 +77,7 @@ final class AuthViewModel: ObservableObject {
             isAuthenticating = false
             clearFields()
         } catch {
-            authenticationError = error.localizedDescription
+            authenticationError = friendlyMessage(for: error)
             isAuthenticating = false
         }
     }
@@ -97,6 +98,33 @@ final class AuthViewModel: ObservableObject {
         password = ""
         fullName = ""
         phone = ""
+    }
+
+    // MARK: - Friendly Firebase error messages
+    private func friendlyMessage(for error: Error) -> String {
+        let code = AuthErrorCode(_bridgedNSError: error as NSError)?.code
+        switch code {
+        case .invalidEmail:
+            return "That doesn't look like a valid email address."
+        case .wrongPassword:
+            return "Incorrect password. Please try again."
+        case .userNotFound:
+            return "No account found with that email. Try signing up first."
+        case .userDisabled:
+            return "Your account has been disabled. Please contact support."
+        case .emailAlreadyInUse:
+            return "An account with this email already exists. Sign in instead."
+        case .weakPassword:
+            return "Your password is too weak — use at least 6 characters."
+        case .networkError:
+            return "No internet connection. Check your network and try again."
+        case .tooManyRequests:
+            return "Too many attempts. Please wait a moment and try again."
+        case .invalidCredential, .credentialAlreadyInUse:
+            return "Incorrect email or password. Please check and try again."
+        default:
+            return "Something went wrong. Please try again."
+        }
     }
 
     func authenticate() {

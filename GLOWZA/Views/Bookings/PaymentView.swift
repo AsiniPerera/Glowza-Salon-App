@@ -117,11 +117,13 @@ struct PaymentView: View {
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                                            .fill(Color(hex: "F2F2F7"))
                                             .frame(width: 48, height: 48)
-                                        Image(systemName: "creditcard.fill")
-                                            .glowzaFont(size: 20, weight: .semibold)
-                                            .foregroundColor(draft.paymentMethod == .card ? .white : Color.glowzaPrimary)
+                                        Image("creditcard")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 48, height: 48)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                     }
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text("Credit / Debit Card")
@@ -145,7 +147,7 @@ struct PaymentView: View {
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
-                                .background(draft.paymentMethod == .card ? Color.glowzaPrimary.opacity(0.06) : appSettings.themeSurface)
+                                .background(appSettings.themeSurface)
                                 .cornerRadius(25)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 25)
@@ -159,23 +161,12 @@ struct PaymentView: View {
                             // Cash button
                             methodButton(.cash)
 
-                            // Online banking button
-                            methodButton(.online)
+
                         }
                         .padding(.horizontal, 24)
                     }
 
-                    // MARK: Online banking info
-                    if draft.paymentMethod == .online {
-                        Spacer().frame(height: 24)
-                        infoMessage(
-                            icon: "building.columns.fill",
-                            title: "Online Banking Redirect",
-                            text: "You'll be securely redirected to your bank's payment gateway to complete the transaction.",
-                            color: Color(hex: "007AFF")
-                        )
-                        .padding(.horizontal, 24)
-                    }
+
 
                     // MARK: Cash info
                     if draft.paymentMethod == .cash {
@@ -220,11 +211,29 @@ struct PaymentView: View {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                        .fill(Color(hex: "F2F2F7"))
                         .frame(width: 48, height: 48)
-                    Image(systemName: method.icon)
-                        .glowzaFont(size: 20, weight: .semibold)
-                        .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                    if method == .online {
+                        Image("onlinebanking")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else if method == .card {
+                        Image("creditcard")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    } else if method == .cash {
+                        Image("paysalon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else {
+                        Image(systemName: method.icon)
+                            .glowzaFont(size: 20, weight: .semibold)
+                            .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -251,7 +260,7 @@ struct PaymentView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+            .background(Color.white)
             .cornerRadius(25)
             .overlay(
                 RoundedRectangle(cornerRadius: 25)
@@ -396,9 +405,11 @@ struct CardEntryView: View {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(Color.black)
                                         .frame(width: 48, height: 48)
-                                    Image(systemName: "apple.logo")
-                                        .glowzaFont(size: 20, weight: .semibold)
-                                        .foregroundColor(.white)
+                                    Image("apple")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 48, height: 48)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 3) {
@@ -523,11 +534,24 @@ struct CardEntryView: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                        .fill(Color(hex: "F2F2F7"))
                         .frame(width: 48, height: 48)
-                    Image(systemName: "creditcard.fill")
-                        .glowzaFont(size: 20, weight: .semibold)
-                        .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                    if card.brand.lowercased() == "visa" {
+                        Image("visa")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else if card.brand.lowercased() == "mastercard" {
+                        Image("mastercard")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else {
+                        Image("creditcard")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    }
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
@@ -554,7 +578,7 @@ struct CardEntryView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+            .background(Color.white)
             .cornerRadius(25)
             .overlay(
                 RoundedRectangle(cornerRadius: 25)

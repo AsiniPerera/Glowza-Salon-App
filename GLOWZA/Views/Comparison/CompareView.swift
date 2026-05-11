@@ -127,7 +127,7 @@ struct CompareView: View {
                     Spacer().frame(height: 36)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
+                .padding(.top, 24)
             }
             .background((appSettings.themePage).ignoresSafeArea())
             .navigationBarHidden(true)
@@ -457,16 +457,8 @@ struct CompareView: View {
     private var clearBtn: some View {
         Button { withAnimation { store.clear() } } label: {
             Label("Clear All", systemImage: "trash")
-                .glowzaFont(size: 14, weight: .semibold).foregroundColor(brand)
-                .frame(maxWidth: .infinity)
-                .frame(height: 36)
-                .background(appSettings.themeSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(brand.opacity(0.3), lineWidth: 1)
-                )
         }
+        .buttonStyle(GlowzaSecondaryButtonStyle())
     }
 
     private var missingSelectionCount: Int {

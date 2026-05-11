@@ -59,8 +59,40 @@ private struct GlowzaScaledFont: ViewModifier {
     let design: Font.Design
 
     func body(content: Content) -> some View {
+        let fontName: String
+        switch weight {
+        case .bold: fontName = "Urbanist-Bold"
+        case .semibold: fontName = "Urbanist-SemiBold"
+        case .medium: fontName = "Urbanist-Medium"
+        case .light: fontName = "Urbanist-Light"
+        default: fontName = "Urbanist-Regular"
+        }
+        
         // Use .font() directly here — NOT .glowzaFont() — to avoid infinite recursion.
-        content.font(.system(size: baseSize * appSettings.fontMultiplier, weight: weight, design: design))
+        // Fallback to system font if Urbanist is not loaded in the project.
+        return content.font(.custom(fontName, size: baseSize * appSettings.fontMultiplier))
+    }
+}
+
+enum GlowzaTextSize {
+    case h1      // 34 (Large Title)
+    case h2      // 28 (Title)
+    case h3      // 24 (Header)
+    case h4      // 20 (Small Title / Subhead)
+    case callout // 17 (Buttons)
+    case body    // 15 (Body)
+    case caption // 12 (Caption)
+    
+    var size: CGFloat {
+        switch self {
+        case .h1: return 34
+        case .h2: return 28
+        case .h3: return 24
+        case .h4: return 20
+        case .callout: return 17
+        case .body: return 15
+        case .caption: return 12
+        }
     }
 }
 
@@ -68,9 +100,52 @@ extension View {
     func glowzaFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
         modifier(GlowzaScaledFont(baseSize: size, weight: weight, design: design))
     }
+    
+    func glowzaFont(_ style: GlowzaTextSize, weight: Font.Weight = .regular) -> some View {
+        glowzaFont(size: style.size, weight: weight)
+    }
 }
 
-// MARK: - Global Button Style
+// MARK: - Global Button Styles
+struct GlowzaPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .glowzaFont(.callout, weight: .semibold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 55)
+            .background(Color(hex: "962043")) // Brand color
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+            )
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+struct GlowzaSecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .glowzaFont(.callout, weight: .semibold)
+            .foregroundColor(Color(hex: "962043")) // Brand color
+            .frame(maxWidth: .infinity)
+            .frame(height: 55)
+            .background(Color(hex: "962043").opacity(0.15)) // Secondary bg
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(Color(hex: "962043").opacity(0.35), lineWidth: 1)
+            )
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// Fallback style used globally until all buttons are migrated
 struct GlowzaRoundedButtonStyle: ButtonStyle {
     @Environment(\.isHighContrast) private var isHighContrast
 
@@ -152,3 +227,18 @@ extension Date {
     }
 }
 
+// MARK: - Standard Back Button
+struct GlowzaCircleBackButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(Color(hex: "3A3A3C"))
+                .frame(width: 36, height: 36)
+                .background(Color(hex: "F2F2F7"))
+                .clipShape(Circle())
+        }
+    }
+}

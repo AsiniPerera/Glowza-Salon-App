@@ -219,17 +219,17 @@ struct HomeView: View {
                         .fill(Color(hex: "9FD8CE"))
                         .frame(width: 44, height: 44)
                     Text(String(profileName.prefix(1)).uppercased())
-                        .glowzaFont(size: 19, weight: .bold, design: .rounded)
+                        .glowzaFont(.h4, weight: .bold)
                         .foregroundColor(Color(hex: "2E6158"))
                 }
             }
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Welocme,")
-                    .glowzaFont(size: 13, weight: .regular, design: .rounded)
+                Text("Welcome,")
+                    .glowzaFont(.caption)
                     .foregroundColor(secondaryText)
                 Text(profileName.components(separatedBy: " ").first ?? profileName)
-                    .glowzaFont(size: 14, weight: .bold, design: .rounded)
+                    .glowzaFont(.body, weight: .bold)
                     .foregroundColor(primaryText)
             }
 
@@ -298,20 +298,20 @@ struct HomeView: View {
             .clipShape(Capsule())
 
             Text("20% off your")
-                .glowzaFont(size: 20, weight: .bold, design: .rounded)
+                .glowzaFont(.h4, weight: .bold)
                 .foregroundColor(.white)
             Text("first treatment")
-                .glowzaFont(size: 20, weight: .bold, design: .rounded)
+                .glowzaFont(.h4, weight: .bold)
                 .foregroundColor(.white)
                 .padding(.top, -4)
 
             Text("Book now & glow up")
-                .glowzaFont(size: 12, weight: .regular)
+                .glowzaFont(.caption)
                 .foregroundColor(Color.white.opacity(0.75))
 
             Button(action: {}) {
                 Text("Book Now")
-                    .glowzaFont(size: 13, weight: .semibold)
+                    .glowzaFont(.caption, weight: .semibold)
                     .foregroundColor(Color(hex: "962043"))
                     .padding(.horizontal, 18)
                     .padding(.vertical, 8)

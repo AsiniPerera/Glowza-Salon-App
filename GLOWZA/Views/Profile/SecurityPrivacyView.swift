@@ -78,15 +78,7 @@ struct SecurityPrivacyView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(accent)
-                    }
-                    .fixedSize()
+                    GlowzaCircleBackButton(action: { dismiss() })
                 }
             }
             .alert("Delete Account", isPresented: $showDataDeleteAlert) {

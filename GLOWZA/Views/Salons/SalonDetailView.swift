@@ -195,15 +195,7 @@ struct SalonDetailView: View {
         }
         .frame(height: 260)
         .overlay(alignment: .topLeading) {
-            Button(action: { dismiss() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 15))
-                    .foregroundColor(Color(hex: "1A1A1A"))
-                    .frame(width: 36, height: 36)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.12), radius: 5)
-            }
+            GlowzaCircleBackButton(action: { dismiss() })
             .padding(.leading, 20)
             .padding(.top, 56)
         }
