@@ -43,6 +43,7 @@ struct HomeView: View {
     @State private var selectedSalonName: String? = nil
     @State private var showMapSheet = false
     @State private var showNotificationsView = false
+    @State private var showFavourites = false
     @State private var currentPromotionPage: Int = 0
     @State private var profileAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData")
     @State private var profileName: String = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini"
@@ -56,7 +57,7 @@ struct HomeView: View {
     ]
 
     private let allSalons: [SalonPreview] = [
-      .init(name: "Haley Avenue", location: "Moratuwa, Colombo", distance: "2.0 km", rating: 4.7, reviews: 312, score: 0.95,
+      .init(name: "Golden Avenue", location: "Moratuwa, Colombo", distance: "2.0 km", rating: 4.7, reviews: 312, score: 0.95,
           coordinate: CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820), imageName: "Salon1", categories: ["Skin", "Hair", "Nails"]),
       .init(name: "Glow Studio", location: "Bambalapitiya, Colombo", distance: "3.5 km", rating: 4.6, reviews: 198, score: 0.88,
           coordinate: CLLocationCoordinate2D(latitude: 6.8971, longitude: 79.8554), imageName: "salon2", categories: ["Skin", "Aesthetic", "Makeup"]),
@@ -159,6 +160,9 @@ struct HomeView: View {
             .sheet(isPresented: $showMapSheet) {
                 SalonMapView(salons: filteredSalons)
             }
+            .sheet(isPresented: $showFavourites) {
+                FavouriteSalonsView().environment(appSettings)
+            }
             .task {
                 await syncSalonsToFirestore()
                 refreshProfileHeader()
@@ -231,18 +235,30 @@ struct HomeView: View {
 
             Spacer()
 
-            Button(action: {
-                showNotificationsView = true
-            }) {
-                Circle()
-                    .fill(surfaceBackground)
-                    .frame(width: 42, height: 42)
-                    .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
-                    .overlay {
-                        Image(systemName: "bell.fill")
-                            .glowzaFont(size: 16, weight: .medium)
-                            .foregroundColor(brand)
-                    }
+            HStack(spacing: 10) {
+                Button(action: {
+                    showFavourites = true
+                }) {
+                    Image(systemName: "heart.fill")
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(brand)
+                        .frame(width: 42, height: 42)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                }
+                
+                Button(action: {
+                    showNotificationsView = true
+                }) {
+                    Image(systemName: "bell.fill")
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(brand)
+                        .frame(width: 42, height: 42)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                }
             }
         }
     }
@@ -662,7 +678,7 @@ private struct PromoBannerCard: View {
 
 private func mappedSalonImageName(_ salonName: String) -> String {
     switch salonName {
-    case "Haley Avenue": return "Salon1"
+    case "Golden Avenue": return "Salon1"
     case "Glow Studio": return "salon2"
     case "Luxe Aesthetics": return "salon3"
     case "Velvet Touch": return "salon4"

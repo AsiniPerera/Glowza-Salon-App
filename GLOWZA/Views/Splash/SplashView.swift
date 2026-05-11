@@ -100,7 +100,7 @@ struct SplashView: View {
                         Image("logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 250, height: 250)
+                            .frame(width: 200, height: 200)
                             .opacity(logoOpacity)
 
                         LinearGradient(
@@ -108,50 +108,18 @@ struct SplashView: View {
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 80, height: 250)
+                        .frame(width: 60, height: 200)
                         .offset(x: shimmerX)
                         .blendMode(.overlay)
                         .opacity(logoOpacity)
                     }
-                    .frame(width: 250, height: 250)
+                    .frame(width: 200, height: 200)
 
                     .clipped()
                     .scaleEffect(logoScale)
                 }
 
-                // Brand name + decorative line + tagline
-                VStack(spacing: 12) {
-                    Text("GLOWZA")
-                        .glowzaFont(size: 40, weight: .bold)
-                        .tracking(9)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [brand, Color(hex: "D63063"), brand],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.clear, pink.opacity(0.80), .clear],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(height: 1)
-                        .padding(.horizontal, 30)
-                        .opacity(subtitleOpacity)
-
-                    Text("Premium Salon Experience")
-                        .glowzaFont(size: 13, weight: .light)
-                        .tracking(3.5)
-                        .foregroundColor(brand.opacity(0.50))
-                        .opacity(subtitleOpacity)
-                }
-                .offset(y: titleOffset)
-                .opacity(titleOpacity)
+                // Removed brand name and tagline per user request
             }
         }
         .onAppear { startAnimations() }
@@ -212,7 +180,7 @@ struct LandingView: View {
                     Image("logo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 300, height: 246)
+                        .frame(width: 220, height: 180)
                         .frame(maxWidth: .infinity, alignment: .center)
 
                     VStack(spacing: 8) {

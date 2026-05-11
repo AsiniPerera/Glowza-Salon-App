@@ -160,7 +160,7 @@ private struct FavouriteSalonRow: View {
 // MARK: - Salon image helper (mirrors HomeView mapping)
 private func mappedSalonImageName(_ salonName: String) -> String {
     switch salonName {
-    case "Haley Avenue":       return "Salon1"
+    case "Golden Avenue":       return "Salon1"
     case "Glow Studio":        return "salon2"
     case "Luxe Aesthetics":    return "salon3"
     case "Velvet Touch":       return "salon4"

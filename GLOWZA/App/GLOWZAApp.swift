@@ -121,7 +121,7 @@ struct RootView: View {
             if url.host == "quick-book" {
                 let salonName = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                     .queryItems?.first(where: { $0.name == "salon" })?
-                    .value?.removingPercentEncoding ?? "Haley Avenue"
+                    .value?.removingPercentEncoding ?? "Golden Avenue"
                 screen = .main
                 NotificationCenter.default.post(name: .glowzaGoToHomeTab, object: nil)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

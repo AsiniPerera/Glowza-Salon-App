@@ -51,7 +51,7 @@ final class FavouritesStore {
 
     /// Injects default favourites for lecturer demonstration.
     private func seedDemoData() {
-        let demoFavs = ["Haley Avenue", "Azure Spa"]
+        let demoFavs = ["Golden Avenue", "Azure Spa"]
         for fav in demoFavs {
             if !favouriteNames.contains(fav) {
                 favouriteNames.append(fav)

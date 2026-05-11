@@ -195,7 +195,7 @@ final class BookingStore {
         let existingReceipts = Set(bookings.map { $0.receiptNumber })
         
         let demoBookings: [(salon: String, service: String, status: BookingStatus, dateOffset: Int)] = [
-            ("Haley Avenue", "Chemical Peel", .completed, -5),
+            ("Golden Avenue", "Chemical Peel", .completed, -5),
             ("Azure Spa", "Deep Tissue Massage", .upcoming, 2),
             ("The Glam Room", "Bridal Makeup", .cancelled, -10)
         ]

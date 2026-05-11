@@ -68,28 +68,6 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 24)
 
-                    // MARK: Favourites
-                    sectionLabel("Favourites")
-                    profileCard {
-                        navButton(
-                            title: "Favourite Salons",
-                            icon: "heart.fill",
-                            color: .red
-                        ) { showFavourites = true }
-                        .overlay(alignment: .trailing) {
-                            if !favourites.favouriteNames.isEmpty {
-                                Text("\(favourites.favouriteNames.count)")
-                                    .glowzaFont(size: 12, weight: .bold)
-                                    .foregroundColor(.white)
-                                    .frame(minWidth: 20, minHeight: 20)
-                                    .padding(.horizontal, 6)
-                                    .background(Color.red)
-                                    .clipShape(Capsule())
-                                    .padding(.trailing, 36)
-                            }
-                        }
-                    }
-
                     // MARK: Account
                     sectionLabel("Account")
                     profileCard {
@@ -184,7 +162,6 @@ struct ProfileView: View {
                 refreshProfileFromAuthService()
             }
         }
-        .sheet(isPresented: $showFavourites)       { FavouriteSalonsView().environment(appSettings) }
         .sheet(isPresented: $showEditProfile)      {
             EditProfileView(displayName: $displayName, avatarData: $avatarData)
                 .environment(appSettings)
@@ -260,8 +237,11 @@ struct ProfileView: View {
             content()
         }
         .background(appSettings.themeSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .hcBorder(radius: 16)
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 16))
+        .overlay(
+            UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 16)
+                .stroke(appSettings.isHighContrast ? Color.white.opacity(0.85) : Color.clear, lineWidth: appSettings.isHighContrast ? 3 : 0)
+        )
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
         .padding(.horizontal, 20)
         .padding(.bottom, 4)

@@ -164,6 +164,14 @@ final class AuthService {
         currentUser = nil
         currentUserProfile = nil
         isSignedIn = false
+        
+        // Clear profile cache from UserDefaults
+        UserDefaults.standard.removeObject(forKey: "profile_fullName")
+        UserDefaults.standard.removeObject(forKey: "profile_email")
+        UserDefaults.standard.removeObject(forKey: "profile_phone")
+        UserDefaults.standard.removeObject(forKey: "profile_skinType")
+        UserDefaults.standard.removeObject(forKey: "profile_loyalty")
+        UserDefaults.standard.removeObject(forKey: "profile_avatarData")
     }
 
     // MARK: - Check & Listen to Auth State (called once on app launch)

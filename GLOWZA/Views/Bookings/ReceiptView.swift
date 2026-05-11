@@ -316,7 +316,7 @@ struct ReceiptView: View {
 
     private func coordinateForSalon(_ name: String) -> CLLocationCoordinate2D {
         switch name {
-        case "Haley Avenue":
+        case "Golden Avenue":
             return CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820)
         case "Glow Studio":
             return CLLocationCoordinate2D(latitude: 6.7713, longitude: 79.8783)

@@ -221,7 +221,7 @@ final class SalonFirestoreService {
     // MARK: - Map salon display name → Firestore salonId
     func salonId(for salonName: String) -> String {
         let knownIds: [String: String] = [
-            "Haley Avenue":       "haley_avenue",
+            "Golden Avenue":       "haley_avenue",
             "Glow Studio":        "glow_studio",
             "Luxe Aesthetics":    "luxe_aesthetics",
             "Velvet Touch":       "velvet_touch",

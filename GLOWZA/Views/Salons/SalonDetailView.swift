@@ -17,7 +17,7 @@ struct SalonDetailView: View {
     @State private var isFavourited    = false
     @State private var photoIndex      = 0
     @State private var selectedTab     = 0
-    @State private var selectedService: SalonService? = nil
+    @State private var selectedServiceID: UUID? = nil
     @State private var firestoreReviews: [FirestoreSalonReview] = []
     @State private var showReviewSheet = false
     @State private var reviewToEdit: FirestoreSalonReview? = nil
@@ -58,23 +58,35 @@ struct SalonDetailView: View {
                 VStack(spacing: 0) {
                     heroSection
                     infoSheet
+                        .padding(.top, -15)
                 }
             }
             .ignoresSafeArea(edges: .top)
 
-            bookNowBar
-                .opacity(showBookNow ? 1 : 0)
-                .animation(.easeInOut(duration: 0.2), value: showBookNow)
+            if showBookNow {
+                bookNowBar
+                    .transition(.move(edge: .bottom))
+                    .animation(.easeInOut(duration: 0.2), value: showBookNow)
+            }
         }
         .navigationBarHidden(true)
         .onAppear {
             bookingDraft = BookingDraft(salon: salon)
+            selectedServiceID = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                selectedServiceID = nil
+                bookingDraft.service = nil
+            }
             Task {
                 await FavouritesStore.shared.load()
                 isFavourited = FavouritesStore.shared.favouriteNames.contains(salonName)
                 await SalonFirestoreService.shared.seedMockReviews()
                 await fetchFirestoreReviews()
             }
+        }
+        .onDisappear {
+            selectedServiceID = nil
+            bookingDraft.service = nil
         }
         .fullScreenCover(isPresented: $showBookingFlow) {
             BookingFlowView(draft: bookingDraft)
@@ -179,7 +191,7 @@ struct SalonDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 35)
         }
         .frame(height: 260)
         .overlay(alignment: .topLeading) {
@@ -231,7 +243,7 @@ struct SalonDetailView: View {
                 heroContactBtn(color: Color(hex: "25D366"), symbol: "message.fill")
             }
             .padding(.trailing, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 35)
         }
     }
 
@@ -242,11 +254,11 @@ struct SalonDetailView: View {
                 .italic()
                 .font(.system(size: 14))
                 .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "3A3A3A"))
-                .multilineTextAlignment(.center)
-                .lineSpacing(5)
+                .multilineTextAlignment(.leading)
+                .lineSpacing(6)
                 .padding(.horizontal, 24)
-                .padding(.top, 16)
-                .padding(.bottom, 8)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
 
             Picker("Salon Section", selection: $selectedTab) {
                 Text("Services").tag(0)
@@ -270,6 +282,7 @@ struct SalonDetailView: View {
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selectedTab)
         }
         .background(appSettings.isDarkMode ? Color(hex: "0A0A0A") : Color.white)
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 15))
     }
 
     
@@ -366,7 +379,7 @@ struct SalonDetailView: View {
 
     private func mappedSalonImageName(_ salonName: String) -> String {
         switch salonName {
-        case "Haley Avenue": return "Salon1"
+        case "Golden Avenue": return "Salon1"
         case "Glow Studio": return "salon2"
         case "Luxe Aesthetics": return "salon3"
         case "Velvet Touch": return "salon4"
@@ -380,55 +393,111 @@ struct SalonDetailView: View {
         }
     }
 
+    private func imageForService(_ name: String) -> String {
+        let lowerName = name.lowercased()
+        
+        // Direct matches or strong associations
+        if lowerName.contains("facial") { return "facial" }
+        if lowerName.contains("chemical peel") || lowerName.contains("carbon peel") || lowerName.contains("peel") { return "chemicalpeel" }
+        if lowerName.contains("laser hair") { return "laserhair" }
+        if lowerName.contains("hair") { return "hair" } // General hair
+        if lowerName.contains("manicure") || lowerName.contains("pedicure") || lowerName.contains("wax") { return "manicure" }
+        if lowerName.contains("microneedling") || lowerName.contains("micro-needling") { return "microneedling" }
+        if lowerName.contains("body scrub") || lowerName.contains("body wrap") { return "bodyscrub" }
+        if lowerName.contains("massage") || lowerName.contains("reflexology") { return "deeptissuemassage" }
+        if lowerName.contains("nail art") { return "nailart" }
+        if lowerName.contains("threading") || lowerName.contains("microblading") { return "eyebrowthreading" }
+        if lowerName.contains("extension") || lowerName.contains("lift") { return "eyelashextensions" }
+        if lowerName.contains("teeth") { return "teeth " } // Note the space in asset name "teeth "
+        if lowerName.contains("aromatherapy") || lowerName.contains("drip") { return "aromatherapy" }
+        if lowerName.contains("makeup") || lowerName.contains("bridal") { return "bridalmakeup" }
+        
+        // Aesthetic treatments that don't match above -> default to facial or skin
+        if lowerName.contains("botox") || lowerName.contains("filler") || lowerName.contains("aging") || lowerName.contains("tightening") || lowerName.contains("injection") || lowerName.contains("contouring") || lowerName.contains("scar") {
+            return "facial"
+        }
+        
+        // Fallback to a safe default if still empty
+        return "facial"
+    }
+
     private var servicesContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(salon.services) { service in
-                Button(action: {
-                    if selectedService?.id == service.id {
-                        selectedService = nil  // deselect
+                HStack(spacing: 16) {
+                    // Image (Left)
+                    let imgName = imageForService(service.name)
+                    if !imgName.isEmpty {
+                        Image(imgName)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     } else {
-                        selectedService = service
-                        bookingDraft.service = service
+                        // Fallback placeholder
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(brand.opacity(0.08))
+                            .frame(width: 64, height: 64)
+                            .overlay {
+                                Image(systemName: "scissors")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(brand)
+                            }
                     }
-                }) {
-                    HStack(spacing: 14) {
-                        // Checkbox
+                    
+                    // Text Info (Right side of image)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(service.name)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(appSettings.themeText)
+                        
+                        Text(service.duration)
+                            .font(.system(size: 12))
+                            .foregroundColor(appSettings.themeTextSecondary)
+                        
+                        Text("LKR \(Int(service.price))")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(brand)
+                            .padding(.top, 2)
+                    }
+                    
+                    Spacer()
+                    
+                    // Checkbox (Far Right)
+                    Button(action: {
+                        if selectedServiceID == service.id {
+                            selectedServiceID = nil
+                            bookingDraft.service = nil
+                        } else {
+                            selectedServiceID = service.id
+                            bookingDraft.service = service
+                        }
+                    }) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(selectedService?.id == service.id ? brand : Color(hex: "C7C7CC"), lineWidth: 1.5)
-                                .frame(width: 22, height: 22)
-                            if selectedService?.id == service.id {
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            Circle()
+                                .stroke(selectedServiceID == service.id ? brand : Color(hex: "C7C7CC"), lineWidth: 1.5)
+                                .frame(width: 24, height: 24)
+                            
+                            if selectedServiceID == service.id {
+                                Circle()
                                     .fill(brand)
-                                    .frame(width: 22, height: 22)
+                                    .frame(width: 24, height: 24)
                                 Image(systemName: "checkmark")
                                     .font(.system(size: 11, weight: .bold))
                                     .foregroundColor(.white)
                             }
                         }
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(service.name)
-                                .font(.system(size: 14))
-                                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
-                            Text(service.duration)
-                                .font(.system(size: 12))
-                                .foregroundColor(Color(hex: "8A8A8A"))
-                        }
-                        Spacer()
-                        Text("LKR \(Int(service.price))")
-                            .font(.system(size: 14))
-                            .foregroundColor(brand)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
-                    .background(
-                        selectedService?.id == service.id
-                            ? brand.opacity(0.05)
-                            : Color.clear
-                    )
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                Divider().padding(.horizontal, 20)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .fill(appSettings.themeSurface)
+                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+                )
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
             }
         }
     }
@@ -489,8 +558,7 @@ struct SalonDetailView: View {
         } else if let idx = mockUsers.firstIndex(of: review.userName) {
             imageName = "r\(idx + 1)"
         } else {
-            let idx = abs(review.userName.hashValue) % 10 + 1
-            imageName = "r\(idx)"
+            imageName = ""
         }
         
         return VStack(alignment: .leading, spacing: 10) {
@@ -564,7 +632,7 @@ struct SalonDetailView: View {
 
     private var showBookNow: Bool {
         switch selectedTab {
-        case 0: return selectedService != nil
+        case 0: return selectedServiceID != nil
         case 1: return false                       // About tab — hidden
         default: return false                      // Reviews tab — hidden
         }
@@ -575,13 +643,13 @@ struct SalonDetailView: View {
         VStack(spacing: 0) {
             Rectangle().fill(Color(hex: "962043")).frame(height: 1)
             Button(action: {
-                if let svc = selectedService {
-                    bookingDraft.service = svc
+                if let svc = bookingDraft.service {
+                    // Action
                 }
                 showBookingFlow = true
             }) {
                 HStack(spacing: 10) {
-                    if let svc = selectedService, selectedTab == 0 {
+                    if let svc = bookingDraft.service, selectedTab == 0 {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(svc.name)
                                 .font(.system(size: 13, weight: .semibold))
@@ -597,7 +665,7 @@ struct SalonDetailView: View {
                     Text("Book Now")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
-                    if selectedService == nil || selectedTab != 0 {
+                    if bookingDraft.service == nil || selectedTab != 0 {
                         Spacer()
                     }
                 }
@@ -813,7 +881,7 @@ struct SalonReviewSheet: View {
 
     private func coordinateForSalon(_ name: String) -> CLLocationCoordinate2D {
         switch name {
-        case "Haley Avenue":
+        case "Golden Avenue":
             return CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820)
         case "Glow Studio":
             return CLLocationCoordinate2D(latitude: 6.8971, longitude: 79.8554)
@@ -827,7 +895,7 @@ struct SalonReviewSheet: View {
 
 #Preview {
     NavigationStack {
-        SalonDetailView(salonName: "Haley Avenue")
+        SalonDetailView(salonName: "Golden Avenue")
             .environment(TreatmentComparisonStore.shared)
     }
 }

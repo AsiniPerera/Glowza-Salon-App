@@ -114,7 +114,7 @@ struct SalonCatalog {
 
     let salons: [Salon] = [
         Salon(
-            name: "Haley Avenue",
+            name: "Golden Avenue",
             location: "Moratuwa, Colombo",
             distance: "2 km",
             rating: 4.7, reviewCount: 312, score: 0.95,
@@ -135,7 +135,7 @@ struct SalonCatalog {
                 SalonService(name: "Nail Art",            icon: "paintpalette.fill", duration: "45 min", price: 3500,  category: "Nails",     benefits: ["Creative design", "Unique"]),
                 SalonService(name: "Bridal Makeup",       icon: "star.fill",        duration: "180 min", price: 45000, category: "Makeup",    benefits: ["Perfect look", "Long-lasting"])
             ],
-            about: "Haley Avenue is a premier aesthetic salon offering sophisticated beauty treatments in a serene, luxurious environment. Our certified specialists are committed to delivering transformative results tailored to every client.",
+            about: "Premier aesthetic salon offering sophisticated beauty treatments.",
             phone: "+94 11 234 5678",
             openHours: "Mon–Sat: 9:00 AM – 7:00 PM"
         ),
@@ -161,7 +161,7 @@ struct SalonCatalog {
                 SalonService(name: "Skin Tightening",     icon: "bolt.fill",        duration: "60 min", price: 18000, category: "Aesthetic", benefits: ["Firm skin", "Lifting"]),
                 SalonService(name: "Eyelash Lift",        icon: "eye",              duration: "60 min", price: 4500,  category: "Eyes",      benefits: ["Curled lashes", "Natural look"])
             ],
-            about: "Glow Studio specialises in non-invasive aesthetic treatments and advanced skincare. We combine modern technology with holistic beauty principles for visible, lasting results.",
+            about: "Specializes in non-invasive aesthetic treatments and advanced skincare.",
             phone: "+94 11 345 6789",
             openHours: "Mon–Sun: 8:00 AM – 8:00 PM"
         ),
@@ -187,7 +187,7 @@ struct SalonCatalog {
                 SalonService(name: "Hair Coloring",         icon: "paintbrush.pointed.fill", duration: "120 min", price: 12500, category: "Hair",      benefits: ["Vibrant color", "Shiny"]),
                 SalonService(name: "Paraffin Wax",          icon: "drop.fill",      duration: "30 min", price: 3800,  category: "Nails",     benefits: ["Soft hands", "Moisture"])
             ],
-            about: "Luxe Aesthetics is a boutique clinic focusing on premium aesthetic medicine and personalised beauty transformations. Every treatment is precisely crafted for your unique skin needs.",
+            about: "Boutique clinic focusing on premium aesthetic medicine and transformations.",
             phone: "+94 11 456 7890",
             openHours: "Tue–Sun: 10:00 AM – 6:00 PM"
         )
@@ -198,7 +198,7 @@ struct SalonCatalog {
             return matched
         }
 
-        // Fallback keeps the selected salon name instead of silently defaulting to Haley Avenue.
+        // Fallback keeps the selected salon name instead of silently defaulting to Golden Avenue.
         let template = salons.first!
         return Salon(
             name: name,

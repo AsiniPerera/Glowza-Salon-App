@@ -86,12 +86,13 @@ struct CreateAccountView: View {
                         }
                     }
                     .foregroundColor(.white)
-                    .frame(width: 330, height: 55)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 55)
                     .background(canCreate ? Color.glowzaPrimary : Color.hotPinkDisabled)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .disabled(!canCreate || isLoading)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
 
                 if let err = authError {
                     Text(err)

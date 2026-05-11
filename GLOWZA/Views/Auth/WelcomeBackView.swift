@@ -107,7 +107,7 @@ struct WelcomeBackView: View {
                             Text("Tomorrow · 10:00 AM")
                                 .glowzaFont(size: 13)
                                 .foregroundColor(Color(hex: "6B6B6B"))
-                            Text("Haley Avenue, Colombo")
+                            Text("Golden Avenue, Colombo")
                                 .glowzaFont(size: 12)
                                 .foregroundColor(brand)
                         }

@@ -93,12 +93,13 @@ struct SignInView: View {
                         }
                     }
                     .foregroundColor(.white)
-                    .frame(width: 330, height: 55)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 55)
                     .background(canSignIn ? Color.glowzaPrimary : Color.hotPinkDisabled)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .disabled(!canSignIn || isLoading)
-                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
 
                 if let err = emailAuthError {
                     Text(err)

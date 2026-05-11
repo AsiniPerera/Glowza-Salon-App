@@ -42,7 +42,7 @@ struct BookAgainProvider: TimelineProvider {
             let encoded = "Haley%20Avenue"
             return BookAgainEntry(
                 date: Date(),
-                salonName: "Haley Avenue",
+                salonName: "Golden Avenue",
                 serviceName: "Book Next",
                 appointmentTime: "Available",
                 appointmentDate: Date(),
