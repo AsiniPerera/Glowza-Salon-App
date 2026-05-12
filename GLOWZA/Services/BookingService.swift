@@ -103,12 +103,13 @@ final class BookingService {
     func fetchUserBookings(userId: String) async throws -> [FirestoreBooking] {
         let snapshot = try await db.collection(collectionName)
             .whereField("userId", isEqualTo: userId)
-            .order(by: "createdAt", descending: true)
             .getDocuments()
         
-        return try snapshot.documents.compactMap { doc in
+        let bookings = try snapshot.documents.compactMap { doc in
             try doc.data(as: FirestoreBooking.self)
         }
+        
+        return bookings.sorted(by: { $0.createdAt > $1.createdAt })
     }
     
     // MARK: - Get Single Booking
