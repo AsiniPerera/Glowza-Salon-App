@@ -179,6 +179,7 @@ final class BookingStore {
                 firestoreBookings = try await bookingService.fetchUserBookings(userId: userId)
                 syncFirestoreToLocalBookings()
                 persistFirestoreBookingsToCoreData(userId: userId)
+                updatePastBookingsStatus()
                 isLoading = false
             } catch {
                 isLoading = false
@@ -279,12 +280,34 @@ final class BookingStore {
     /// Merges Firestore bookings into local `bookings` while deduplicating by receipt number.
     private func syncFirestoreToLocalBookings() {
         let catalog = SalonCatalog.shared
-        let existingReceipts = Set(bookings.map { $0.receiptNumber })
 
         for fb in firestoreBookings {
             let receipt = fb.bookingSummary.receiptNumber
             if let docId = fb.id { receiptToFirestoreId[receipt] = docId }
-            if existingReceipts.contains(receipt) { continue }
+
+            let status: BookingStatus
+            switch fb.status {
+            case "completed": status = .completed
+            case "cancelled": status = .cancelled
+            case "ongoing": status = .upcoming
+            default: status = .upcoming
+            }
+
+            let review: BookingReview? = fb.review.map {
+                BookingReview(
+                    rating: Int(fb.rating ?? 0),
+                    comment: $0,
+                    date: fb.createdAt,
+                    reviewerName: fb.userName
+                )
+            }
+
+            if let idx = bookings.firstIndex(where: { $0.receiptNumber == receipt }) {
+                // Update existing booking status and review!
+                bookings[idx].status = status
+                bookings[idx].review = review
+                continue
+            }
 
             let salon = catalog.salon(named: fb.bookingSummary.salon)
             let service = salon.services.first(where: { $0.name == fb.bookingSummary.service })
@@ -303,24 +326,8 @@ final class BookingStore {
             default: pm = .card
             }
 
-            let status: BookingStatus
-            switch fb.status {
-            case "completed": status = .completed
-            case "cancelled": status = .cancelled
-            default: status = .upcoming
-            }
-
             let scheduleParts = fb.bookingSummary.schedule.components(separatedBy: " - ")
             let timeSlot = scheduleParts.count > 1 ? scheduleParts.last! : ""
-
-            let review: BookingReview? = fb.review.map {
-                BookingReview(
-                    rating: Int(fb.rating ?? 0),
-                    comment: $0,
-                    date: fb.createdAt,
-                    reviewerName: fb.userName
-                )
-            }
 
             let localBooking = Booking(
                 id: UUID(),
@@ -338,6 +345,28 @@ final class BookingStore {
             bookings.append(localBooking)
         }
 
+        WidgetBookingSyncService.shared.updateFromBookings(bookings)
+    }
+
+    /// Automatically marks past upcoming bookings as completed in local state, Core Data, and Firestore.
+    func updatePastBookingsStatus() {
+        let now = Date()
+        let startOfToday = Calendar.current.startOfDay(for: now)
+        
+        for i in 0..<bookings.count {
+            if bookings[i].status == .upcoming && bookings[i].date < startOfToday {
+                bookings[i].status = .completed
+                
+                // Update Core Data
+                try? bookingRepository.updateBookingStatus(bookings[i].id, status: "completed")
+                
+                // Update Firestore
+                let receipt = bookings[i].receiptNumber
+                Task {
+                    try? await bookingService.updateStatusByReceipt(receipt, status: "completed")
+                }
+            }
+        }
         WidgetBookingSyncService.shared.updateFromBookings(bookings)
     }
 

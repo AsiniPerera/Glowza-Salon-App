@@ -218,15 +218,18 @@ struct AddReviewView: View {
 private struct BookingCardImage: View {
     let salonName: String
     @Environment(AppSettings.self) private var appSettings
+    
     var body: some View {
+        let imageName = mappedSalonImageName(salonName)
+        
         ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(appSettings.themeRaised)
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
                 .frame(width: 80, height: 80)
-            Image(systemName: "building.2.fill")
-                .glowzaFont(size: 28)
-                .foregroundColor(brand.opacity(0.4))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
+        .frame(width: 80, height: 80)
     }
 }
 
@@ -242,7 +245,11 @@ private func mappedSalonImageName(_ salonName: String) -> String {
     case "Elegance Salon": return "salon8"
     case "Crystal Beauty": return "salon9"
     case "Radiant Aesthetic": return "salon10"
-    default: return "Salon1"
+    default: 
+        // Fallback: Generate a consistent image index based on the name
+        let hash = abs(salonName.hashValue)
+        let index = (hash % 10) + 1
+        return index == 1 ? "Salon1" : "salon\(index)"
     }
 }
 

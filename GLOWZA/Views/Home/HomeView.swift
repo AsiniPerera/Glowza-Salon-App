@@ -169,7 +169,7 @@ struct HomeView: View {
                 NotificationsView()
             }
             .sheet(isPresented: $showMapSheet) {
-                SalonMapView(salons: filteredSalons)
+                SalonMapView(salons: allSalons)
             }
             .sheet(isPresented: $showFavourites) {
                 FavouriteSalonsView().environment(appSettings)
@@ -223,26 +223,53 @@ struct HomeView: View {
     private func loadSalonsFromFirestore() async {
         isSalonsLoading = true
         defer { isSalonsLoading = false }
-        do {
-            let firestoreSalons = try await SalonFirestoreService.shared.fetchAllSalons()
-            if !firestoreSalons.isEmpty {
-                self.allSalons = firestoreSalons.map { fs in
-                    SalonPreview(
-                        name: fs.name,
-                        location: fs.location,
-                        distance: fs.distance,
-                        rating: fs.rating,
-                        reviews: fs.reviewCount,
-                        score: fs.score,
-                        coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8577),
-                        imageName: mappedSalonImageName(fs.name),
-                        categories: fs.categories
-                    )
+        
+        // Hardcode 20 salons with ALL services/categories from screenshots
+        let allCategories = [
+            "Facial Care", "Skin Therapy", "Chemical Peel", "HydraFacial", "Microdermabrasion",
+            "Microneedling", "Hair Cut", "Hair Color", "Hair Styling", "Laser Hair",
+            "Hair Treatment", "PRP for Hair", "Manicure", "Pedicure", "Nail Art", "Gel Manicure"
+        ]
+        
+        func getShuffledCategories(forIndex idx: Int) -> [String] {
+            var cats = Set<String>()
+            // Guarantee every category is used at least once across 20 salons
+            cats.insert(allCategories[idx % allCategories.count])
+            
+            // Add 3 to 6 more random unique categories
+            let additionalCount = Int.random(in: 3...6)
+            for _ in 0..<additionalCount {
+                if let randomCat = allCategories.randomElement() {
+                    cats.insert(randomCat)
                 }
             }
-        } catch {
-            print("Failed to fetch salons: \(error)")
+            return Array(cats)
         }
+        
+        let hardcodedSalons = [
+            SalonPreview(name: "Golden Avenue", location: "Colombo", distance: "2 km", rating: 4.7, reviews: 312, score: 0.95, coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612), imageName: "Salon1", categories: getShuffledCategories(forIndex: 0)),
+            SalonPreview(name: "Glow Studio", location: "Colombo", distance: "3.5 km", rating: 4.5, reviews: 150, score: 0.88, coordinate: CLLocationCoordinate2D(latitude: 6.9344, longitude: 79.8450), imageName: "salon2", categories: getShuffledCategories(forIndex: 1)),
+            SalonPreview(name: "Luxe Aesthetics", location: "Colombo", distance: "5 km", rating: 4.8, reviews: 200, score: 0.92, coordinate: CLLocationCoordinate2D(latitude: 6.9120, longitude: 79.8550), imageName: "salon3", categories: getShuffledCategories(forIndex: 2)),
+            SalonPreview(name: "Velvet Touch", location: "Colombo", distance: "1.5 km", rating: 4.6, reviews: 180, score: 0.90, coordinate: CLLocationCoordinate2D(latitude: 6.9000, longitude: 79.8700), imageName: "salon4", categories: getShuffledCategories(forIndex: 3)),
+            SalonPreview(name: "Aura Beauty Bar", location: "Colombo", distance: "4 km", rating: 4.4, reviews: 90, score: 0.85, coordinate: CLLocationCoordinate2D(latitude: 6.8850, longitude: 79.8600), imageName: "salon5", categories: getShuffledCategories(forIndex: 4)),
+            SalonPreview(name: "Silk & Shine", location: "Colombo", distance: "2.5 km", rating: 4.3, reviews: 120, score: 0.80, coordinate: CLLocationCoordinate2D(latitude: 6.9200, longitude: 79.8500), imageName: "salon6", categories: getShuffledCategories(forIndex: 5)),
+            SalonPreview(name: "Prime Beauty", location: "Colombo", distance: "3 km", rating: 4.9, reviews: 400, score: 0.98, coordinate: CLLocationCoordinate2D(latitude: 6.9400, longitude: 79.8650), imageName: "salon7", categories: getShuffledCategories(forIndex: 6)),
+            SalonPreview(name: "Elegance Salon", location: "Colombo", distance: "6 km", rating: 4.2, reviews: 80, score: 0.75, coordinate: CLLocationCoordinate2D(latitude: 6.9500, longitude: 79.8750), imageName: "salon8", categories: getShuffledCategories(forIndex: 7)),
+            SalonPreview(name: "Crystal Beauty", location: "Colombo", distance: "7 km", rating: 4.1, reviews: 60, score: 0.70, coordinate: CLLocationCoordinate2D(latitude: 6.9150, longitude: 79.8400), imageName: "salon9", categories: getShuffledCategories(forIndex: 8)),
+            SalonPreview(name: "Radiant Aesthetic", location: "Colombo", distance: "1 km", rating: 5.0, reviews: 500, score: 1.00, coordinate: CLLocationCoordinate2D(latitude: 6.8900, longitude: 79.8800), imageName: "salon10", categories: getShuffledCategories(forIndex: 9)),
+            SalonPreview(name: "Glow Palace", location: "Colombo", distance: "4.5 km", rating: 4.5, reviews: 140, score: 0.87, coordinate: CLLocationCoordinate2D(latitude: 6.9050, longitude: 79.8450), imageName: "salon6", categories: getShuffledCategories(forIndex: 10)),
+            SalonPreview(name: "Pure Skin Lab", location: "Colombo", distance: "5.5 km", rating: 4.6, reviews: 160, score: 0.89, coordinate: CLLocationCoordinate2D(latitude: 6.9250, longitude: 79.8700), imageName: "salon7", categories: getShuffledCategories(forIndex: 11)),
+            SalonPreview(name: "The Hair Lounge", location: "Colombo", distance: "2 km", rating: 4.4, reviews: 110, score: 0.84, coordinate: CLLocationCoordinate2D(latitude: 6.8700, longitude: 79.8550), imageName: "salon8", categories: getShuffledCategories(forIndex: 12)),
+            SalonPreview(name: "Serene Spa", location: "Colombo", distance: "8 km", rating: 4.3, reviews: 70, score: 0.78, coordinate: CLLocationCoordinate2D(latitude: 6.8800, longitude: 79.8650), imageName: "salon9", categories: getShuffledCategories(forIndex: 13)),
+            SalonPreview(name: "Urban Nails", location: "Colombo", distance: "3.5 km", rating: 4.7, reviews: 220, score: 0.91, coordinate: CLLocationCoordinate2D(latitude: 6.9100, longitude: 79.8400), imageName: "salon10", categories: getShuffledCategories(forIndex: 14)),
+            SalonPreview(name: "Divine Beauty", location: "Colombo", distance: "4.2 km", rating: 4.5, reviews: 130, score: 0.86, coordinate: CLLocationCoordinate2D(latitude: 6.8950, longitude: 79.8750), imageName: "Salon1", categories: getShuffledCategories(forIndex: 15)),
+            SalonPreview(name: "Bloom Studio", location: "Colombo", distance: "2.8 km", rating: 4.6, reviews: 170, score: 0.89, coordinate: CLLocationCoordinate2D(latitude: 6.9300, longitude: 79.8550), imageName: "salon2", categories: getShuffledCategories(forIndex: 16)),
+            SalonPreview(name: "Infinity Glow", location: "Colombo", distance: "6.5 km", rating: 4.3, reviews: 95, score: 0.81, coordinate: CLLocationCoordinate2D(latitude: 6.9450, longitude: 79.8600), imageName: "salon3", categories: getShuffledCategories(forIndex: 17)),
+            SalonPreview(name: "Skin Deep", location: "Colombo", distance: "1.8 km", rating: 4.8, reviews: 240, score: 0.93, coordinate: CLLocationCoordinate2D(latitude: 6.9000, longitude: 79.8500), imageName: "salon4", categories: getShuffledCategories(forIndex: 18)),
+            SalonPreview(name: "The Beauty Room", location: "Colombo", distance: "3.2 km", rating: 4.4, reviews: 115, score: 0.83, coordinate: CLLocationCoordinate2D(latitude: 6.9150, longitude: 79.8650), imageName: "salon5", categories: getShuffledCategories(forIndex: 19))
+        ]
+        
+        self.allSalons = hardcodedSalons
     }
 
     // MARK: - Top Bar
@@ -567,7 +594,7 @@ private struct SalonRowCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(mappedSalonImageName(salon.name))
+            Image(salon.imageName)
                 .resizable()
                 .scaledToFill()
                 .frame(width: 90, height: 104)
@@ -730,32 +757,7 @@ private struct PromoBannerCard: View {
     }
 }
 
-private func mappedSalonImageName(_ salonName: String) -> String {
-    switch salonName {
-    case "Golden Avenue": return "Salon1"
-    case "Glow Studio": return "salon2"
-    case "Luxe Aesthetics": return "salon3"
-    case "Velvet Touch": return "salon4"
-    case "Aura Beauty Bar": return "salon5"
-    case "Silk & Shine": return "salon6"
-    case "Prime Beauty": return "salon7"
-    case "Elegance Salon": return "salon8"
-    case "Crystal Beauty": return "salon9"
-    case "Radiant Aesthetic": return "salon10"
-    case "Cinnamon Glow": return "Salon1"
-    case "Rose Mirror": return "salon2"
-    case "Urban Bloom": return "salon3"
-    case "Coco Beauty Lounge": return "salon4"
-    case "The Beauty Deck": return "salon5"
-    case "Lotus Salon": return "salon6"
-    case "Pearl Skin Studio": return "salon7"
-    case "Mirror Muse": return "salon8"
-    case "Golden Petals": return "salon9"
-    case "Blush Avenue": return "salon10"
-    case "Opal Aesthetics": return "Salon1"
-    default: return "Salon1"
-    }
-}
+
 
 // MARK: - Legacy stubs (kept for compatibility)
 struct ReputationRing: View {
@@ -799,10 +801,10 @@ struct SalonMapView: View {
         NavigationStack {
             ZStack {
                 Map(position: $cameraPosition) {
-                    ForEach(colomboSalons) { salon in
+                    ForEach(salons) { salon in
                         Annotation(salon.name, coordinate: salon.coordinate) {
                             VStack(spacing: 4) {
-                                Image(mappedSalonImageName(salon.name))
+                                Image(salon.imageName)
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 44, height: 44)
