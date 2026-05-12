@@ -79,15 +79,14 @@ struct ConsentFormView: View {
                 Text("Treatment Consent Form")
                     .glowzaFont(.body, weight: .bold)
                     .foregroundColor(dark)
-                    .tracking(3)
                 Text("REF: GZ-2024-089")
                     .glowzaFont(.caption, weight: .medium)
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "666A72"))
-                    .tracking(1.6)
-                Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
-                    .glowzaFont(.body)
-                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52"))
-                    .lineSpacing(6)
+                JustifiedText(
+                    text: "I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.",
+                    font: UIFont(name: "Urbanist-Regular", size: 15) ?? UIFont.systemFont(ofSize: 15),
+                    color: appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52")
+                )
             }
             .padding(.bottom, 4)
 
@@ -186,5 +185,29 @@ struct ConsentFormView: View {
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isAgreed)
+    }
+}
+
+struct JustifiedText: UIViewRepresentable {
+    let text: String
+    let font: UIFont
+    let color: Color
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.textAlignment = .justified
+        label.font = font
+        label.textColor = UIColor(color)
+        label.lineBreakMode = .byWordWrapping
+        return label
+    }
+
+    func updateUIView(_ uiView: UILabel, context: Context) {
+        uiView.text = text
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        uiView.sizeThatFits(CGSize(width: proposal.width ?? 300, height: .greatestFiniteMagnitude))
     }
 }

@@ -79,7 +79,7 @@ struct PaymentView: View {
                                 .foregroundColor(Color(hex: "8E8E93"))
                                 .tracking(0.5)
                             Text("LKR \(Int(total))")
-                                .glowzaFont(size: 26, weight: .bold)
+                                .glowzaFont(size: 20, weight: .semibold)
                                 .foregroundColor(.glowzaPrimary)
                         }
                         Spacer()
@@ -121,9 +121,8 @@ struct PaymentView: View {
                                             .frame(width: 48, height: 48)
                                         Image("creditcard")
                                             .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 48, height: 48)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                            .scaledToFit()
+                                            .frame(width: 24, height: 24)
                                     }
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text("Credit / Debit Card")
@@ -147,7 +146,7 @@ struct PaymentView: View {
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
-                                .background(appSettings.themeSurface)
+                                .background(Color.white)
                                 .cornerRadius(25)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 25)
@@ -160,8 +159,6 @@ struct PaymentView: View {
 
                             // Cash button
                             methodButton(.cash)
-
-
                         }
                         .padding(.horizontal, 24)
                     }
@@ -219,20 +216,19 @@ struct PaymentView: View {
                             .scaledToFit()
                             .frame(width: 24, height: 24)
                     } else if method == .card {
-                        Image("creditcard")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(Color.glowzaPrimary)
                     } else if method == .cash {
-                        Image("paysalon")
+                        Image("salon pay")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
+                            .blendMode(.multiply)
                     } else {
                         Image(systemName: method.icon)
                             .glowzaFont(size: 20, weight: .semibold)
-                            .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                            .foregroundColor(Color.glowzaPrimary)
                     }
                 }
 
@@ -405,11 +401,9 @@ struct CardEntryView: View {
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(Color.black)
                                         .frame(width: 48, height: 48)
-                                    Image("apple")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 48, height: 48)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    Image(systemName: "apple.logo")
+                                        .glowzaFont(size: 20, weight: .semibold)
+                                        .foregroundColor(.white)
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 3) {

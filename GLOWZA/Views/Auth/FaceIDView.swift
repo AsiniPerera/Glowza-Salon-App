@@ -13,6 +13,7 @@ struct FaceIDAuthView: View {
     @State private var rotationAngle: Double = 0
     @State private var pulseScale: CGFloat = 1.0
     let onAuthSuccess: () -> Void
+    let onCancel: () -> Void
     @Environment(AppSettings.self) private var appSettings
 
     private var pageBackground: Color { appSettings.themePage }
@@ -146,8 +147,16 @@ struct FaceIDAuthView: View {
 
             VStack(spacing: 0) {
                 // Status indicator
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .center) {
+                    Button(action: {
+                        onCancel()
+                    }) {
+                        Text("Cancel")
+                            .glowzaFont(size: 15, weight: .semibold)
+                            .foregroundColor(brand)
+                    }
+                    Spacer()
+                    VStack(alignment: .center, spacing: 2) {
                         Text("Detecting Face ID")
                             .glowzaFont(size: 15, weight: .semibold)
                             .foregroundColor(appSettings.themeText)
@@ -156,14 +165,14 @@ struct FaceIDAuthView: View {
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
                     Spacer()
-                        ZStack {
-                            Circle()
-                                .fill(brand.opacity(0.1))
-                                .frame(width: 32, height: 32)
-                            Image(systemName: "faceid")
-                                .glowzaFont(size: 16, weight: .semibold)
-                                .foregroundColor(brand)
-                        }
+                    ZStack {
+                        Circle()
+                            .fill(brand.opacity(0.1))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "faceid")
+                            .glowzaFont(size: 16, weight: .semibold)
+                            .foregroundColor(brand)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 20)
@@ -273,5 +282,5 @@ struct FaceIDAuthView: View {
 }
 
 #Preview {
-    FaceIDAuthView(onAuthSuccess: {})
+    FaceIDAuthView(onAuthSuccess: {}, onCancel: {})
 }

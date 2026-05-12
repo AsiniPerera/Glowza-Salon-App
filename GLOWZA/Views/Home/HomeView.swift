@@ -46,59 +46,70 @@ struct HomeView: View {
     @State private var showFavourites = false
     @State private var currentPromotionPage: Int = 0
     @State private var profileAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData")
-    @State private var profileName: String = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini"
+    @State private var profileName: String = UserDefaults.standard.string(forKey: "profile_fullName") ?? "User"
+    @State private var isSalonsLoading = false
 
     private let services: [ServiceCategory] = [
-        .init(name: "Skin Care", icon: "leaf", category: "Skin"),
+        .init(name: "Facial Care", icon: "face.smiling", category: "Skin"),
+        .init(name: "Skin Therapy", icon: "leaf", category: "Skin"),
+        .init(name: "Chemical Peel", icon: "flask", category: "Skin"),
+        .init(name: "HydraFacial", icon: "drop.fill", category: "Skin"),
+        .init(name: "Microneedling", icon: "syringe", category: "Skin"),
+        .init(name: "Hair Cut", icon: "scissors", category: "Hair"),
+        .init(name: "Hair Color", icon: "paintbrush.pointed", category: "Hair"),
+        .init(name: "Hair Styling", icon: "comb", category: "Hair"),
         .init(name: "Laser Hair", icon: "bolt", category: "Hair"),
-      .init(name: "Hair Care", icon: "scissors", category: "Hair"),
-      .init(name: "Nails", icon: "hand.raised", category: "Nails"),
-      .init(name: "Aesthetic", icon: "sparkles", category: "Aesthetic")
+        .init(name: "Hair Treatment", icon: "leaf.fill", category: "Hair"),
+        .init(name: "PRP for Hair", icon: "heart.text.square", category: "Hair"),
+        .init(name: "Manicure", icon: "hand.raised", category: "Nails"),
+        .init(name: "Pedicure", icon: "heart", category: "Nails"),
+        .init(name: "Nail Art", icon: "wand.and.stars", category: "Nails"),
+        .init(name: "Gel Manicure", icon: "hand.point.up.fill", category: "Nails")
     ]
 
-    private let allSalons: [SalonPreview] = [
+    @State private var allSalons: [SalonPreview] = [
       .init(name: "Golden Avenue", location: "Moratuwa, Colombo", distance: "2.0 km", rating: 4.7, reviews: 312, score: 0.95,
-          coordinate: CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820), imageName: "Salon1", categories: ["Skin", "Hair", "Nails"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820), imageName: "Salon1", categories: ["Facial Care", "Chemical Peel", "HydraFacial"]),
       .init(name: "Glow Studio", location: "Bambalapitiya, Colombo", distance: "3.5 km", rating: 4.6, reviews: 198, score: 0.88,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8971, longitude: 79.8554), imageName: "salon2", categories: ["Skin", "Aesthetic", "Makeup"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8971, longitude: 79.8554), imageName: "salon2", categories: ["Hair Cut", "Hair Color", "Hair Styling"]),
       .init(name: "Luxe Aesthetics", location: "Colombo 03", distance: "5.0 km", rating: 4.5, reviews: 245, score: 0.82,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9101, longitude: 79.8570), imageName: "Salon1", categories: ["Aesthetic", "Skin", "Wellness"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9101, longitude: 79.8570), imageName: "Salon1", categories: ["Manicure", "Pedicure", "Nail Art"]),
       .init(name: "Velvet Touch", location: "Nugegoda, Colombo", distance: "6.2 km", rating: 4.4, reviews: 131, score: 0.78,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8655, longitude: 79.8991), imageName: "salon2", categories: ["Hair", "Nails", "Makeup"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8655, longitude: 79.8991), imageName: "salon2", categories: ["Facial Care", "Hair Cut", "Manicure"]),
       .init(name: "Aura Beauty Bar", location: "Colombo 03", distance: "8.1 km", rating: 4.8, reviews: 420, score: 0.97,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8935, longitude: 79.8534), imageName: "Salon1", categories: ["Aesthetic", "Wellness", "Hair"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8935, longitude: 79.8534), imageName: "Salon1", categories: ["Skin Therapy", "Hair Styling", "Nail Art"]),
       .init(name: "Silk & Shine", location: "Battaramulla, Colombo", distance: "4.3 km", rating: 4.9, reviews: 287, score: 0.93,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8901, longitude: 79.8812), imageName: "salon2", categories: ["Nails", "Skin", "Makeup"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8901, longitude: 79.8812), imageName: "salon2", categories: ["Chemical Peel", "Laser Hair", "Gel Manicure"]),
       .init(name: "Prime Beauty", location: "Wattala, Colombo", distance: "7.8 km", rating: 4.3, reviews: 165, score: 0.75,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9907, longitude: 79.8910), imageName: "Salon1", categories: ["Hair", "Aesthetic", "Wellness"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9907, longitude: 79.8910), imageName: "Salon1", categories: ["Microneedling", "PRP for Hair", "Manicure"]),
       .init(name: "Elegance Salon", location: "Malabe, Colombo", distance: "9.2 km", rating: 4.6, reviews: 276, score: 0.86,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9062, longitude: 79.9582), imageName: "salon2", categories: ["Skin", "Hair", "Nails"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9062, longitude: 79.9582), imageName: "salon2", categories: ["Facial Care", "Skin Therapy"]),
       .init(name: "Crystal Beauty", location: "Colombo 04", distance: "6.5 km", rating: 4.7, reviews: 354, score: 0.92,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8851, longitude: 79.8606), imageName: "Salon1", categories: ["Aesthetic", "Wellness", "Makeup"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8851, longitude: 79.8606), imageName: "Salon1", categories: ["Hair Cut", "Hair Color"]),
       .init(name: "Radiant Aesthetic", location: "Galle Road, Colombo", distance: "3.2 km", rating: 4.8, reviews: 398, score: 0.96,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8774, longitude: 79.8588), imageName: "salon2", categories: ["Nails", "Hair", "Skin"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8774, longitude: 79.8588), imageName: "salon2", categories: ["Manicure", "Pedicure"]),
       .init(name: "Cinnamon Glow", location: "Colombo 05", distance: "4.1 km", rating: 4.5, reviews: 214, score: 0.84,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8978, longitude: 79.8712), imageName: "Salon1", categories: ["Skin", "Makeup", "Wellness"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8978, longitude: 79.8712), imageName: "Salon1", categories: ["HydraFacial", "Laser Hair"]),
       .init(name: "Rose Mirror", location: "Rajagiriya, Colombo", distance: "5.4 km", rating: 4.4, reviews: 176, score: 0.80,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9070, longitude: 79.8959), imageName: "salon2", categories: ["Hair", "Skin", "Nails"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9070, longitude: 79.8959), imageName: "salon2", categories: ["Microneedling", "Hair Treatment"]),
       .init(name: "Urban Bloom", location: "Wellawatte, Colombo", distance: "5.9 km", rating: 4.6, reviews: 239, score: 0.89,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8747, longitude: 79.8602), imageName: "Salon1", categories: ["Aesthetic", "Hair", "Makeup"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8747, longitude: 79.8602), imageName: "Salon1", categories: ["Chemical Peel", "Gel Manicure"]),
       .init(name: "Coco Beauty Lounge", location: "Kirulapone, Colombo", distance: "6.1 km", rating: 4.3, reviews: 141, score: 0.77,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8792, longitude: 79.8768), imageName: "salon2", categories: ["Skin", "Wellness", "Nails"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8792, longitude: 79.8768), imageName: "salon2", categories: ["Facial Care", "Hair Styling", "Nail Art"]),
       .init(name: "The Beauty Deck", location: "Colombo 06", distance: "6.8 km", rating: 4.7, reviews: 268, score: 0.91,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8760, longitude: 79.8583), imageName: "Salon1", categories: ["Makeup", "Hair", "Aesthetic"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8760, longitude: 79.8583), imageName: "Salon1", categories: ["Skin Therapy", "Hair Cut"]),
       .init(name: "Lotus Salon", location: "Colombo 07", distance: "7.0 km", rating: 4.8, reviews: 305, score: 0.94,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9123, longitude: 79.8673), imageName: "salon2", categories: ["Skin", "Hair", "Wellness"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9123, longitude: 79.8673), imageName: "salon2", categories: ["HydraFacial", "Hair Color"]),
       .init(name: "Pearl Skin Studio", location: "Colombo 08", distance: "7.3 km", rating: 4.6, reviews: 223, score: 0.87,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9142, longitude: 79.8774), imageName: "Salon1", categories: ["Skin", "Aesthetic", "Wellness"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9142, longitude: 79.8774), imageName: "Salon1", categories: ["Microneedling", "Gel Manicure"]),
       .init(name: "Mirror Muse", location: "Colombo 02", distance: "7.7 km", rating: 4.4, reviews: 187, score: 0.81,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9272, longitude: 79.8503), imageName: "salon2", categories: ["Makeup", "Hair", "Nails"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9272, longitude: 79.8503), imageName: "salon2", categories: ["Chemical Peel", "Hair Treatment"]),
       .init(name: "Golden Petals", location: "Colombo 01", distance: "8.0 km", rating: 4.2, reviews: 129, score: 0.73,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9350, longitude: 79.8447), imageName: "Salon1", categories: ["Hair", "Nails", "Wellness"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9350, longitude: 79.8447), imageName: "Salon1", categories: ["Skin Therapy", "Nail Art"]),
       .init(name: "Blush Avenue", location: "Thimbirigasyaya, Colombo", distance: "8.4 km", rating: 4.7, reviews: 261, score: 0.90,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8959, longitude: 79.8743), imageName: "salon2", categories: ["Makeup", "Skin", "Aesthetic"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8959, longitude: 79.8743), imageName: "salon2", categories: ["Facial Care", "Gel Manicure"]),
       .init(name: "Opal Aesthetics", location: "Havelock Town, Colombo", distance: "8.8 km", rating: 4.8, reviews: 334, score: 0.96,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8830, longitude: 79.8699), imageName: "Salon1", categories: ["Aesthetic", "Skin", "Hair"])
+          coordinate: CLLocationCoordinate2D(latitude: 6.8830, longitude: 79.8699), imageName: "Salon1", categories: ["HydraFacial", "PRP for Hair", "Gel Manicure"])
     ]
 
     private var filteredSalons: [SalonPreview] {
@@ -108,8 +119,8 @@ struct HomeView: View {
         }
 
       if let selectedServiceID,
-         let selectedCategory = services.first(where: { $0.id == selectedServiceID })?.category {
-        result = result.filter { $0.categories.contains(selectedCategory) }
+         let selectedService = services.first(where: { $0.id == selectedServiceID }) {
+        result = result.filter { $0.categories.contains(selectedService.name) }
       }
 
         return result
@@ -165,6 +176,8 @@ struct HomeView: View {
             }
             .task {
                 await syncSalonsToFirestore()
+                await loadSalonsFromFirestore()
+                await SalonFirestoreService.shared.seedMockReviews()
                 refreshProfileHeader()
             }
             .onAppear {
@@ -182,25 +195,53 @@ struct HomeView: View {
 
     private func refreshProfileHeader() {
         profileAvatarData = UserDefaults.standard.data(forKey: "profile_avatarData")
-        profileName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Asini"
+        profileName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "User"
     }
 
     @MainActor
     private func syncSalonsToFirestore() async {
-        for salon in allSalons {
+        let salons = SalonCatalog.shared.salons
+        for salon in salons {
+            let categories = Array(Set(salon.services.map { $0.category }))
             do {
                 try await SalonFirestoreService.shared.upsertSalon(
                     name: salon.name,
                     location: salon.location,
                     distance: salon.distance,
                     rating: salon.rating,
-                    reviewCount: salon.reviews,
+                    reviewCount: salon.reviewCount,
                     score: salon.score,
-                    categories: salon.categories
+                    categories: categories
                 )
             } catch {
                 print("Failed to sync salon \(salon.name): \(error)")
             }
+        }
+    }
+
+    @MainActor
+    private func loadSalonsFromFirestore() async {
+        isSalonsLoading = true
+        defer { isSalonsLoading = false }
+        do {
+            let firestoreSalons = try await SalonFirestoreService.shared.fetchAllSalons()
+            if !firestoreSalons.isEmpty {
+                self.allSalons = firestoreSalons.map { fs in
+                    SalonPreview(
+                        name: fs.name,
+                        location: fs.location,
+                        distance: fs.distance,
+                        rating: fs.rating,
+                        reviews: fs.reviewCount,
+                        score: fs.score,
+                        coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8577),
+                        imageName: mappedSalonImageName(fs.name),
+                        categories: fs.categories
+                    )
+                }
+            }
+        } catch {
+            print("Failed to fetch salons: \(error)")
         }
     }
 
@@ -216,11 +257,11 @@ struct HomeView: View {
                         .clipShape(Circle())
                 } else {
                     Circle()
-                        .fill(Color(hex: "9FD8CE"))
+                        .fill(brand.opacity(0.15))
                         .frame(width: 44, height: 44)
-                    Text(String(profileName.prefix(1)).uppercased())
-                        .glowzaFont(.h4, weight: .bold)
-                        .foregroundColor(Color(hex: "2E6158"))
+                    Image(systemName: "person.fill")
+                        .glowzaFont(.h4)
+                        .foregroundColor(brand)
                 }
             }
 
@@ -235,29 +276,31 @@ struct HomeView: View {
 
             Spacer()
 
-            HStack(spacing: 10) {
-                Button(action: {
-                    showFavourites = true
-                }) {
-                    Image(systemName: "heart.fill")
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(brand)
-                        .frame(width: 42, height: 42)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
-                }
-                
-                Button(action: {
-                    showNotificationsView = true
-                }) {
-                    Image(systemName: "bell.fill")
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(brand)
-                        .frame(width: 42, height: 42)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                        .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+            if profileName != "User" {
+                HStack(spacing: 10) {
+                    Button(action: {
+                        showFavourites = true
+                    }) {
+                        Image(systemName: "heart.fill")
+                            .glowzaFont(size: 16, weight: .medium)
+                            .foregroundColor(brand)
+                            .frame(width: 42, height: 42)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                    }
+                    
+                    Button(action: {
+                        showNotificationsView = true
+                    }) {
+                        Image(systemName: "bell.fill")
+                            .glowzaFont(size: 16, weight: .medium)
+                            .foregroundColor(brand)
+                            .frame(width: 42, height: 42)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                    }
                 }
             }
         }
@@ -480,7 +523,17 @@ struct HomeView: View {
                 }
             }
 
-            if filteredSalons.isEmpty {
+            if isSalonsLoading {
+                VStack(spacing: 12) {
+                    ProgressView()
+                        .tint(brand)
+                    Text("Loading salons...")
+                        .glowzaFont(size: 14)
+                        .foregroundColor(secondaryText)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+            } else if filteredSalons.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
                         .glowzaFont(size: 32)
@@ -563,6 +616,7 @@ private struct SalonRowCard: View {
                         Text(cat)
                             .glowzaFont(size: 10, weight: .semibold)
                             .foregroundColor(Color(hex: "962043"))
+                            .lineLimit(1)
                             .padding(.horizontal, 7)
                             .padding(.vertical, 3)
                             .background(Color(hex: "962043").opacity(0.08))

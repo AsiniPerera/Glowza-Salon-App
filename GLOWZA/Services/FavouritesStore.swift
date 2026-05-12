@@ -21,6 +21,10 @@ final class FavouritesStore {
     private(set) var favouriteNames: [String] = []
 
     // MARK: - Public API
+    
+    func clear() {
+        favouriteNames = []
+    }
 
     func isFavourite(_ salonName: String) -> Bool {
         favouriteNames.contains(salonName)
@@ -46,7 +50,7 @@ final class FavouritesStore {
         withAnimation { favouriteNames = ids }
         
         // Inject demo data for lecturer demonstration
-        seedDemoData()
+        // seedDemoData()
     }
 
     /// Injects default favourites for lecturer demonstration.

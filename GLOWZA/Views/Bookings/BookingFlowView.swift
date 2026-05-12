@@ -144,8 +144,8 @@ struct BookingFlowView: View {
             }
         case .confirmation:
             if let booking = completedBooking {
-                BookingConfirmedView(booking: booking, onProceedToReceipt: {
-                    step = .receipt
+                BookingConfirmedView(booking: booking, onBackToHome: {
+                    dismiss()
                 })
                 .environment(AppSettings.shared)
             }
@@ -242,12 +242,7 @@ struct BookAppointmentView: View {
     }
 
     private var topBack: some View {
-        Button(action: onBack) {
-            Image(systemName: "chevron.left")
-                .glowzaFont(size: 20, weight: .semibold)
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "5F6168"))
-        }
-        .padding(.top, 2)
+        GlowzaCircleBackButton(action: onBack)
     }
 
     private var serviceSelectionHeader: some View {

@@ -162,7 +162,7 @@ struct CreateAccountView: View {
             } catch {
                 await MainActor.run {
                     isLoading = false
-                    authError = error.localizedDescription
+                    authError = AuthService.friendlyErrorMessage(for: error)
                 }
             }
         }

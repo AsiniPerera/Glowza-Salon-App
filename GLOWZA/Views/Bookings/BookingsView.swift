@@ -223,17 +223,9 @@ private struct BookingCardImage: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(appSettings.themeRaised)
                 .frame(width: 80, height: 80)
-            if UIImage(named: mappedSalonImageName(salonName)) != nil {
-                Image(mappedSalonImageName(salonName))
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 80, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            } else {
-                Image(systemName: "building.2.fill")
-                    .glowzaFont(size: 28)
-                    .foregroundColor(brand.opacity(0.4))
-            }
+            Image(systemName: "building.2.fill")
+                .glowzaFont(size: 28)
+                .foregroundColor(brand.opacity(0.4))
         }
     }
 }
@@ -306,20 +298,6 @@ struct UpcomingBookingsView: View {
                     .foregroundColor(Color(hex: "8A8A8A"))
                 
                 Spacer()
-                
-                Button(action: { cancelTarget = booking }) {
-                    Text("Cancel")
-                        .glowzaFont(size: 13, weight: .semibold)
-                        .foregroundColor(Color(hex: "962043"))
-                        .padding(.horizontal, 24)
-                        .frame(height: 32)
-                        .background(appSettings.themeRaised)
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(Color(hex: "962043"), lineWidth: 1.2)
-                        )
-                }
             }
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 14)
 
@@ -352,6 +330,16 @@ struct UpcomingBookingsView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 38)
                         .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
+                }
+                
+                Button(action: { cancelTarget = booking }) {
+                    Text("Cancel")
+                        .glowzaFont(size: 14, weight: .semibold)
+                        .foregroundColor(brand)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(brand.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
                 }
             }

@@ -38,6 +38,7 @@ final class SalonFirestoreService {
     private init() {}
 
     private let db = Firestore.firestore()
+    private var cachedSalons: [FirestoreSalon]?
 
     // MARK: - Upload Full Salon Catalog to Firestore
     /// Saves all salons from SalonCatalog into the `salons` Firestore collection.
@@ -79,9 +80,12 @@ final class SalonFirestoreService {
     }
 
     // MARK: - Fetch All Salons from Firestore
-    func fetchAllSalons() async throws -> [FirestoreSalon] {
+    func fetchAllSalons(forceRefresh: Bool = false) async throws -> [FirestoreSalon] {
+        if !forceRefresh, let cached = cachedSalons {
+            return cached
+        }
         let snapshot = try await db.collection("salons").getDocuments()
-        return snapshot.documents.compactMap { doc -> FirestoreSalon? in
+        let salons = snapshot.documents.compactMap { doc -> FirestoreSalon? in
             let d = doc.data()
             guard let id       = d["id"] as? String,
                   let name     = d["name"] as? String,
@@ -101,6 +105,8 @@ final class SalonFirestoreService {
                 updatedAt:   (d["updatedAt"] as? Timestamp)?.dateValue()
             )
         }
+        self.cachedSalons = salons
+        return salons
     }
 
     // MARK: - Upsert Individual Salon (used when rating/review changes)

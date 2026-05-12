@@ -26,18 +26,9 @@ struct BookingSummaryView: View {
                 VStack(alignment: .leading, spacing: 0) {
 
                     // Back button
-                    Button(action: onBack) {
-                        ZStack {
-                            Circle()
-                                .fill(appSettings.themeRaised)
-                                .frame(width: 36, height: 36)
-                            Image(systemName: "chevron.left")
-                                .glowzaFont(size: 14, weight: .semibold)
-                                .foregroundColor(Color(hex: "1C1C1E"))
-                        }
-                    }
-                    .padding(.top, 24)
-                    .padding(.horizontal, 24)
+                    GlowzaCircleBackButton(action: onBack)
+                        .padding(.top, 24)
+                        .padding(.horizontal, 20)
 
                     Spacer().frame(height: 32)
 
@@ -50,7 +41,7 @@ struct BookingSummaryView: View {
                             .glowzaFont(size: 17)
                             .foregroundColor(Color(hex: "8E8E93"))
                     }
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 20)
 
                     Spacer().frame(height: 32)
 
@@ -62,9 +53,9 @@ struct BookingSummaryView: View {
                             .tracking(0.5)
 
                         VStack(spacing: 0) {
-                            summaryRow(icon: "building.2.fill", label: "Salon", value: draft.salon.name)
+                            summaryRow(icon: "storefront", label: "Salon", value: draft.salon.name)
                             Divider().padding(.leading, 52)
-                            summaryRow(icon: "sparkles", label: "Treatment", value: service.name)
+                            summaryRow(icon: service.icon, label: "Treatment", value: service.name)
                             Divider().padding(.leading, 52)
                             summaryRow(icon: "clock.fill", label: "Duration", value: service.duration)
                             Divider().padding(.leading, 52)
@@ -87,23 +78,14 @@ struct BookingSummaryView: View {
                             .tracking(0.5)
 
                         VStack(spacing: 12) {
-                            HStack {
-                                Text("Treatment Fee")
-                                    .glowzaFont(size: 15)
-                                    .foregroundColor(Color(hex: "8E8E93"))
-                                Spacer()
-                                Text("LKR \(Int(service.price))")
-                                    .glowzaFont(size: 15, weight: .semibold)
-                                    .foregroundColor(appSettings.themeText)
-                            }
-                            Divider().padding(.vertical, 4)
+
                             HStack {
                                 Text("Total Amount")
                                     .glowzaFont(size: 17, weight: .semibold)
                                     .foregroundColor(appSettings.themeText)
                                 Spacer()
                                 Text("LKR \(Int(total))")
-                                    .glowzaFont(size: 24, weight: .bold)
+                                    .glowzaFont(size: 17, weight: .semibold)
                                     .foregroundColor(.glowzaPrimary)
                             }
                         }
@@ -115,23 +97,7 @@ struct BookingSummaryView: View {
 
                     Spacer().frame(height: 24)
 
-                    // Terms & Info card
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("IMPORTANT")
-                            .glowzaFont(size: 11, weight: .semibold)
-                            .foregroundColor(Color(hex: "8E8E93"))
-                            .tracking(0.5)
 
-                        Text("Please arrive 10–15 minutes early. For changes or cancellations, contact the salon directly.")
-                            .glowzaFont(size: 15)
-                            .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "1C1C1E"))
-                            .lineSpacing(2)
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(appSettings.themeSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .padding(.horizontal, 24)
 
                     Spacer().frame(height: 128)
                 }

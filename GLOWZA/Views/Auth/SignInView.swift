@@ -135,11 +135,11 @@ struct SignInView: View {
                     .foregroundColor(brand)
                     .frame(maxWidth: .infinity)
                     .frame(height: 55)
-                    .background(brand.opacity(0.07))
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(Color.white)
+                    .clipShape(Capsule())
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(brand.opacity(0.30), lineWidth: 1)
+                        Capsule()
+                            .stroke(brand, lineWidth: 1)
                     )
                 }
                 .disabled(viewModel.isAuthenticating)
@@ -191,6 +191,8 @@ struct SignInView: View {
             FaceIDAuthView(onAuthSuccess: {
                 showFaceIDAuth = false
                 onSignIn?()
+            }, onCancel: {
+                showFaceIDAuth = false
             })
         }
     }
@@ -280,7 +282,7 @@ struct SignInView: View {
             } catch {
                 await MainActor.run {
                     isLoading = false
-                    emailAuthError = error.localizedDescription
+                    emailAuthError = AuthService.friendlyErrorMessage(for: error)
                 }
             }
         }

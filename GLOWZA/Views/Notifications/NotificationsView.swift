@@ -20,26 +20,6 @@ struct NotificationsView: View {
             pageBackground.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("Notifications")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(primaryText)
-                    
-                    Spacer()
-                    
-                    if !notificationManager.notificationHistory.isEmpty {
-                        Button(action: { notificationManager.clearAllHistory() }) {
-                            Text("Clear")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(brand)
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(surfaceBackground)
-                
                 // Content
                 if notificationManager.notificationHistory.isEmpty {
                     VStack(spacing: 12) {
@@ -85,13 +65,28 @@ struct NotificationsView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: { dismiss() }) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
                         Text("Back")
+                            .font(.system(size: 17))
                             .fixedSize()
                     }
-                    .foregroundColor(brand)
+                    .foregroundColor(Color(hex: "9E1B4C")) // Match the pink/burgundy color in image
+                }
+            }
+            ToolbarItem(placement: .principal) {
+                Text("Notifications")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(primaryText)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                if !notificationManager.notificationHistory.isEmpty {
+                    Button(action: { notificationManager.clearAllHistory() }) {
+                        Text("Clear")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "9E1B4C"))
+                    }
                 }
             }
         }

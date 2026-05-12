@@ -47,6 +47,9 @@ class NotificationManager {
     private init() {
         loadNotificationHistory()
         requestNotificationPermission()
+        Task {
+            await fetchNotificationsFromFirestore()
+        }
     }
     
     // MARK: - Load & Save History
@@ -87,6 +90,56 @@ class NotificationManager {
     private func saveNotificationHistory() {
         if let encoded = try? JSONEncoder().encode(notificationHistory) {
             UserDefaults.standard.set(encoded, forKey: historyKey)
+        }
+    }
+    
+    // MARK: - Fetch from Firestore
+    func fetchNotificationsFromFirestore() async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        do {
+            let snapshot = try await db.collection("notifications")
+                .whereField("userId", isEqualTo: uid)
+                .getDocuments()
+            
+            let firestoreNotifs = snapshot.documents.compactMap { doc -> NotificationItem? in
+                let d = doc.data()
+                guard let title = d["title"] as? String,
+                      let subtitle = d["subtitle"] as? String,
+                      let icon = d["icon"] as? String,
+                      let typeStr = d["type"] as? String,
+                      let timestamp = (d["createdAt"] as? Timestamp)?.dateValue() else { return nil }
+                
+                let type: NotificationItem.NotificationType = {
+                    switch typeStr {
+                    case "success": return .success
+                    case "error": return .error
+                    case "warning": return .warning
+                    default: return .info
+                    }
+                }()
+                
+                return NotificationItem(
+                    title: title,
+                    subtitle: subtitle,
+                    icon: icon,
+                    type: type,
+                    timestamp: timestamp
+                )
+            }
+            
+            await MainActor.run {
+                // Merge with existing history (avoid duplicates)
+                let existingTitles = Set(self.notificationHistory.map { $0.title + $0.subtitle })
+                for item in firestoreNotifs {
+                    if !existingTitles.contains(item.title + item.subtitle) {
+                        self.notificationHistory.append(item)
+                    }
+                }
+                self.notificationHistory.sort(by: { $0.timestamp > $1.timestamp })
+                self.saveNotificationHistory()
+            }
+        } catch {
+            print("Failed to fetch notifications from Firestore: \(error)")
         }
     }
     
@@ -138,6 +191,7 @@ class NotificationManager {
                 self.notificationHistory.removeAll()
             }
             self.saveNotificationHistory()
+            try? self.notificationRepo.clearAllNotifications()
         }
     }
     

@@ -111,35 +111,36 @@ final class BookingStore {
         amountPaid: Double,
         receiptNumber: String
     ) async {
-        guard let userId = authService.currentUID else {
-            error = "User not authenticated"
-            return
-        }
-
+        let userId = authService.currentUID ?? "GUEST"
+        
         let userName = authService.currentUserName
             ?? UserDefaults.standard.string(forKey: "profile_fullName")
             ?? "Guest"
-
+        
         isLoading = true
         error = nil
-
+        
         do {
-            let firestoreId = try await bookingService.createBooking(
-                userId: userId,
-                userName: userName,
-                salonName: salonName,
-                salonLocation: salonLocation,
-                serviceName: serviceName,
-                servicePrice: servicePrice,
-                date: date,
-                timeSlot: timeSlot,
-                paymentMethod: paymentMethod,
-                amountPaid: amountPaid,
-                receiptNumber: receiptNumber
-            )
-
-            receiptToFirestoreId[receiptNumber] = firestoreId
-
+            var firestoreId: String? = nil
+            
+            if userId != "GUEST" {
+                firestoreId = try await bookingService.createBooking(
+                    userId: userId,
+                    userName: userName,
+                    salonName: salonName,
+                    salonLocation: salonLocation,
+                    serviceName: serviceName,
+                    servicePrice: servicePrice,
+                    date: date,
+                    timeSlot: timeSlot,
+                    paymentMethod: paymentMethod,
+                    amountPaid: amountPaid,
+                    receiptNumber: receiptNumber
+                )
+                
+                receiptToFirestoreId[receiptNumber] = firestoreId!
+            }
+            
             try? bookingRepository.saveBookingToCore(
                 userId: userId,
                 userName: userName,
@@ -154,8 +155,9 @@ final class BookingStore {
                 amountPaid: amountPaid,
                 firestoreID: firestoreId
             )
-
+            
             isLoading = false
+
         } catch {
             self.error = error.localizedDescription
             isLoading = false
@@ -164,29 +166,30 @@ final class BookingStore {
     }
 
     func fetchUserBookings() async {
-        guard let userId = authService.currentUID else {
-            error = "User not authenticated"
-            return
-        }
-
+        let userId = authService.currentUID ?? "GUEST"
+        
         isLoading = true
         error = nil
-
+        
         // Offline-first: show cached data immediately.
         loadFromCoreData(userId: userId)
-
-        do {
-            firestoreBookings = try await bookingService.fetchUserBookings(userId: userId)
-            syncFirestoreToLocalBookings()
-            persistFirestoreBookingsToCoreData(userId: userId)
+        
+        if userId != "GUEST" {
+            do {
+                firestoreBookings = try await bookingService.fetchUserBookings(userId: userId)
+                syncFirestoreToLocalBookings()
+                persistFirestoreBookingsToCoreData(userId: userId)
+                isLoading = false
+            } catch {
+                isLoading = false
+                print("⚠️ Offline — showing cached bookings (\(bookings.count))")
+            }
+        } else {
             isLoading = false
-        } catch {
-            isLoading = false
-            print("⚠️ Offline — showing cached bookings (\(bookings.count))")
         }
 
         // Final step: Inject demo data for lecturers/demo
-        seedDemoData()
+        // seedDemoData()
     }
 
     /// Injects hardcoded demo data to ensure every user has a populated profile (for lecturer demonstration).

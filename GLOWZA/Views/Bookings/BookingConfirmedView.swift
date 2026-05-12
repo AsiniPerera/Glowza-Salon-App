@@ -4,7 +4,7 @@ import SwiftUI
 struct BookingConfirmedView: View {
 
     let booking: Booking
-    let onProceedToReceipt: () -> Void
+    let onBackToHome: () -> Void
 
     @State private var checkScale: CGFloat = 0.3
     @State private var checkOpacity: Double = 0.0
@@ -29,26 +29,26 @@ struct BookingConfirmedView: View {
                 ZStack {
                     Circle()
                         .stroke(brand.opacity(0.12), lineWidth: 1)
-                        .frame(width: 170, height: 170)
+                        .frame(width: 130, height: 130)
                         .scaleEffect(ring2Scale)
                         .opacity(ring2Opacity)
 
                     Circle()
-                        .stroke(brand.opacity(0.28), lineWidth: 1.8)
-                        .frame(width: 126, height: 126)
+                        .stroke(brand.opacity(0.28), lineWidth: 1.5)
+                        .frame(width: 100, height: 100)
                         .scaleEffect(ring1Scale)
                         .opacity(ring1Opacity)
 
                     Circle()
                         .fill(brand.opacity(0.10))
-                        .frame(width: 90, height: 90)
+                        .frame(width: 70, height: 70)
 
                     Circle()
-                        .stroke(brand, lineWidth: 2.5)
-                        .frame(width: 90, height: 90)
+                        .stroke(brand, lineWidth: 2)
+                        .frame(width: 70, height: 70)
 
                     Image(systemName: "checkmark")
-                        .font(.system(size: 38, weight: .bold))
+                        .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(brand)
                 }
                 .scaleEffect(checkScale)
@@ -99,12 +99,14 @@ struct BookingConfirmedView: View {
 
                 Spacer()
 
-                // ── View Receipt button ────────────────────────────────
-                Button(action: onProceedToReceipt) {
+
+
+                // ── Back to Home button ────────────────────────────────
+                Button(action: onBackToHome) {
                     HStack(spacing: 8) {
-                        Image(systemName: "doc.text.fill")
+                        Image(systemName: "house.fill")
                             .font(.system(size: 15, weight: .semibold))
-                        Text("View Receipt & Download")
+                        Text("Back to Home")
                             .font(.system(size: 17, weight: .semibold))
                     }
                     .foregroundColor(.white)

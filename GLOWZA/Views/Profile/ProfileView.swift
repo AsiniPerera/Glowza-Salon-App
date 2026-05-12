@@ -174,6 +174,17 @@ struct ProfileView: View {
         .sheet(isPresented: $showFontSizeSettings)  { FontSizeSettingsView().environment(appSettings).preferredColorScheme(appSettings.colorScheme) }
         .alert("Sign Out", isPresented: $showSignOutAlert) {
             Button("Sign Out", role: .destructive) {
+                // 1. Sign out from Firebase
+                try? AuthService.shared.signOut()
+                
+                // 2. Clear local data
+                NotificationManager.shared.clearAllHistory()
+                FavouritesStore.shared.clear()
+                UserDefaults.standard.removeObject(forKey: "profile_fullName")
+                UserDefaults.standard.removeObject(forKey: "profile_avatarData")
+                UserDefaults.standard.removeObject(forKey: "is_new_user")
+                
+                // 3. Notify app to go to login
                 NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
             }
             Button("Cancel", role: .cancel) {}
@@ -320,8 +331,8 @@ struct ProfileView: View {
                     .fill(brand.opacity(0.12))
                     .frame(width: size, height: size)
                     .overlay(
-                        Text(initials)
-                            .glowzaFont(size: size * 0.34, weight: .bold)
+                        Image(systemName: "person.fill")
+                            .font(.system(size: size * 0.4, weight: .bold))
                             .foregroundStyle(brand)
                     )
             }

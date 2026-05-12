@@ -44,6 +44,26 @@ enum AuthError: Error, LocalizedError {
 @Observable
 final class AuthService {
 
+    static func friendlyErrorMessage(for error: Error) -> String {
+        let msg = error.localizedDescription
+        if msg.contains("malformed") || msg.contains("expired") || msg.contains("credential") {
+            return "Invalid email or password. Please try again."
+        }
+        if msg.contains("already in use") {
+            return "This email is already registered. Please sign in instead."
+        }
+        if msg.contains("no user record") || msg.contains("user-not-found") {
+            return "No account found with this email. Please sign up."
+        }
+        if msg.contains("network") {
+            return "Network error. Please check your internet connection."
+        }
+        if msg.contains("wrong-password") {
+            return "Incorrect password. Please try again."
+        }
+        return msg
+    }
+
     static let shared = AuthService()
     nonisolated private init() {}
 
@@ -93,6 +113,7 @@ final class AuthService {
         self.currentUser = glowzaUser
         self.currentUserProfile = userProfile
         cacheProfileToDefaults(userProfile)
+        UserDefaults.standard.set(true, forKey: "is_new_user")
 
         // 6. Cache to Core Data for offline access
         try? UserProfileRepository.shared.saveOrUpdateProfile(
