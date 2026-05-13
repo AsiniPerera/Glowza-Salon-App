@@ -19,6 +19,7 @@ from sklearn.pipeline import Pipeline
 # ─────────────────────────────────────────────────────────────
 # 1. Training data — labelled skin-concern sentences
 # ─────────────────────────────────────────────────────────────
+# These are the categories our model will learn to predict!
 LABELS = [
     "Acne & Breakouts",
     "Dark Circles",
@@ -30,6 +31,8 @@ LABELS = [
     "Acne Scars",
 ]
 
+# This is the training data. We provide examples of what a user might say
+# and label them with the correct concern category.
 training_examples = [
     # ── Acne & Breakouts ──────────────────────────────────────
     ("I have pimples on my face",                              LABELS[0]),
@@ -171,8 +174,10 @@ training_examples = [
 texts, labels = zip(*training_examples)
 
 # ─────────────────────────────────────────────────────────────
-# 2. Convert text → word-count dicts  (done same way in Swift)
+# 2. Convert text → word-count dicts  (Bag of Words)
 # ─────────────────────────────────────────────────────────────
+# This function splits a sentence into words and counts how many times
+# each word appears. This is a simple way to represent text for ML!
 def text_to_word_counts(text: str) -> dict:
     words = text.lower().split()
     counts = {}
@@ -180,19 +185,26 @@ def text_to_word_counts(text: str) -> dict:
         counts[w] = counts.get(w, 0) + 1
     return counts
 
+# Convert all our training texts into these word-count dictionaries!
 text_dicts = [text_to_word_counts(t) for t in texts]
 
 # ─────────────────────────────────────────────────────────────
-# 3. Build sklearn pipeline  (DictVectorizer IS supported by coremltools)
+# 3. Build sklearn pipeline
 # ─────────────────────────────────────────────────────────────
+# We use a pipeline to chain together the vectorizer, normalizer, and classifier.
 pipeline = Pipeline([
+    # DictVectorizer converts the {word: count} dicts into numerical vectors!
     ("vect",    DictVectorizer()),
+    # Normalizer scales the vectors so they have unit norm (length of 1).
     ("norm",    Normalizer(norm="l2")),
+    # LogisticRegression is the actual classifier that learns patterns!
     ("clf",     LogisticRegression(C=1.5, max_iter=500, multi_class="ovr", solver="liblinear")),
 ])
+
+# Train the model!
 pipeline.fit(text_dicts, labels)
 
-# Quick self-check
+# Quick self-check to see if the model learned the training data well!
 test_cases = [
     ("pimples and oily skin",          LABELS[0]),
     ("dark circles under eyes",        LABELS[1]),
@@ -212,22 +224,24 @@ for text, expected in test_cases:
     print(f"{status}  [{expected}]  '{text}' → '{pred}'")
 
 # ─────────────────────────────────────────────────────────────
-# 4. Export to CoreML  (DictVectorizer → Normalizer → LR — all supported)
+# 4. Export to CoreML
 # ─────────────────────────────────────────────────────────────
+# Now we convert the trained scikit-learn pipeline into Apple's CoreML format!
 coreml_model = ct.converters.sklearn.convert(
     pipeline,
-    input_features="wordCounts",        # just the dict name for DictVectorizer pipelines
-    output_feature_names="skinConcernLabel",
+    input_features="wordCounts",        # The name of the input feature in iOS.
+    output_feature_names="skinConcernLabel", # The name of the output prediction.
 )
 
+# Add some metadata so we know what this model is!
 coreml_model.short_description = "Skin concern text classifier for Glowza app"
 coreml_model.author             = "Glowza AI"
 coreml_model.version            = "1.0"
 coreml_model.input_description["wordCounts"]        = "Word-count dictionary of the skin concern input"
 coreml_model.output_description["skinConcernLabel"] = "Predicted skin concern category"
 
+# Save the model to the Xcode project directory!
 OUTPUT = "/Users/COBSCCOMP242P-024/AsiniDev/GLOWZA/GLOWZA/Views/AIBeauty/SkinConcernClassifier.mlmodel"
 coreml_model.save(OUTPUT)
 print(f"\n{'✅' if all_pass else '⚠️ '}  Model saved → {OUTPUT}")
 print(f"   Classes: {list(pipeline.classes_)}")
-

@@ -3,14 +3,17 @@ import PhotosUI
 import AVFoundation
 
 // MARK: - Profile View
+// This view displays the user's profile information, account settings,
+// security options, and preferences (like dark mode and font size).
 struct ProfileView: View {
 
     @Environment(AppSettings.self) private var appSettings
 
     @State private var isFaceIDEnabled   = true
     @State private var pushNotifications = true
-    @State private var synthesizer = AVSpeechSynthesizer()
+    @State private var synthesizer = AVSpeechSynthesizer() // For VoiceOver support!
 
+    // States to control presentation of sheets!
     @State private var showEditProfile      = false
     @State private var showChangePassword   = false
     @State private var showTreatmentHistory = false
@@ -23,6 +26,7 @@ struct ProfileView: View {
 
     private var favourites: FavouritesStore { FavouritesStore.shared }
 
+    // Avatar data loaded from UserDefaults!
     @State private var avatarData: Data?               = UserDefaults.standard.data(forKey: "profile_avatarData")
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @State private var displayName: String             = UserDefaults.standard.string(forKey: "profile_fullName") ?? ""
@@ -30,11 +34,13 @@ struct ProfileView: View {
 
     private var brand: Color { appSettings.themeBrand }
 
+    // Computed property to turn avatar data into a UIImage!
     private var avatarImage: UIImage? {
         guard let d = avatarData else { return nil }
         return UIImage(data: d)
     }
 
+    // Helper to get initials from display name (e.g., "John Doe" -> "JD")!
     private var initials: String {
         displayName.split(separator: " ").prefix(2).compactMap { $0.first?.uppercased() }.joined()
     }
@@ -53,6 +59,7 @@ struct ProfileView: View {
                         .padding(.bottom, 8)
 
                     // MARK: Avatar card
+                    // Shows the user's picture and name!
                     VStack(spacing: 14) {
                         avatarView(size: 80)
                         Text(displayName)
@@ -68,29 +75,7 @@ struct ProfileView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 24)
 
-                    // MARK: Favourites
-                    sectionLabel("Favourites")
-                    profileCard {
-                        navButton(
-                            title: "Favourite Salons",
-                            icon: "heart.fill",
-                            color: .red
-                        ) { showFavourites = true }
-                        .overlay(alignment: .trailing) {
-                            if !favourites.favouriteNames.isEmpty {
-                                Text("\(favourites.favouriteNames.count)")
-                                    .glowzaFont(size: 12, weight: .bold)
-                                    .foregroundColor(.white)
-                                    .frame(minWidth: 20, minHeight: 20)
-                                    .padding(.horizontal, 6)
-                                    .background(Color.red)
-                                    .clipShape(Capsule())
-                                    .padding(.trailing, 36)
-                            }
-                        }
-                    }
-
-                    // MARK: Account
+                    // MARK: Account Section
                     sectionLabel("Account")
                     profileCard {
                         navButton(title: "Edit Profile",      icon: "person.crop.circle.fill", color: brand)   { showEditProfile = true }
@@ -100,7 +85,7 @@ struct ProfileView: View {
                         navButton(title: "Treatment History", icon: "clock.arrow.circlepath",  color: .teal)   { showTreatmentHistory = true }
                     }
 
-                    // MARK: Security
+                    // MARK: Security Section
                     sectionLabel("Security")
                     profileCard {
                         navButton(title: "Security & Privacy", icon: "checkmark.shield.fill", color: .green) { showSecurity = true }
@@ -111,7 +96,7 @@ struct ProfileView: View {
                                   isOn: $isFaceIDEnabled)
                     }
 
-                    // MARK: Preferences
+                    // MARK: Preferences Section
                     sectionLabel("Preferences")
                     profileCard {
                         toggleRow(title: "Push Notifications", icon: "bell.badge.fill",        color: .red,    isOn: $pushNotifications)
@@ -140,7 +125,7 @@ struct ProfileView: View {
                         fontSizeNavRow
                     }
 
-                    // MARK: General
+                    // MARK: General Section
                     sectionLabel("General")
                     profileCard {
                         navButton(title: "App Updates",        icon: "arrow.down.app.fill", color: .cyan)              { showAppUpdates = true }
@@ -148,7 +133,7 @@ struct ProfileView: View {
                         navButton(title: "Terms & Conditions", icon: "doc.text.fill",       color: Color(.systemGray)) { showTerms = true }
                     }
 
-                    // MARK: Sign Out
+                    // MARK: Sign Out Button
                     Button(action: { showSignOutAlert = true }) {
                         HStack(spacing: 12) {
                             iconBadge(icon: "rectangle.portrait.and.arrow.right", color: .red)
@@ -184,7 +169,6 @@ struct ProfileView: View {
                 refreshProfileFromAuthService()
             }
         }
-        .sheet(isPresented: $showFavourites)       { FavouriteSalonsView().environment(appSettings) }
         .sheet(isPresented: $showEditProfile)      {
             EditProfileView(displayName: $displayName, avatarData: $avatarData)
                 .environment(appSettings)
@@ -197,6 +181,17 @@ struct ProfileView: View {
         .sheet(isPresented: $showFontSizeSettings)  { FontSizeSettingsView().environment(appSettings).preferredColorScheme(appSettings.colorScheme) }
         .alert("Sign Out", isPresented: $showSignOutAlert) {
             Button("Sign Out", role: .destructive) {
+                // 1. Sign out from Firebase
+                try? AuthService.shared.signOut()
+                
+                // 2. Clear local data
+                NotificationManager.shared.clearAllHistory()
+                FavouritesStore.shared.clear()
+                UserDefaults.standard.removeObject(forKey: "profile_fullName")
+                UserDefaults.standard.removeObject(forKey: "profile_avatarData")
+                UserDefaults.standard.removeObject(forKey: "is_new_user")
+                
+                // 3. Notify app to go to login
                 NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
             }
             Button("Cancel", role: .cancel) {}
@@ -205,13 +200,16 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Load profile from AuthService (Firestore source of truth)
+    // MARK: - Helper Methods
+
+    // Speaks text using AVSpeechSynthesizer!
     private func speak(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
         synthesizer.speak(utterance)
     }
 
+    // Refreshes the profile data from AuthService (Firestore source of truth).
     private func refreshProfileFromAuthService() {
         let auth = AuthService.shared
 
@@ -228,7 +226,7 @@ struct ProfileView: View {
             avatarData = cached
         }
 
-        // Background fetch latest avatar from Firestore
+        // Background fetch latest avatar from Firestore!
         Task {
             if let uid = auth.currentUID {
                 let db = try? await FirestoreAvatarLoader.loadAvatar(uid: uid)
@@ -242,8 +240,9 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Card helpers
+    // MARK: - Card Helpers
 
+    // Creates a section label (e.g., "ACCOUNT").
     private func sectionLabel(_ title: String) -> some View {
         Text(title)
             .glowzaFont(size: 13, weight: .semibold)
@@ -255,18 +254,23 @@ struct ProfileView: View {
             .padding(.bottom, 6)
     }
 
+    // Creates a card container for list items.
     private func profileCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
             content()
         }
         .background(appSettings.themeSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .hcBorder(radius: 16)
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 16))
+        .overlay(
+            UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 16)
+                .stroke(appSettings.isHighContrast ? Color.white.opacity(0.85) : Color.clear, lineWidth: appSettings.isHighContrast ? 3 : 0)
+        )
         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
         .padding(.horizontal, 20)
         .padding(.bottom, 4)
     }
 
+    // Divider line between items in a card.
     private var cardDivider: some View {
         Rectangle()
             .fill(appSettings.themeDivider)
@@ -274,8 +278,9 @@ struct ProfileView: View {
             .padding(.leading, 58)
     }
 
-    // MARK: - Row builders
+    // MARK: - Row Builders
 
+    // Creates a button that navigates to another screen.
     private func navButton(title: String, icon: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
@@ -294,6 +299,7 @@ struct ProfileView: View {
         .buttonStyle(.plain)
     }
 
+    // Creates a row with a toggle switch.
     private func toggleRow(title: String, icon: String, color: Color, isOn: Binding<Bool>) -> some View {
         HStack(spacing: 12) {
             iconBadge(icon: icon, color: color)
@@ -306,6 +312,7 @@ struct ProfileView: View {
         .padding(.vertical, 14)
     }
 
+    // Specific row for font size settings.
     private var fontSizeNavRow: some View {
         Button(action: { showFontSizeSettings = true }) {
             HStack(spacing: 12) {
@@ -327,6 +334,7 @@ struct ProfileView: View {
         .buttonStyle(.plain)
     }
 
+    // Displays the user's avatar or a placeholder.
     private func avatarView(size: CGFloat) -> some View {
         ZStack {
             if let ui = avatarImage {
@@ -340,14 +348,15 @@ struct ProfileView: View {
                     .fill(brand.opacity(0.12))
                     .frame(width: size, height: size)
                     .overlay(
-                        Text(initials)
-                            .glowzaFont(size: size * 0.34, weight: .bold)
+                        Image(systemName: "person.fill")
+                            .font(.system(size: size * 0.4, weight: .bold))
                             .foregroundStyle(brand)
                     )
             }
         }
     }
 
+    // Creates a colored badge with an icon!
     private func iconBadge(icon: String, color: Color) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 7, style: .continuous)

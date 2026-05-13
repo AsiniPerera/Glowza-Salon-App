@@ -1,12 +1,14 @@
 // MARK: - Beauty Data Store
-// All treatment and product data lives here as JSON.
+// All treatment and product data lives here as hardcoded JSON!
 // To add, remove, or edit items — just update the JSON strings below.
 // The AI engine decodes and uses this data at runtime via JSONDecoder.
+// This simulates fetching data from a backend API or database.
 
 enum BeautyDataStore {
 
     // MARK: - Concern Categories
     // Every concern the ML model can classify — name must match the CoreML label exactly.
+    // 'anchors' are keywords used to match user search queries!
     static let concernsJSON = """
     [
       { "name": "Acne & Breakouts",      "icon": "drop.fill",              "anchors": ["acne", "pimple", "breakout", "zit", "blackhead", "blemish", "sebum", "oily"] },
@@ -21,6 +23,9 @@ enum BeautyDataStore {
     """
 
     // MARK: - Treatments
+    // List of professional treatments offered by salons.
+    // 'concernTags' link these treatments to the concerns listed above!
+    // 'semanticAnchors' help the AI find this treatment based on keywords.
     static let treatmentsJSON = """
     [
       {
@@ -115,6 +120,7 @@ enum BeautyDataStore {
     """
 
     // MARK: - Products
+    // List of skincare products recommended for at-home use.
     static let productsJSON = """
     [
       {

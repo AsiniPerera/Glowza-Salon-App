@@ -11,7 +11,7 @@ struct AppointmentReminderProvider: TimelineProvider {
 		AppointmentReminderEntry(
 			date: Date(),
 			booking: WidgetBookingSnapshot(
-				salonName: "Haley Avenue",
+				salonName: "Golden Avenue",
 				serviceName: "Signature Facial",
 				date: Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date(),
 				timeSlot: "10:30 AM",
@@ -169,7 +169,7 @@ struct GLOWZAWidgets: Widget {
 	AppointmentReminderEntry(
 		date: .now,
 		booking: WidgetBookingSnapshot(
-			salonName: "Haley Avenue",
+			salonName: "Golden Avenue",
 			serviceName: "Signature Facial",
 			date: Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now,
 			timeSlot: "10:30 AM",

@@ -1,6 +1,8 @@
 import SwiftUI
 
 // MARK: - App Updates View
+// This view displays a list of app updates (release notes) with version numbers and dates.
+// It helps users see what's new in each version.
 struct AppUpdatesView: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -10,6 +12,7 @@ struct AppUpdatesView: View {
     private var surfaceBackground: Color { appSettings.themeSurface }
     private var primaryText: Color { appSettings.themeText }
 
+    // Hardcoded list of changes for each version!
     private let changes: [(version: String, date: String, notes: [String])] = [
         (
             version: "Version 2.1.0",
@@ -48,11 +51,12 @@ struct AppUpdatesView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
 
-                    // Current version hero
+                    // MARK: Current Version Hero
                     VStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .glowzaFont(size: 40)
-                            .foregroundColor(accent)
+                        Image("logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
                         Text("GLOWZA")
                             .glowzaFont(size: 13, weight: .medium)
                             .foregroundColor(Color(hex: "8A8D94"))
@@ -68,6 +72,7 @@ struct AppUpdatesView: View {
                     .padding(.vertical, 32)
                     .background(surfaceBackground)
 
+                    // MARK: Update History
                     VStack(spacing: 20) {
                         ForEach(changes, id: \.version) { release in
                             VStack(alignment: .leading, spacing: 12) {
@@ -110,15 +115,7 @@ struct AppUpdatesView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(accent)
-                    }
-                    .fixedSize()
+                    GlowzaCircleBackButton(action: { dismiss() })
                 }
             }
         }
@@ -126,6 +123,7 @@ struct AppUpdatesView: View {
 }
 
 // MARK: - Terms & Conditions View
+// This view displays the app's terms and conditions in a readable format.
 struct TermsConditionsView: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -135,6 +133,7 @@ struct TermsConditionsView: View {
     private var surfaceBackground: Color { appSettings.themeSurface }
     private var primaryText: Color { appSettings.themeText }
 
+    // Hardcoded list of sections for terms and conditions!
     private let sections: [(title: String, body: String)] = [
         (
             "1. Acceptance of Terms",
@@ -179,7 +178,7 @@ struct TermsConditionsView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
 
-                    // Header
+                    // MARK: Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Terms & Conditions")
                             .glowzaFont(size: 24, weight: .bold)
@@ -193,6 +192,7 @@ struct TermsConditionsView: View {
                     .padding(.vertical, 24)
                     .background(surfaceBackground)
 
+                    // MARK: Content Sections
                     VStack(spacing: 12) {
                         ForEach(sections, id: \.title) { section in
                             VStack(alignment: .leading, spacing: 8) {
@@ -220,15 +220,7 @@ struct TermsConditionsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(accent)
-                    }
-                    .fixedSize()
+                    GlowzaCircleBackButton(action: { dismiss() })
                 }
             }
         }

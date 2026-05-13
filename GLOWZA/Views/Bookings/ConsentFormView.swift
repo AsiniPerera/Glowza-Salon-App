@@ -1,39 +1,46 @@
 import SwiftUI
 import PencilKit
 
-// MARK: - Signature Canvas (UIViewRepresentable - must keep)
+// MARK: - Signature Canvas (UIViewRepresentable)
+// This bridges UIKit's PKCanvasView to SwiftUI so we can use Apple's PencilKit for drawing signatures!
 struct SignatureCanvasView: UIViewRepresentable {
     @Binding var canvasView: PKCanvasView
     var onDrawingChanged: () -> Void
 
     func makeUIView(context: Context) -> PKCanvasView {
-        canvasView.drawingPolicy = .anyInput
-        canvasView.tool          = PKInkingTool(.pen, color: .black, width: 2)
+        canvasView.drawingPolicy = .anyInput // Allows drawing with finger or Apple Pencil.
+        canvasView.tool          = PKInkingTool(.pen, color: .black, width: 2) // Sets the pen tool.
         canvasView.backgroundColor = .clear
         canvasView.delegate = context.coordinator
         return canvasView
     }
+    
     func updateUIView(_ uiView: PKCanvasView, context: Context) {}
 
     func makeCoordinator() -> Coordinator { Coordinator(onDrawingChanged: onDrawingChanged) }
 
+    // Coordinator acts as the delegate for the PKCanvasView.
     class Coordinator: NSObject, PKCanvasViewDelegate {
         var onDrawingChanged: () -> Void
+        
         init(onDrawingChanged: @escaping () -> Void) { self.onDrawingChanged = onDrawingChanged }
+        
+        // Called whenever the user draws something!
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) { onDrawingChanged() }
     }
 }
 
 // MARK: - Consent Form View
+// This view shows the terms and conditions and requires the user to agree and sign.
 struct ConsentFormView: View {
 
-    @Binding var draft: BookingDraft
+    @Binding var draft: BookingDraft // Bound to parent to share data.
     let onConfirm: () -> Void
     let onBack: () -> Void
 
-    @State private var canvasView = PKCanvasView()
-    @State private var isAgreed = false
-    @State private var hasSignature = false
+    @State private var canvasView = PKCanvasView() // Holds the signature drawing.
+    @State private var isAgreed = false // Tracks if the checkbox is checked.
+    @State private var hasSignature = false // Tracks if the user has drawn something.
     private var appSettings: AppSettings { AppSettings.shared }
 
     private var accent: Color { appSettings.themeBrand }
@@ -49,12 +56,15 @@ struct ConsentFormView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     header
+                    
                     Text("Final Consent Form")
-                        .glowzaFont(size: 28, weight: .bold)
+                        .glowzaFont(.h2, weight: .bold)
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
+                    
                     signatureSection
-                    Spacer().frame(height: 110)
+                    
+                    Spacer().frame(height: 110) // Space for the bottom bar!
                 }
                 .padding(.top, 16)
                 .padding(.bottom, 20)
@@ -67,11 +77,7 @@ struct ConsentFormView: View {
 
     private var header: some View {
         HStack {
-            Button(action: onBack) {
-                Image(systemName: "chevron.left")
-                    .glowzaFont(size: 20, weight: .semibold)
-                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "5F6168"))
-            }
+            GlowzaCircleBackButton(action: onBack)
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -81,21 +87,22 @@ struct ConsentFormView: View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Treatment Consent Form")
-                    .glowzaFont(size: 14, weight: .bold)
+                    .glowzaFont(.body, weight: .bold)
                     .foregroundColor(dark)
-                    .tracking(3)
                 Text("REF: GZ-2024-089")
-                    .glowzaFont(size: 12, weight: .medium)
+                    .glowzaFont(.caption, weight: .medium)
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "666A72"))
-                    .tracking(1.6)
-                Text("I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.")
-                    .glowzaFont(size: 14)
-                    .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52"))
-                    .lineSpacing(6)
+                
+                // We use our custom JustifiedText view here!
+                JustifiedText(
+                    text: "I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.",
+                    font: UIFont(name: "Urbanist-Regular", size: 15) ?? UIFont.systemFont(ofSize: 15),
+                    color: appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52")
+                )
             }
             .padding(.bottom, 4)
 
-            // Checkbox agreement
+            // Checkbox agreement.
             Button(action: { isAgreed.toggle() }) {
                 HStack(alignment: .top, spacing: 12) {
                     ZStack {
@@ -112,7 +119,7 @@ struct ConsentFormView: View {
                         }
                     }
                     Text("I have read and agree to the treatment consent terms above, and confirm that this signature is my own.")
-                        .glowzaFont(size: 13)
+                        .glowzaFont(.caption)
                         .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "4A4C52"))
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer()
@@ -124,13 +131,14 @@ struct ConsentFormView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text("Electronic Signature")
-                        .glowzaFont(size: 14, weight: .semibold)
+                        .glowzaFont(.body, weight: .semibold)
                         .foregroundColor(dark)
                         .tracking(2.2)
                     Spacer()
+                    // Clear button to reset the drawing!
                     Button(action: { canvasView.drawing = PKDrawing() }) {
                         Text("CLEAR")
-                            .glowzaFont(size: 11)
+                            .glowzaFont(.caption, weight: .semibold)
                             .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "777A81"))
                             .tracking(2)
                     }
@@ -142,6 +150,7 @@ struct ConsentFormView: View {
                         .overlay(Rectangle().stroke(Color(hex: "C4C4C7"), lineWidth: 1))
                         .frame(height: 160)
 
+                    // Placeholder text when canvas is empty.
                     if !hasSignature {
                         VStack(spacing: 12) {
                             Text("Sign here (optional)")
@@ -154,6 +163,7 @@ struct ConsentFormView: View {
                         }
                     }
 
+                    // The actual signature canvas!
                     SignatureCanvasView(canvasView: $canvasView) {
                         hasSignature = !canvasView.drawing.strokes.isEmpty
                     }
@@ -167,10 +177,12 @@ struct ConsentFormView: View {
         .padding(.horizontal, 20)
     }
 
+    // Bottom bar with the confirm button, only visible when agreed!
     private var bottomBar: some View {
         VStack(spacing: 0) {
             if isAgreed {
                 Button(action: {
+                    // Convert the drawing to an image and save it to the draft!
                     if hasSignature {
                         draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
                     }
@@ -186,9 +198,37 @@ struct ConsentFormView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
                 .background(bottomBarBackground)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(.move(edge: .bottom).combined(with: .opacity)) // Smooth transition!
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isAgreed)
+    }
+}
+
+// MARK: - JustifiedText
+// This is a UIViewRepresentable that wraps a UIKit UILabel to support justified text alignment!
+// SwiftUI's Text view doesn't support full justification in older iOS versions!
+struct JustifiedText: UIViewRepresentable {
+    let text: String
+    let font: UIFont
+    let color: Color
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.textAlignment = .justified // Here is the magic!
+        label.font = font
+        label.textColor = UIColor(color)
+        label.lineBreakMode = .byWordWrapping
+        return label
+    }
+
+    func updateUIView(_ uiView: UILabel, context: Context) {
+        uiView.text = text
+    }
+
+    // Helps SwiftUI calculate the height of the view!
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
+        uiView.sizeThatFits(CGSize(width: proposal.width ?? 300, height: .greatestFiniteMagnitude))
     }
 }

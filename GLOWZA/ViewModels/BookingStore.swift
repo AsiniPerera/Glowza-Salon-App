@@ -2,9 +2,14 @@ import Foundation
 import Observation
 import Combine
 
+// MARK: - Booking Store
+// This class manages the booking state for the app!
+// It uses the newer @Observable macro (SwiftUI Observation framework) instead of ObservableObject.
+// It handles offline-first data loading, syncing with Firestore, and updating the widget.
 @MainActor
 @Observable
 final class BookingStore {
+    // Singleton pattern!
     static let shared = BookingStore()
     private init() {}
 
@@ -12,15 +17,19 @@ final class BookingStore {
     var firestoreBookings: [FirestoreBooking] = []
     var isLoading = false
     var error: String?
-    /// Maps local receipt number to Firestore document ID for cross-referencing.
-    private var receiptToFirestoreId: [String: String] = [:]
+    
+    /// Maps local receipt number to Firestore document ID for cross-referencing!
+    var receiptToFirestoreId: [String: String] = [:]
 
     private let bookingService = BookingService.shared
     private let authService = AuthService.shared
     private let bookingRepository = BookingRepository.shared
 
+    // MARK: - Computed Properties
+    // These properties automatically filter the bookings array!
+    
     var upcoming: [Booking] {
-        // Bookings that are marked as upcoming AND are for today or the future
+        // Bookings that are marked as upcoming AND are for today or the future!
         bookings.filter { 
             $0.status == .upcoming && $0.date >= Calendar.current.startOfDay(for: Date()) 
         }
@@ -28,7 +37,7 @@ final class BookingStore {
     }
 
     var completed: [Booking] {
-        // Bookings that are explicitly marked as completed OR are marked as upcoming but the date has passed
+        // Bookings that are explicitly marked as completed OR are marked as upcoming but the date has passed!
         bookings.filter {
             $0.status == .completed || ($0.status == .upcoming && $0.date < Calendar.current.startOfDay(for: Date()))
         }
@@ -40,8 +49,11 @@ final class BookingStore {
         .sorted(by: { $0.date > $1.date })
     }
 
+    // MARK: - Local Operations
+    
     func add(_ booking: Booking) {
         bookings.append(booking)
+        // Update the widget!
         WidgetBookingSyncService.shared.saveUpcomingBooking(booking)
     }
 
@@ -52,12 +64,14 @@ final class BookingStore {
 
         let receipt = bookings[idx].receiptNumber
 
+        // Update local Core Data!
         do {
             try bookingRepository.updateBookingStatus(id, status: "cancelled")
         } catch {
             print("Failed to save cancelled booking to Core Data: \(error)")
         }
 
+        // Update remote Firestore!
         Task {
             if let firestoreId = receiptToFirestoreId[receipt] {
                 await cancelBookingFirestore(firestoreId)
@@ -75,6 +89,7 @@ final class BookingStore {
 
         let receipt = bookings[idx].receiptNumber
 
+        // Update local Core Data!
         do {
             try bookingRepository.addReviewToCore(
                 bookingId: bookingID,
@@ -86,6 +101,7 @@ final class BookingStore {
             print("Failed to save review to Core Data: \(error)")
         }
 
+        // Update remote Firestore!
         Task {
             if let firestoreId = receiptToFirestoreId[receipt] {
                 await addReviewFirestore(firestoreId, rating: Double(review.rating), review: review.comment)
@@ -100,6 +116,7 @@ final class BookingStore {
     }
 
     // MARK: - Firebase Operations
+    
     func createBooking(
         salonName: String,
         salonLocation: String,
@@ -111,35 +128,38 @@ final class BookingStore {
         amountPaid: Double,
         receiptNumber: String
     ) async {
-        guard let userId = authService.currentUID else {
-            error = "User not authenticated"
-            return
-        }
-
+        let userId = authService.currentUID ?? "GUEST"
+        
         let userName = authService.currentUserName
             ?? UserDefaults.standard.string(forKey: "profile_fullName")
             ?? "Guest"
-
+        
         isLoading = true
         error = nil
-
+        
         do {
-            let firestoreId = try await bookingService.createBooking(
-                userId: userId,
-                userName: userName,
-                salonName: salonName,
-                salonLocation: salonLocation,
-                serviceName: serviceName,
-                servicePrice: servicePrice,
-                date: date,
-                timeSlot: timeSlot,
-                paymentMethod: paymentMethod,
-                amountPaid: amountPaid,
-                receiptNumber: receiptNumber
-            )
-
-            receiptToFirestoreId[receiptNumber] = firestoreId
-
+            var firestoreId: String? = nil
+            
+            // If logged in, save to Firestore!
+            if userId != "GUEST" {
+                firestoreId = try await bookingService.createBooking(
+                    userId: userId,
+                    userName: userName,
+                    salonName: salonName,
+                    salonLocation: salonLocation,
+                    serviceName: serviceName,
+                    servicePrice: servicePrice,
+                    date: date,
+                    timeSlot: timeSlot,
+                    paymentMethod: paymentMethod,
+                    amountPaid: amountPaid,
+                    receiptNumber: receiptNumber
+                )
+                
+                receiptToFirestoreId[receiptNumber] = firestoreId!
+            }
+            
+            // Always save to Core Data (local cache)!
             try? bookingRepository.saveBookingToCore(
                 userId: userId,
                 userName: userName,
@@ -154,39 +174,50 @@ final class BookingStore {
                 amountPaid: amountPaid,
                 firestoreID: firestoreId
             )
-
+            
             isLoading = false
+
         } catch {
             self.error = error.localizedDescription
             isLoading = false
-            print("❌ Booking creation failed: \(error)")
+            print("Booking creation failed: \(error)")
         }
     }
 
     func fetchUserBookings() async {
-        guard let userId = authService.currentUID else {
-            error = "User not authenticated"
-            return
-        }
-
+        let userId = authService.currentUID ?? "GUEST"
+        
         isLoading = true
         error = nil
-
-        // Offline-first: show cached data immediately.
+        
+        // 1. Offline-first: show cached data immediately!
         loadFromCoreData(userId: userId)
-
-        do {
-            firestoreBookings = try await bookingService.fetchUserBookings(userId: userId)
-            syncFirestoreToLocalBookings()
-            persistFirestoreBookingsToCoreData(userId: userId)
+        
+        // 2. Fetch fresh data from Firestore if logged in!
+        if userId != "GUEST" {
+            do {
+                firestoreBookings = try await bookingService.fetchUserBookings(userId: userId)
+                
+                // Sync Firestore data with local state!
+                syncFirestoreToLocalBookings()
+                
+                // Update Core Data cache!
+                persistFirestoreBookingsToCoreData(userId: userId)
+                
+                // Auto-complete past bookings!
+                updatePastBookingsStatus()
+                
+                isLoading = false
+            } catch {
+                isLoading = false
+                print("Offline — showing cached bookings (\(bookings.count))")
+            }
+        } else {
             isLoading = false
-        } catch {
-            isLoading = false
-            print("⚠️ Offline — showing cached bookings (\(bookings.count))")
         }
 
-        // Final step: Inject demo data for lecturers/demo
-        seedDemoData()
+        // Final step: Inject demo data for lecturers/demo (if needed).
+        // seedDemoData()
     }
 
     /// Injects hardcoded demo data to ensure every user has a populated profile (for lecturer demonstration).
@@ -195,7 +226,7 @@ final class BookingStore {
         let existingReceipts = Set(bookings.map { $0.receiptNumber })
         
         let demoBookings: [(salon: String, service: String, status: BookingStatus, dateOffset: Int)] = [
-            ("Haley Avenue", "Chemical Peel", .completed, -5),
+            ("Golden Avenue", "Chemical Peel", .completed, -5),
             ("Azure Spa", "Deep Tissue Massage", .upcoming, 2),
             ("The Glam Room", "Bridal Makeup", .cancelled, -10)
         ]
@@ -228,6 +259,7 @@ final class BookingStore {
     }
 
     // MARK: - Core Data offline helpers
+    
     func loadFromCoreData(userId: String) {
         guard let cdBookings = try? bookingRepository.fetchBookingsFromCore(userId: userId),
               !cdBookings.isEmpty else { return }
@@ -255,6 +287,10 @@ final class BookingStore {
         for fb in firestoreBookings where !existingReceipts.contains(fb.bookingSummary.receiptNumber) {
             let scheduleParts = fb.bookingSummary.schedule.components(separatedBy: " - ")
             let timeSlot = scheduleParts.count > 1 ? scheduleParts.last! : ""
+            
+            let df = DateFormatter()
+            df.dateFormat = "MMM d, yyyy"
+            let appointmentDate = scheduleParts.first.flatMap { df.date(from: $0) } ?? fb.createdAt
 
             try? bookingRepository.saveBookingToCore(
                 userId: userId,
@@ -263,7 +299,7 @@ final class BookingStore {
                 salonLocation: fb.bookingSummary.salonLocation,
                 serviceName: fb.bookingSummary.service,
                 servicePrice: fb.bookingSummary.servicePrice,
-                date: fb.createdAt,
+                date: appointmentDate,
                 timeSlot: timeSlot,
                 receiptNumber: fb.bookingSummary.receiptNumber,
                 paymentMethod: fb.paymentMethod,
@@ -276,12 +312,34 @@ final class BookingStore {
     /// Merges Firestore bookings into local `bookings` while deduplicating by receipt number.
     private func syncFirestoreToLocalBookings() {
         let catalog = SalonCatalog.shared
-        let existingReceipts = Set(bookings.map { $0.receiptNumber })
 
         for fb in firestoreBookings {
             let receipt = fb.bookingSummary.receiptNumber
             if let docId = fb.id { receiptToFirestoreId[receipt] = docId }
-            if existingReceipts.contains(receipt) { continue }
+
+            let status: BookingStatus
+            switch fb.status {
+            case "completed": status = .completed
+            case "cancelled": status = .cancelled
+            case "ongoing": status = .upcoming
+            default: status = .upcoming
+            }
+
+            let review: BookingReview? = fb.review.map {
+                BookingReview(
+                    rating: Int(fb.rating ?? 0),
+                    comment: $0,
+                    date: fb.createdAt,
+                    reviewerName: fb.userName
+                )
+            }
+
+            if let idx = bookings.firstIndex(where: { $0.receiptNumber == receipt }) {
+                // Update existing booking status and review!
+                bookings[idx].status = status
+                bookings[idx].review = review
+                continue
+            }
 
             let salon = catalog.salon(named: fb.bookingSummary.salon)
             let service = salon.services.first(where: { $0.name == fb.bookingSummary.service })
@@ -300,30 +358,18 @@ final class BookingStore {
             default: pm = .card
             }
 
-            let status: BookingStatus
-            switch fb.status {
-            case "completed": status = .completed
-            case "cancelled": status = .cancelled
-            default: status = .upcoming
-            }
-
             let scheduleParts = fb.bookingSummary.schedule.components(separatedBy: " - ")
             let timeSlot = scheduleParts.count > 1 ? scheduleParts.last! : ""
-
-            let review: BookingReview? = fb.review.map {
-                BookingReview(
-                    rating: Int(fb.rating ?? 0),
-                    comment: $0,
-                    date: fb.createdAt,
-                    reviewerName: fb.userName
-                )
-            }
+            
+            let df = DateFormatter()
+            df.dateFormat = "MMM d, yyyy"
+            let appointmentDate = scheduleParts.first.flatMap { df.date(from: $0) } ?? fb.createdAt
 
             let localBooking = Booking(
                 id: UUID(),
                 salon: salon,
                 service: service,
-                date: fb.createdAt,
+                date: appointmentDate,
                 timeSlot: timeSlot,
                 receiptNumber: receipt,
                 paymentMethod: pm,
@@ -335,6 +381,28 @@ final class BookingStore {
             bookings.append(localBooking)
         }
 
+        WidgetBookingSyncService.shared.updateFromBookings(bookings)
+    }
+
+    /// Automatically marks past upcoming bookings as completed in local state, Core Data, and Firestore.
+    func updatePastBookingsStatus() {
+        let now = Date()
+        let startOfToday = Calendar.current.startOfDay(for: now)
+        
+        for i in 0..<bookings.count {
+            if bookings[i].status == .upcoming && bookings[i].date < startOfToday {
+                bookings[i].status = .completed
+                
+                // Update Core Data!
+                try? bookingRepository.updateBookingStatus(bookings[i].id, status: "completed")
+                
+                // Update Firestore!
+                let receipt = bookings[i].receiptNumber
+                Task {
+                    try? await bookingService.updateStatusByReceipt(receipt, status: "completed")
+                }
+            }
+        }
         WidgetBookingSyncService.shared.updateFromBookings(bookings)
     }
 
@@ -366,3 +434,4 @@ final class BookingStore {
         }
     }
 }
+

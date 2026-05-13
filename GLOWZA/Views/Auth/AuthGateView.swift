@@ -1,23 +1,29 @@
+// This file acts as a "Gate" that protects the app using Face ID or Touch ID.
+// If enabled, the user must scan their face before they can see their profile.
 import SwiftUI
-import LocalAuthentication
+import LocalAuthentication // Apple's framework for Face ID and Touch ID.
 
 private var brand: Color { Color.glowzaPrimary }
 
-// MARK: - Auth Gate View (Face ID)
+// MARK: - Auth Gate View
 struct AuthGateView: View {
 
+    // This @Binding variable is passed from the parent view.
+    // Setting it to true will let the user inside the app!
     @Binding var isAuthenticated: Bool
-    @State private var authError: String? = nil
-    @State private var isAuthenticating = false
-    @State private var shakeOffset: CGFloat = 0
-    @State private var appear = false
+    
+    @State private var authError: String? = nil // Holds error messages.
+    @State private var isAuthenticating = false // True while Face ID popup is active.
+    @State private var shakeOffset: CGFloat = 0 // Used to shake the card on failure.
+    @State private var appear = false // Used to animate the screen elements in.
+    
     @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         ZStack {
             appSettings.themePage.ignoresSafeArea()
 
-            // Subtle decorative circles
+            // Subtle decorative circles in the background.
             Circle()
                 .fill(brand.opacity(0.06))
                 .frame(width: 400, height: 400)
@@ -30,7 +36,7 @@ struct AuthGateView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // ── Logo ──
+                // ── Logo Section ──
                 VStack(spacing: 16) {
                     ZStack {
                         Circle().fill(brand.opacity(0.10)).frame(width: 72, height: 72)
@@ -45,14 +51,16 @@ struct AuthGateView: View {
                         .tracking(6)
                         .foregroundColor(appSettings.themeText)
                 }
-                .opacity(appear ? 1 : 0)
+                .opacity(appear ? 1 : 0) // Fades in smoothly.
 
                 Spacer()
 
-                // ── Face ID card ──
+                // ── Face ID Card Section ──
                 VStack(spacing: 28) {
-                    // Face ID icon
+                    
+                    // Face ID Icon with pulse rings.
                     ZStack {
+                        // We loop 3 times to create 3 expanding rings around the icon.
                         ForEach(0..<3, id: \.self) { i in
                             Circle()
                                 .stroke(brand.opacity(0.06 + Double(i) * 0.03), lineWidth: 1.5)
@@ -71,9 +79,10 @@ struct AuthGateView: View {
                         Image(systemName: "faceid")
                             .glowzaFont(size: 44, weight: .light)
                             .foregroundColor(brand)
+                            // iOS 17+ bounce effect!
                             .symbolEffect(.bounce, value: isAuthenticating)
                     }
-                    .offset(x: shakeOffset)
+                    .offset(x: shakeOffset) // Shakes horizontally if login fails.
 
                     VStack(spacing: 8) {
                         Text("Welcome Back")
@@ -86,6 +95,7 @@ struct AuthGateView: View {
                             .lineSpacing(4)
                     }
 
+                    // Show error if authentication fails.
                     if let error = authError {
                         Label(error, systemImage: "exclamationmark.circle.fill")
                             .glowzaFont(size: 13, weight: .medium)
@@ -97,7 +107,7 @@ struct AuthGateView: View {
                             .transition(.scale.combined(with: .opacity))
                     }
 
-                    // Face ID button
+                    // Face ID Button.
                     Button(action: authenticate) {
                         HStack(spacing: 8) {
                             if isAuthenticating {
@@ -117,6 +127,7 @@ struct AuthGateView: View {
                     .disabled(isAuthenticating)
                     .frame(maxWidth: .infinity)
 
+                    // Privacy notice.
                     HStack(spacing: 5) {
                         Image(systemName: "lock.shield")
                             .glowzaFont(size: 11)
@@ -139,27 +150,40 @@ struct AuthGateView: View {
             }
         }
         .onAppear {
+            // Animates the card sliding up when the screen appears.
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) { appear = true }
+            
+            // Automatically trigger Face ID popup after 0.7 seconds!
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { authenticate() }
         }
     }
 
+    // This function talks to the iOS system to show the Face ID popup.
     private func authenticate() {
-        let context = LAContext()
+        let context = LAContext() // The object that handles biometrics.
         var error: NSError?
         authError = nil
+        
+        // Step 1: Check if the device even supports Face ID (or if user has it enabled).
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             withAnimation { authError = "Face ID not available on this device" }
             return
         }
+        
         isAuthenticating = true
+        
+        // Step 2: Ask the user to scan their face.
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics,
                                 localizedReason: "Access your GLOWZA beauty profile") { success, err in
+            
+            // UI updates must always run on the Main Thread!
             DispatchQueue.main.async {
                 isAuthenticating = false
                 if success {
+                    // Let the user in!
                     withAnimation(.spring(response: 0.5)) { isAuthenticated = true }
                 } else {
+                    // Show error and shake the card!
                     withAnimation { authError = err?.localizedDescription ?? "Authentication failed" }
                     triggerShake()
                 }
@@ -167,6 +191,7 @@ struct AuthGateView: View {
         }
     }
 
+    // A fun function that shakes the card left and right if login fails!
     private func triggerShake() {
         withAnimation(.default) { shakeOffset = -10 }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

@@ -1,20 +1,22 @@
 import SwiftUI
 
 // MARK: - Font Size Settings
+// This view allows the user to change the font size scale used across the app.
+// It provides a live preview of the text size before applying the changes.
 struct FontSizeSettingsView: View {
 
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.dismiss) private var dismiss
 
-    /// Local preview state — does NOT touch appSettings until the user taps Save
+    /// Local preview state — does NOT touch appSettings until the user taps Save!
     @State private var selectedSize: GlowzaFontSize = .normal
-    /// Tracks whether the user changed anything so we can animate the Save button
+    /// Tracks whether the user changed anything so we can animate the Save button!
     @State private var hasChanged = false
 
     var body: some View {
         VStack(spacing: 0) {
 
-            // MARK: Custom nav bar
+            // MARK: Custom Nav Bar
             HStack(spacing: 0) {
                 Button(action: { dismiss() }) {
                     HStack(spacing: 5) {
@@ -54,9 +56,10 @@ struct FontSizeSettingsView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
 
-                    // MARK: Live preview card
+                    // MARK: Live Preview Card
+                    // Shows a sample text block that updates as you pick different sizes!
                     VStack(alignment: .leading, spacing: 0) {
-                        // header strip
+                        // Header strip
                         HStack {
                             Label("Preview", systemImage: "eye.fill")
                                 .font(.system(size: 12, weight: .semibold))
@@ -94,7 +97,7 @@ struct FontSizeSettingsView: View {
                                 .foregroundColor(appSettings.themeTextSecondary)
                         }
                         .padding(16)
-                        // Apply the preview size only to this content block
+                        // Apply the preview size only to this content block!
                         .environment(\.dynamicTypeSize, selectedSize.dynamicTypeSize)
                         .animation(.spring(duration: 0.3), value: selectedSize)
                     }
@@ -103,7 +106,7 @@ struct FontSizeSettingsView: View {
                     .hcBorder(radius: 16)
                     .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
 
-                    // MARK: Size option rows
+                    // MARK: Size Option Rows
                     VStack(spacing: 0) {
                         ForEach(Array(GlowzaFontSize.allCases.enumerated()), id: \.element) { idx, size in
                             sizeOptionRow(size)
@@ -121,7 +124,7 @@ struct FontSizeSettingsView: View {
                     .hcBorder(radius: 16)
                     .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
 
-                    // MARK: Footer note
+                    // MARK: Footer Note
                     Text("Changes apply across the entire app. Tap Save to confirm, or Back to discard.")
                         .font(.system(size: 12))
                         .foregroundColor(appSettings.themeTextSecondary)
@@ -133,7 +136,7 @@ struct FontSizeSettingsView: View {
                 .padding(.bottom, 36)
             }
 
-            // MARK: Pinned Save & Apply button
+            // MARK: Pinned Save & Apply Button
             Button(action: save) {
                 Text("Save & Apply")
                     .font(.system(size: 16, weight: .semibold))
@@ -150,11 +153,11 @@ struct FontSizeSettingsView: View {
             .padding(.bottom, 28)
         }
         .background(appSettings.themePage.ignoresSafeArea())
-        .onAppear { selectedSize = appSettings.fontSizeScale }
+        .onAppear { selectedSize = appSettings.fontSizeScale } // Set initial size!
     }
 
-    // MARK: - Row builder
-
+    // MARK: - Row Builder
+    // Helper to create a row for a specific font size option.
     private func sizeOptionRow(_ size: GlowzaFontSize) -> some View {
         let isSelected = selectedSize == size
         return Button(action: {
@@ -164,7 +167,7 @@ struct FontSizeSettingsView: View {
             }
         }) {
             HStack(spacing: 14) {
-                // "A" bubble
+                // "A" bubble with preview font size!
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(isSelected ? appSettings.themeBrand : appSettings.themeRaised)
@@ -198,6 +201,7 @@ struct FontSizeSettingsView: View {
 
     // MARK: - Helpers
 
+    // Helper to get description for each size.
     private func sizeDescription(_ size: GlowzaFontSize) -> String {
         switch size {
         case .small:      return "Compact — fits more content on screen"
@@ -207,6 +211,7 @@ struct FontSizeSettingsView: View {
         }
     }
 
+    // Saves the selected size to AppSettings.
     private func save() {
         withAnimation(.easeInOut(duration: 0.2)) {
             appSettings.fontSizeScale = selectedSize

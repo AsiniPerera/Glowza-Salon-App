@@ -2,13 +2,17 @@ import SwiftUI
 import PhotosUI
 
 // MARK: - Edit Profile View
+// This view allows the user to edit their profile information,
+// including their name, email, phone, date of birth, and skin type.
+// It also allows them to change their profile picture.
 struct EditProfileView: View {
 
-    @Binding var displayName: String
-    @Binding var avatarData: Data?
+    @Binding var displayName: String // Binds back to the parent view!
+    @Binding var avatarData: Data? // Binds back to the parent view!
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
 
+    // Local state variables for the form fields!
     @State private var name: String    = ""
     @State private var email: String   = ""
     @State private var phone: String   = ""
@@ -27,11 +31,13 @@ struct EditProfileView: View {
     private var surfaceBackground: Color { appSettings.themeSurface }
     private var chipBackground: Color { appSettings.isDarkMode ? Color(hex: "2A2A2A") : Color(hex: "EDEDED") }
 
+    // Computed property to turn avatar data into a UIImage!
     private var avatarImage: UIImage? {
         guard let data = avatarData else { return nil }
         return UIImage(data: data)
     }
 
+    // Helper to get initials from name!
     private var initials: String {
         name.split(separator: " ").prefix(2).compactMap { $0.first?.uppercased() }.joined()
     }
@@ -44,7 +50,7 @@ struct EditProfileView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
 
-                        // Avatar picker
+                        // MARK: Avatar Picker
                         Button(action: { showPhotoPicker = true }) {
                             ZStack(alignment: .bottomTrailing) {
                                 ZStack {
@@ -66,6 +72,7 @@ struct EditProfileView: View {
                                             .foregroundColor(accent)
                                     }
                                 }
+                                // Camera icon badge!
                                 ZStack {
                                     Circle().fill(accent).frame(width: 26, height: 26)
                                     Image(systemName: "camera.fill")
@@ -96,19 +103,20 @@ struct EditProfileView: View {
                                             avatarData = compressed
                                             UserDefaults.standard.set(compressed, forKey: "profile_avatarData")
                                         }
+                                        // Save to Firestore!
                                         try await AuthService.shared.updateProfileAvatarData(compressed)
                                         NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
-                                        print("✅ Avatar saved to Firestore")
+                                        print("Avatar saved to Firestore")
                                     }
                                 } catch {
-                                    print("❌ Avatar upload failed: \(error)")
+                                    print("Avatar upload failed: \(error)")
                                 }
                                 await MainActor.run { isSavingAvatar = false }
                             }
                         }
                         .padding(.top, 8)
 
-                        // Form fields
+                        // MARK: Form Fields
                         VStack(spacing: 0) {
                             formField(icon: "person", label: "Full Name", content:
                                 AnyView(
@@ -142,7 +150,7 @@ struct EditProfileView: View {
                                 )
                             )
 
-                            // Skin type picker
+                            // MARK: Skin Type Picker
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 12) {
                                     Image(systemName: "drop")
@@ -187,6 +195,7 @@ struct EditProfileView: View {
                                     lineWidth: appSettings.isHighContrast ? 3 : 0
                                 )
                         )
+                        // Error message for name field!
                         if let err = nameError {
                             Text(err)
                                 .glowzaFont(size: 13)
@@ -195,7 +204,7 @@ struct EditProfileView: View {
                                 .padding(.horizontal, 4)
                         }
 
-                        // Save button
+                        // MARK: Save Button
                         Button(action: saveProfile) {
                             Text("Save Changes")
                                 .glowzaFont(size: 15, weight: .semibold)
@@ -211,7 +220,7 @@ struct EditProfileView: View {
                     .padding(.bottom, 40)
                 }
 
-                // Saved banner
+                // Saved banner that pops up when the profile is saved!
                 if showSavedBanner {
                     VStack {
                         Spacer()
@@ -248,6 +257,7 @@ struct EditProfileView: View {
         .onAppear { loadSaved() }
     }
 
+    // Helper to create a form field with an icon and label.
     private func formField(icon: String, label: String, content: AnyView) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 12) {
@@ -269,6 +279,7 @@ struct EditProfileView: View {
         }
     }
 
+    // Loads saved profile data from AuthService or UserDefaults.
     private func loadSaved() {
         // Priority 1: live data from AuthService (populated from Firestore after login)
         let auth = AuthService.shared
@@ -288,6 +299,7 @@ struct EditProfileView: View {
         skinType = UserDefaults.standard.string(forKey: "profile_skinType") ?? "Normal"
     }
 
+    // Saves the profile data to UserDefaults and Firestore.
     private func saveProfile() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { nameError = "Name cannot be empty"; return }
@@ -313,13 +325,15 @@ struct EditProfileView: View {
                     skinType: skinType,
                     dateOfBirth: dob.isEmpty ? nil : dob
                 )
-                print("✅ Profile saved to Firestore")
+                print("Profile saved to Firestore")
             } catch {
-                print("❌ Profile save failed: \(error)")
+                print("Profile save failed: \(error)")
             }
         }
 
         NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
+        
+        // Show the saved banner and dismiss after 2 seconds!
         withAnimation { showSavedBanner = true }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { showSavedBanner = false }

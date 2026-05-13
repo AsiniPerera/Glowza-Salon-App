@@ -1,11 +1,14 @@
 import SwiftUI
 
 // MARK: - Security & Privacy View
+// This view allows the user to manage their security settings (like 2FA and Face ID)
+// and privacy preferences (like data sharing). It also includes the option to delete the account.
 struct SecurityPrivacyView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
 
+    // State variables tied to UserDefaults for persistence!
     @State private var twoFactorEnabled      = UserDefaults.standard.bool(forKey: "sec_2fa")
     @State private var loginNotifications    = UserDefaults.standard.bool(forKey: "sec_loginNotif")
     @State private var biometricLogin        = UserDefaults.standard.bool(forKey: "sec_biometric")
@@ -22,7 +25,7 @@ struct SecurityPrivacyView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
 
-                    // Security section
+                    // MARK: Security Section
                     settingsSection(title: "Security") {
                         toggleRow(icon: "key.horizontal",   label: "Two-Factor Authentication",
                                   subtitle: "Require a code on each login",
@@ -35,14 +38,14 @@ struct SecurityPrivacyView: View {
                                   value: $biometricLogin) { UserDefaults.standard.set($0, forKey: "sec_biometric") }
                     }
 
-                    // Privacy section
+                    // MARK: Privacy Section
                     settingsSection(title: "Privacy") {
                         toggleRow(icon: "hand.raised",      label: "Data Sharing",
                                   subtitle: "Allow anonymised data to improve the app",
                                   value: $dataSharing) { UserDefaults.standard.set($0, forKey: "sec_dataSharing") }
                     }
 
-                    // Danger zone
+                    // MARK: Danger Zone
                     settingsSection(title: "Account") {
                         Button(action: { showDataDeleteAlert = true }) {
                             HStack(spacing: 14) {
@@ -78,15 +81,7 @@ struct SecurityPrivacyView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("Back")
-                        }
-                        .glowzaFont(size: 16, weight: .medium)
-                        .foregroundColor(accent)
-                    }
-                    .fixedSize()
+                    GlowzaCircleBackButton(action: { dismiss() })
                 }
             }
             .alert("Delete Account", isPresented: $showDataDeleteAlert) {
@@ -99,6 +94,7 @@ struct SecurityPrivacyView: View {
     }
 
     // MARK: - Section Container
+    // Helper to create a titled section with a white background card.
     private func settingsSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
@@ -115,7 +111,8 @@ struct SecurityPrivacyView: View {
         }
     }
 
-    // MARK: - Toggle Row (with subtitle and save callback)
+    // MARK: - Toggle Row
+    // Helper to create a row with an icon, title, subtitle, and a toggle switch.
     private func toggleRow(icon: String, label: String, subtitle: String,
                             value: Binding<Bool>, onChange: @escaping (Bool) -> Void) -> some View {
         HStack(spacing: 14) {
@@ -135,7 +132,7 @@ struct SecurityPrivacyView: View {
             Toggle("", isOn: value)
                 .tint(accent)
                 .labelsHidden()
-                .onChange(of: value.wrappedValue) { onChange($0) }
+                .onChange(of: value.wrappedValue) { onChange($0) } // Save to UserDefaults!
         }
         .padding(.horizontal, 16)
         .frame(minHeight: 60)

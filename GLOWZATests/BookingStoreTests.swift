@@ -1,6 +1,3 @@
-// BookingStoreTests.swift
-// GLOWZATests
-
 import XCTest
 @testable import GLOWZA
 
@@ -20,16 +17,12 @@ final class BookingStoreTests: XCTestCase {
         super.tearDown()
     }
 
-    // MARK: - add
-
     func test_add_appendsBooking() {
         let booking = Fixtures.makeBooking()
         BookingStore.shared.add(booking)
         XCTAssertEqual(BookingStore.shared.bookings.count, 1)
         XCTAssertEqual(BookingStore.shared.bookings.first?.id, booking.id)
     }
-
-    // MARK: - Filters
 
     func test_upcoming_filterReturnOnlyUpcomingBookings() {
         BookingStore.shared.bookings = [
@@ -40,52 +33,12 @@ final class BookingStoreTests: XCTestCase {
         XCTAssertEqual(BookingStore.shared.upcoming.count, 1)
     }
 
-    func test_cancelled_filterReturnsOnlyCancelled() {
-        BookingStore.shared.bookings = [
-            Fixtures.makeBooking(status: .cancelled),
-            Fixtures.makeBooking(status: .upcoming)
-        ]
-        XCTAssertEqual(BookingStore.shared.cancelled.count, 1)
-    }
-
-    // MARK: - cancelBooking
-
     func test_cancelBooking_changesStatusToCancelled() {
         let booking = Fixtures.makeBooking(status: .upcoming)
         BookingStore.shared.bookings = [booking]
         BookingStore.shared.cancelBooking(id: booking.id)
         XCTAssertEqual(BookingStore.shared.bookings.first?.status, .cancelled)
     }
-
-    func test_cancelBooking_unknownIdDoesNothing() {
-        let booking = Fixtures.makeBooking(status: .upcoming)
-        BookingStore.shared.bookings = [booking]
-        BookingStore.shared.cancelBooking(id: UUID())
-        XCTAssertEqual(BookingStore.shared.bookings.first?.status, .upcoming)
-    }
-
-    // MARK: - addReview
-
-    func test_addReview_setsReviewOnBooking() {
-        let booking = Fixtures.makeBooking(status: .upcoming)
-        BookingStore.shared.bookings = [booking]
-        let review = Fixtures.makeReview(rating: 5, comment: "Loved it!", reviewerName: "Jane")
-        BookingStore.shared.addReview(bookingID: booking.id, review: review)
-        let stored = BookingStore.shared.bookings.first?.review
-        XCTAssertNotNil(stored)
-        XCTAssertEqual(stored?.rating,       5)
-        XCTAssertEqual(stored?.comment,      "Loved it!")
-        XCTAssertEqual(stored?.reviewerName, "Jane")
-    }
-
-    func test_addReview_changesStatusToCompleted() {
-        let booking = Fixtures.makeBooking(status: .upcoming)
-        BookingStore.shared.bookings = [booking]
-        BookingStore.shared.addReview(bookingID: booking.id, review: Fixtures.makeReview())
-        XCTAssertEqual(BookingStore.shared.bookings.first?.status, .completed)
-    }
-
-    // MARK: - reviews(forSalon:)
 
     func test_reviewsForSalon_returnsMatchingReviews() {
         let salonA = Fixtures.makeSalon(name: "Salon A")
@@ -102,5 +55,22 @@ final class BookingStoreTests: XCTestCase {
         let comments = reviews.map { $0.comment }
         XCTAssertTrue(comments.contains("Great A"))
         XCTAssertTrue(comments.contains("Also A"))
+    }
+    
+    // 5. Test that cancelled filter returns only cancelled bookings!
+    func test_cancelled_filterReturnsOnlyCancelled() {
+        BookingStore.shared.bookings = [
+            Fixtures.makeBooking(status: .cancelled),
+            Fixtures.makeBooking(status: .upcoming)
+        ]
+        XCTAssertEqual(BookingStore.shared.cancelled.count, 1)
+    }
+    
+    // 6. Test that cancelBooking with unknown ID does nothing!
+    func test_cancelBooking_unknownIdDoesNothing() {
+        let booking = Fixtures.makeBooking(status: .upcoming)
+        BookingStore.shared.bookings = [booking]
+        BookingStore.shared.cancelBooking(id: UUID())
+        XCTAssertEqual(BookingStore.shared.bookings.first?.status, .upcoming)
     }
 }

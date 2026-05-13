@@ -2,15 +2,20 @@ import SwiftUI
 import Combine
 
 // MARK: - Chat Message
+// A simple model to represent a message in the chat.
+// It has an ID, text, and a boolean to check if it's from the user or the AI.
 struct ChatMessage: Identifiable {
     let id = UUID()
     let text: String
     let isUser: Bool
 }
 
-// MARK: - AI Beauty View  (Chatbot)
+// MARK: - AI Beauty View (Chatbot)
+// This view is a chatbot interface where users can ask the AI about skin concerns.
+// The AI will recommend treatments based on the user's input.
 struct AIBeautyView: View {
 
+    // Array of messages to display in the chat.
     @State private var messages: [ChatMessage] = [
         ChatMessage(
             text: "Hi! I'm your AI Beauty Agent. Describe your skin concerns and I'll recommend personalised treatments and tips for you.",
@@ -18,9 +23,9 @@ struct AIBeautyView: View {
         )
     ]
     @State private var inputText = ""
-    @State private var isTyping = false
-    @State private var dotPhase = 0
-    @FocusState private var inputFocused: Bool
+    @State private var isTyping = false // Shows the typing indicator.
+    @State private var dotPhase = 0 // For animating the typing dots.
+    @FocusState private var inputFocused: Bool // Controls keyboard focus.
     @Environment(AppSettings.self) private var appSettings
 
     private var pageBackground:    Color { appSettings.themePage }
@@ -32,11 +37,11 @@ struct AIBeautyView: View {
     private var brand:             Color { appSettings.themeBrand }
     private var secondaryText:     Color { appSettings.themeTextSecondary }
 
-    private let bottomID = "chatBottom"
+    private let bottomID = "chatBottom" // Used to scroll to the bottom.
 
     var body: some View {
         VStack(spacing: 0) {
-            // Chat messages
+            // MARK: Chat Messages List
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 14) {
@@ -52,13 +57,17 @@ struct AIBeautyView: View {
                         ForEach(messages) { msg in
                             messageBubble(msg)
                         }
+                        
+                        // Show typing bubble if AI is thinking!
                         if isTyping { typingBubble }
+                        
                         Color.clear.frame(height: 1).id(bottomID)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 16)
                 }
                 .background(pageBackground)
+                // Auto-scroll to bottom when new messages arrive!
                 .onChange(of: messages.count) {
                     withAnimation { proxy.scrollTo(bottomID, anchor: .bottom) }
                 }
@@ -67,35 +76,26 @@ struct AIBeautyView: View {
                 }
             }
 
-            // Input bar
+            // MARK: Input Bar
             inputBar
         }
         .background(pageBackground.ignoresSafeArea())
         .navigationBarHidden(true)
+        // Timer to animate the typing dots!
         .onReceive(
             Timer.publish(every: 0.4, on: .main, in: .common).autoconnect()
         ) { _ in if isTyping { dotPhase = (dotPhase + 1) % 3 } }
     }
 
-    // MARK: - Header
-    private var header: some View {
-        Text("AI Beauty Agent")
-            .glowzaFont(size: 18, weight: .bold)
-            .foregroundColor(appSettings.isHighContrast ? .white : primaryText)
-            .padding(.horizontal, 20)
-            .padding(.top, 14)
-            .padding(.bottom, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(pageBackground.ignoresSafeArea(edges: .top))
-    }
-
-    // MARK: - Message Bubble
+    // MARK: - Message Bubble View
+    // Helper to draw a chat bubble based on whether it's user or AI.
     @ViewBuilder
     private func messageBubble(_ msg: ChatMessage) -> some View {
         let isHC = appSettings.isHighContrast
         let rose  = Color(hex: "FF2D55")
         HStack(alignment: .bottom, spacing: 0) {
-            if msg.isUser { Spacer(minLength: 60) }
+            if msg.isUser { Spacer(minLength: 60) } // Push user bubble to the right.
+            
             Text(msg.text)
                 .glowzaFont(size: 15, weight: isHC ? .medium : .regular)
                 .foregroundColor(isHC ? .black : (msg.isUser ? .white : primaryText))
@@ -105,7 +105,7 @@ struct AIBeautyView: View {
                 .background(
                     ZStack {
                         isHC ? (msg.isUser ? brand : .white) : (msg.isUser ? brand : bubbleBackground)
-                        // Rose tint on AI bubbles in HC — visually distinct from dark mode
+                        // Rose tint on AI bubbles in High Contrast mode.
                         if isHC && !msg.isUser { rose.opacity(0.12) }
                     }
                 )
@@ -117,7 +117,7 @@ struct AIBeautyView: View {
                         topTrailingRadius: 20
                     )
                 )
-                // Neon border on AI bubbles in HC
+                // Neon border on AI bubbles in High Contrast mode.
                 .overlay(
                     UnevenRoundedRectangle(
                         topLeadingRadius: 20,
@@ -127,13 +127,14 @@ struct AIBeautyView: View {
                     )
                     .stroke(isHC && !msg.isUser ? rose.opacity(0.80) : Color.clear, lineWidth: 3)
                 )
-                // Electric Rose glow behind user bubble in HC
                 .shadow(color: isHC && msg.isUser ? rose.opacity(0.35) : .clear, radius: 10)
-            if !msg.isUser { Spacer(minLength: 60) }
+            
+            if !msg.isUser { Spacer(minLength: 60) } // Push AI bubble to the left.
         }
     }
 
     // MARK: - Typing Indicator
+    // Helper to draw the animated typing dots.
     private var typingBubble: some View {
         HStack(alignment: .bottom, spacing: 0) {
             HStack(spacing: 5) {
@@ -154,7 +155,7 @@ struct AIBeautyView: View {
         }
     }
 
-    // MARK: - Input Bar
+    // MARK: - Input Bar View
     private var inputBar: some View {
         let isHC     = appSettings.isHighContrast
         let rose     = Color(hex: "FF2D55")
@@ -169,7 +170,6 @@ struct AIBeautyView: View {
                 .padding(.vertical, 12)
                 .background(isHC ? .white : inputBackground)
                 .clipShape(Capsule())
-                // Neon border on input field in HC
                 .overlay(
                     Capsule()
                         .stroke(isHC ? rose.opacity(inputFocused ? 1.0 : 0.70) : Color.clear,
@@ -181,8 +181,6 @@ struct AIBeautyView: View {
                     Circle()
                         .fill(isEmpty ? appSettings.themeBrandMuted : brand)
                         .frame(width: 44, height: 44)
-                        // Neon glow on send button in HC when active
-                        .shadow(color: isHC && !isEmpty ? rose.opacity(0.45) : .clear, radius: 10)
                     Image(systemName: "arrow.up")
                         .glowzaFont(size: 17, weight: .semibold)
                         .foregroundColor(.white)
@@ -203,18 +201,24 @@ struct AIBeautyView: View {
                 radius: 8, x: 0, y: -2)
     }
 
-    // MARK: - Send
+    // MARK: - Send Message Logic
     private func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         inputText = ""
         inputFocused = false
+        
         messages.append(ChatMessage(text: text, isUser: true))
         isTyping = true
+        
         Task {
+            // Call the AI Beauty Engine to analyse the input!
             let r = await AIBeautyEngine.shared.analyse(input: text)
             let reply = buildReply(from: r, input: text)
+            
+            // Simulate network delay for realism!
             try? await Task.sleep(nanoseconds: 900_000_000)
+            
             await MainActor.run {
                 isTyping = false
                 messages.append(ChatMessage(text: reply, isUser: false))
@@ -222,7 +226,8 @@ struct AIBeautyView: View {
         }
     }
 
-    // MARK: - Reply Builder
+    // MARK: - Reply Builder Helper
+    // This function takes the AI result and builds a friendly response string.
     private func buildReply(from result: AIBeautyResult, input: String) -> String {
         guard !result.isEmpty else {
             return "I appreciate you sharing that! Could you give me a bit more detail? For example, mention things like oily skin, acne, dark spots, dryness, or sensitivity and I'll personalise my advice for you."

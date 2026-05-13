@@ -1,6 +1,9 @@
 import Foundation
 import WidgetKit
 
+// MARK: - Widget Booking Snapshot
+// This struct represents the data we share with the iOS Widget!
+// It conforms to Codable so we can encode it to JSON and save it in UserDefaults!
 struct WidgetBookingSnapshot: Codable {
     let salonName: String
     let serviceName: String
@@ -10,15 +13,21 @@ struct WidgetBookingSnapshot: Codable {
     let receiptNumber: String
 }
 
+// MARK: - Widget Booking Sync Service
+// This class handles sharing booking data with the app's home screen widgets!
+// It uses "App Groups" to share data between the main app and the widget extension.
 final class WidgetBookingSyncService {
-    static let shared = WidgetBookingSyncService()
+    static let shared = WidgetBookingSyncService() // Singleton instance!
 
+    // The App Group ID defined in your developer account and project capabilities!
     static let appGroupId = "group.com.asini.glowza"
+    
     private let key = "widget_upcoming_booking"
     private let favoriteSalonKey = "widget_favorite_salon"
 
     private init() {}
 
+    // Saves the next upcoming booking to shared storage so the widget can see it!
     func saveUpcomingBooking(_ booking: Booking) {
         let appointmentDate = appointmentDate(for: booking)
         let snapshot = WidgetBookingSnapshot(
@@ -30,20 +39,28 @@ final class WidgetBookingSyncService {
             receiptNumber: booking.receiptNumber
         )
 
+        // Encode to JSON data.
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        
+        // Save to the shared App Group storage!
         defaults.set(data, forKey: key)
+        
+        // Tell iOS to refresh the widgets!
         reloadWidgets()
 
+        // Set favorite salon as fallback if none exists.
         if defaults.string(forKey: favoriteSalonKey)?.isEmpty ?? true {
             defaults.set(booking.salon.name, forKey: favoriteSalonKey)
         }
     }
 
+    // Clears the data (e.g. when a booking is completed or cancelled).
     func clearUpcomingBooking() {
         defaults.removeObject(forKey: key)
         reloadWidgets()
     }
 
+    // Finds the *next* upcoming booking from a list and updates the widget!
     func updateFromBookings(_ bookings: [Booking]) {
         let nextUpcoming = bookings
             .filter { $0.status == .upcoming }
@@ -57,19 +74,22 @@ final class WidgetBookingSyncService {
         }
     }
 
+    // Saves the user's favorite salon for the "Book Again" widget!
     func setFavoriteSalon(_ salonName: String) {
         defaults.set(salonName, forKey: favoriteSalonKey)
         reloadWidgets()
     }
 
+    // Helper to get the shared UserDefaults instance!
     private var defaults: UserDefaults {
         UserDefaults(suiteName: Self.appGroupId) ?? .standard
     }
 
+    // Helper to combine the Date and TimeSlot string into a single Date object!
     private func appointmentDate(for booking: Booking) -> Date {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "h:mm a"
+        formatter.dateFormat = "h:mm a" // Expects formats like "10:30 AM".
 
         guard let parsedTime = formatter.date(from: booking.timeSlot) else {
             return booking.date
@@ -85,6 +105,7 @@ final class WidgetBookingSyncService {
         ) ?? booking.date
     }
 
+    // Helper to tell iOS to reload specific widget timelines!
     private func reloadWidgets() {
         WidgetCenter.shared.reloadTimelines(ofKind: "GLOWZAWidgets")
         WidgetCenter.shared.reloadTimelines(ofKind: "UpcomingBookingsWidget")

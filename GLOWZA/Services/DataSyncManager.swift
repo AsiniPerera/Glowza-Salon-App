@@ -4,34 +4,39 @@ import Network
 import FirebaseFirestore
 
 // MARK: - Offline-first Data Sync Manager
-// Core Data is the single local cache; Firestore is the remote source of truth.
-// On launch: load from Core Data immediately (works offline) then refresh from Firestore.
-// On reconnect: push any bookings that were created while offline.
+// This manager handles syncing data between local Core Data and remote Firestore.
+// Core Data is the single local cache (works offline); Firestore is the remote source of truth.
+// On launch: load from Core Data immediately (fast!) then refresh from Firestore in background.
+// On reconnect: push any bookings that were created while offline!
 @MainActor
 final class DataSyncManager {
-    static let shared = DataSyncManager()
+    static let shared = DataSyncManager() // Singleton instance!
 
-    private(set) var isOnline: Bool = true
+    private(set) var isOnline: Bool = true // Tracks network status!
 
     private let coreDataStack     = CoreDataStack.shared
     private let bookingRepository  = BookingRepository.shared
     private let userProfileRepo    = UserProfileRepository.shared
     private let salonRepository    = SalonRepository.shared
 
+    // NWPathMonitor is Apple's framework for monitoring network changes!
     private nonisolated let monitor      = NWPathMonitor()
     private nonisolated let monitorQueue = DispatchQueue(label: "com.glowza.network", qos: .utility)
 
     private init() {
+        // Set up the network monitor callback!
         monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor [weak self] in
                 let nowOnline = path.status == .satisfied
                 self?.isOnline = nowOnline
+                
+                // If we just came online, sync any pending offline bookings!
                 if nowOnline { await self?.syncPendingBookingsToFirestore() }
             }
         }
         monitor.start(queue: monitorQueue)
         
-        // Populate default data if empty (Offline support)
+        // Populate default data if empty (Crucial for first-time offline support!).
         populateDefaultDataIfEmpty()
     }
     
@@ -51,7 +56,7 @@ final class DataSyncManager {
 
     // MARK: - Offline Bootstrap
     /// Called right after auth state is confirmed. Loads Core Data into in-memory stores
-    /// so the UI is responsive before any Firestore network request completes.
+    /// so the UI is responsive before any Firestore network request completes!
     func bootstrapFromCoreData(userId: String) {
         BookingStore.shared.loadFromCoreData(userId: userId)
     }
@@ -59,6 +64,7 @@ final class DataSyncManager {
     // MARK: - Salon Cache
     /// Persist a fresh Firestore salon list to Core Data for offline use.
     func cacheSalons(_ salons: [Salon]) {
+        // We use a detached task to avoid blocking the main thread!
         Task.detached(priority: .utility) { [salonRepository] in
             try? salonRepository.upsertSalons(salons)
         }
@@ -69,15 +75,18 @@ final class DataSyncManager {
         (try? salonRepository.fetchAllSalons()) ?? []
     }
 
-    // MARK: - Sync pending bookings to Firestore (offline-created bookings have firestoreID == nil)
+    // MARK: - Sync pending bookings to Firestore
+    // Offline-created bookings have firestoreID == nil or empty.
     func syncPendingBookingsToFirestore() async {
         guard let userId = AuthService.shared.currentUID else { return }
         do {
             let all     = try bookingRepository.fetchBookingsFromCore(userId: userId)
             let pending = all.filter { $0.firestoreID == nil || $0.firestoreID == "" }
             guard !pending.isEmpty else { return }
+            
             print("🔄 Syncing \(pending.count) offline booking(s) to Firestore…")
             for cd in pending {
+                // Create the booking in Firestore!
                 let fid = try await BookingService.shared.createBooking(
                     userId: cd.userId, userName: cd.userName,
                     salonName: cd.salonName, salonLocation: cd.salonLocation,
@@ -86,15 +95,17 @@ final class DataSyncManager {
                     paymentMethod: cd.paymentMethod, amountPaid: cd.amountPaid,
                     receiptNumber: cd.receiptNumber
                 )
+                // Update the local Core Data record with the new Firestore ID!
                 try await bookingRepository.syncBookingWithFirebase(cd, firestoreID: fid)
-                print("✅ Synced offline booking \(cd.receiptNumber) → \(fid)")
+                print("Synced offline booking \(cd.receiptNumber) → \(fid)")
             }
         } catch {
-            print("⚠️ Pending booking sync failed: \(error)")
+            print("Pending booking sync failed: \(error)")
         }
     }
 
-    // MARK: - Full Firestore → Core Data sync (use after sign-in on a new device)
+    // MARK: - Full Firestore → Core Data sync
+    // Use after sign-in on a new device to pull all history down!
     func syncFirestoreToCoreData(userId: String) async {
         let userName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "Guest"
 
@@ -146,7 +157,7 @@ final class DataSyncManager {
                 )
             }
         } catch {
-            print("⚠️ Notification sync failed: \(error)")
+            print("Notification sync failed: \(error)")
         }
 
         // 4. Cache static catalog salons to Core Data for offline access
@@ -154,6 +165,7 @@ final class DataSyncManager {
     }
 
     // MARK: - Clear all local cache
+    // Used when logging out or clearing data!
     func clearAllCoreData() throws {
         try coreDataStack.deleteAll("CDBooking")
         try coreDataStack.deleteAll("CDReview")

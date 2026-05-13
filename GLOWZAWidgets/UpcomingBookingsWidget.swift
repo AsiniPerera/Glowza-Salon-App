@@ -11,7 +11,7 @@ struct UpcomingBookingsProvider: TimelineProvider {
         UpcomingBookingsEntry(
             date: Date(),
             snapshot: WidgetBookingSnapshot(
-                salonName: "Haley Avenue",
+                salonName: "Golden Avenue",
                 serviceName: "Facial Treatment",
                 date: Date(),
                 timeSlot: "10:00 AM",

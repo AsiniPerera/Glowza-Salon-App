@@ -1,25 +1,31 @@
 import SwiftUI
 
+// MARK: - Payment View
+// This view handles the payment process. It allows the user to select a payment method
+// (Card or Cash) and shows a summary of the amount due.
 struct PaymentView: View {
-    @Binding var draft: BookingDraft
-    let onPay: (Booking) -> Void
+    @Binding var draft: BookingDraft // Bound to parent to share data.
+    let onPay: (Booking) -> Void // Callback when payment is successful.
     let onBack: () -> Void
 
-    @State private var showCardEntry = false
-    @State private var selectedCardIndex: Int? = nil
+    @State private var showCardEntry = false // Controls whether to show the card selection screen.
+    @State private var selectedCardIndex: Int? = nil // Tracks the selected card.
     private var appSettings: AppSettings { AppSettings.shared }
 
     private var service: SalonService { draft.service ?? draft.salon.services[0] }
     private var total: Double { service.price }
 
+    // Computed property to check if the user can proceed.
     private var canConfirm: Bool {
         switch draft.paymentMethod {
-        case .card: return selectedCardIndex != nil
+        case .card: return selectedCardIndex != nil // Must select a card if paying by card!
         case .cash, .online: return true
         }
     }
 
     var body: some View {
+        // We use a conditional statement to switch between the main payment view
+        // and the card entry view! This is a simple way to do navigation without a NavigationStack.
         if showCardEntry {
             CardEntryView(
                 draft: $draft,
@@ -35,6 +41,7 @@ struct PaymentView: View {
         }
     }
 
+    // The main payment selection view.
     private var mainPaymentView: some View {
         ZStack(alignment: .bottom) {
             appSettings.themePage.ignoresSafeArea()
@@ -42,7 +49,7 @@ struct PaymentView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
 
-                    // MARK: Back button
+                    // Back button
                     Button(action: onBack) {
                         ZStack {
                             Circle()
@@ -58,7 +65,7 @@ struct PaymentView: View {
 
                     Spacer().frame(height: 24)
 
-                    // MARK: Header
+                    // Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Payment")
                             .glowzaFont(size: 28, weight: .bold)
@@ -71,7 +78,7 @@ struct PaymentView: View {
 
                     Spacer().frame(height: 24)
 
-                    // MARK: Amount summary
+                    // Amount summary card
                     HStack(alignment: .center, spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("TOTAL DUE")
@@ -79,7 +86,7 @@ struct PaymentView: View {
                                 .foregroundColor(Color(hex: "8E8E93"))
                                 .tracking(0.5)
                             Text("LKR \(Int(total))")
-                                .glowzaFont(size: 26, weight: .bold)
+                                .glowzaFont(size: 20, weight: .semibold)
                                 .foregroundColor(.glowzaPrimary)
                         }
                         Spacer()
@@ -100,7 +107,7 @@ struct PaymentView: View {
 
                     Spacer().frame(height: 28)
 
-                    // MARK: Payment method selection
+                    // Payment method selection list
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Payment Method")
                             .glowzaFont(size: 11, weight: .semibold)
@@ -112,16 +119,17 @@ struct PaymentView: View {
                             // Card button
                             Button(action: {
                                 draft.paymentMethod = .card
-                                showCardEntry = true
+                                showCardEntry = true // Show card selection!
                             }) {
                                 HStack(spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(draft.paymentMethod == .card ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                                            .fill(Color(hex: "F2F2F7"))
                                             .frame(width: 48, height: 48)
-                                        Image(systemName: "creditcard.fill")
-                                            .glowzaFont(size: 20, weight: .semibold)
-                                            .foregroundColor(draft.paymentMethod == .card ? .white : Color.glowzaPrimary)
+                                        Image("creditcard")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 24, height: 24)
                                     }
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text("Credit / Debit Card")
@@ -145,7 +153,7 @@ struct PaymentView: View {
                                 }
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 12)
-                                .background(draft.paymentMethod == .card ? Color.glowzaPrimary.opacity(0.06) : appSettings.themeSurface)
+                                .background(Color.white)
                                 .cornerRadius(25)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 25)
@@ -158,26 +166,11 @@ struct PaymentView: View {
 
                             // Cash button
                             methodButton(.cash)
-
-                            // Online banking button
-                            methodButton(.online)
                         }
                         .padding(.horizontal, 24)
                     }
 
-                    // MARK: Online banking info
-                    if draft.paymentMethod == .online {
-                        Spacer().frame(height: 24)
-                        infoMessage(
-                            icon: "building.columns.fill",
-                            title: "Online Banking Redirect",
-                            text: "You'll be securely redirected to your bank's payment gateway to complete the transaction.",
-                            color: Color(hex: "007AFF")
-                        )
-                        .padding(.horizontal, 24)
-                    }
-
-                    // MARK: Cash info
+                    // Cash info message
                     if draft.paymentMethod == .cash {
                         Spacer().frame(height: 24)
                         infoMessage(
@@ -193,7 +186,7 @@ struct PaymentView: View {
                 }
             }
 
-            // MARK: Confirm button pinned to bottom
+            // Confirm button pinned to bottom
             VStack(spacing: 0) {
                 Divider().opacity(0.5)
                 Button(action: confirmPayment) {
@@ -213,6 +206,7 @@ struct PaymentView: View {
         .navigationBarHidden(true)
     }
 
+    // Helper to create a payment method button.
     private func methodButton(_ method: PaymentMethodType) -> some View {
         let isSelected = draft.paymentMethod == method
 
@@ -220,11 +214,28 @@ struct PaymentView: View {
             HStack(spacing: 14) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                        .fill(Color(hex: "F2F2F7"))
                         .frame(width: 48, height: 48)
-                    Image(systemName: method.icon)
-                        .glowzaFont(size: 20, weight: .semibold)
-                        .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                    if method == .online {
+                        Image("onlinebanking")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else if method == .card {
+                        Image(systemName: "creditcard.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(Color.glowzaPrimary)
+                    } else if method == .cash {
+                        Image("salon pay")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                            .blendMode(.multiply)
+                    } else {
+                        Image(systemName: method.icon)
+                            .glowzaFont(size: 20, weight: .semibold)
+                            .foregroundColor(Color.glowzaPrimary)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -251,7 +262,7 @@ struct PaymentView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+            .background(Color.white)
             .cornerRadius(25)
             .overlay(
                 RoundedRectangle(cornerRadius: 25)
@@ -263,6 +274,7 @@ struct PaymentView: View {
         .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 
+    // Helper to create an info message box.
     private func infoMessage(icon: String, title: String, text: String, color: Color = .glowzaPrimary) -> some View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
@@ -293,6 +305,7 @@ struct PaymentView: View {
         )
     }
 
+    // Computed property for confirm button text based on payment method.
     private var confirmButtonText: String {
         switch draft.paymentMethod {
         case .card:   return "Pay LKR \(Int(total))"
@@ -309,6 +322,7 @@ struct PaymentView: View {
         }
     }
 
+    // Creates the final Booking object and calls the onPay callback!
     private func confirmPayment() {
         let booking = Booking(
             id: UUID(),
@@ -329,6 +343,7 @@ struct PaymentView: View {
 }
 
 // MARK: - Card Entry View
+// This view allows the user to select a saved card or add a new one.
 struct CardEntryView: View {
     @Binding var draft: BookingDraft
     @Binding var selectedCardIndex: Int?
@@ -336,7 +351,7 @@ struct CardEntryView: View {
     let onContinue: () -> Void
 
     private var appSettings: AppSettings { AppSettings.shared }
-    @State private var showAddCard = false
+    @State private var showAddCard = false // Controls whether to show the add card form.
     @State private var savedCards: [(last4: String, brand: String)] = [
         (last4: "4242", brand: "Visa"),
         (last4: "5555", brand: "Mastercard")
@@ -389,7 +404,7 @@ struct CardEntryView: View {
                         
                         Spacer().frame(height: 24)
                         
-                        // Apple Pay
+                        // Apple Pay button (mock)
                         Button(action: {}) {
                             HStack(spacing: 14) {
                                 ZStack {
@@ -516,6 +531,7 @@ struct CardEntryView: View {
         .navigationBarHidden(true)
     }
     
+    // Helper to create a card selection button.
     private func cardSelectionButton(index: Int, card: (last4: String, brand: String)) -> some View {
         let isSelected = selectedCardIndex == index
         
@@ -523,11 +539,24 @@ struct CardEntryView: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(isSelected ? Color.glowzaPrimary : Color(hex: "F2F2F7"))
+                        .fill(Color(hex: "F2F2F7"))
                         .frame(width: 48, height: 48)
-                    Image(systemName: "creditcard.fill")
-                        .glowzaFont(size: 20, weight: .semibold)
-                        .foregroundColor(isSelected ? .white : Color.glowzaPrimary)
+                    if card.brand.lowercased() == "visa" {
+                        Image("visa")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else if card.brand.lowercased() == "mastercard" {
+                        Image("mastercard")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    } else {
+                        Image("creditcard")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
+                    }
                 }
                 
                 VStack(alignment: .leading, spacing: 3) {
@@ -554,7 +583,7 @@ struct CardEntryView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
-            .background(isSelected ? Color.glowzaPrimary.opacity(0.06) : Color.white)
+            .background(Color.white)
             .cornerRadius(25)
             .overlay(
                 RoundedRectangle(cornerRadius: 25)
@@ -568,6 +597,7 @@ struct CardEntryView: View {
 }
 
 // MARK: - Add Card Form View
+// This view allows the user to enter new card details.
 struct AddCardFormView: View {
     @Binding var draft: BookingDraft
     @Binding var isShowing: Bool
@@ -579,10 +609,11 @@ struct AddCardFormView: View {
     @State private var expiryDate = ""
     @State private var cvv = ""
     @State private var isSaving = false
-    @FocusState private var focusedField: CardField?
+    @FocusState private var focusedField: CardField? // Tracks which field has keyboard focus!
     
     enum CardField { case name, number, expiry, cvv }
     
+    // Simple validation to check if fields are filled correctly!
     private var isFormValid: Bool {
         cardNumber.count == 16
             && !cardHolder.trimmingCharacters(in: .whitespaces).isEmpty
@@ -631,7 +662,7 @@ struct AddCardFormView: View {
                             .foregroundColor(Color(hex: "8E8E93"))
                             .tracking(0.5)
                         
-                        // Cardholder
+                        // Cardholder Name Field
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Cardholder Name")
                                 .glowzaFont(size: 13, weight: .medium)
@@ -649,7 +680,7 @@ struct AddCardFormView: View {
                                 )
                         }
                         
-                        // Card number
+                        // Card Number Field
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Card Number")
                                 .glowzaFont(size: 13, weight: .medium)
@@ -659,6 +690,7 @@ struct AddCardFormView: View {
                                     .keyboardType(.numberPad)
                                     .glowzaFont(size: 16, design: .monospaced)
                                     .focused($focusedField, equals: .number)
+                                    // Formats the input to only allow numbers and max 16 digits!
                                     .onChange(of: cardNumber) { val in
                                         cardNumber = String(val.filter { $0.isNumber }.prefix(16))
                                     }
@@ -677,8 +709,9 @@ struct AddCardFormView: View {
                             )
                         }
                         
-                        // Expiry + CVV
+                        // Expiry + CVV Fields in a HStack!
                         HStack(spacing: 14) {
+                            // Expiry Date Field
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("Expiry Date")
                                     .glowzaFont(size: 13, weight: .medium)
@@ -687,6 +720,7 @@ struct AddCardFormView: View {
                                     .keyboardType(.numberPad)
                                     .glowzaFont(size: 16, design: .monospaced)
                                     .focused($focusedField, equals: .expiry)
+                                    // Formats the input to add a slash!
                                     .onChange(of: expiryDate) { val in
                                         let d = String(val.filter { $0.isNumber }.prefix(4))
                                         if d.count <= 2 {
@@ -705,6 +739,7 @@ struct AddCardFormView: View {
                                     )
                             }
                             
+                            // CVV Field
                             VStack(alignment: .leading, spacing: 6) {
                                 Text("CVV")
                                     .glowzaFont(size: 13, weight: .medium)
@@ -733,7 +768,7 @@ struct AddCardFormView: View {
                             }
                         }
                         
-                        // Security
+                        // Security notice
                         HStack(spacing: 8) {
                             Image(systemName: "lock.shield.fill")
                                 .glowzaFont(size: 13)
@@ -750,7 +785,7 @@ struct AddCardFormView: View {
                 }
             }
             
-            // Save button
+            // Save button pinned to bottom
             VStack(spacing: 0) {
                 Divider().opacity(0.5)
                 Button(action: saveCard) {
@@ -779,10 +814,12 @@ struct AddCardFormView: View {
         .navigationBarHidden(true)
     }
     
+    // Simulates saving the card to a backend.
     private func saveCard() {
         isSaving = true
+        // We use DispatchQueue.main.asyncAfter to simulate a network delay!
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            onCardAdded(cardNumber.suffix(4).uppercased())
+            onCardAdded(String(cardNumber.suffix(4))) // Pass only the last 4 digits!
             isSaving = false
             isShowing = false
         }

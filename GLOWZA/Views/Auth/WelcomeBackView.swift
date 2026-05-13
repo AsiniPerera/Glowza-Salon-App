@@ -1,3 +1,5 @@
+// This file shows a personalized "Welcome Back" screen to the user after they log in.
+// It also shows a mock "Upcoming Appointment" card to make the app feel alive.
 import SwiftUI
 
 private var brand: Color { Color.glowzaPrimary }
@@ -6,14 +8,17 @@ private let hotPink = Color(hex: "962043")
 // MARK: - Welcome Back View
 struct WelcomeBackView: View {
 
+    // We pass the user's name from the previous screen to personalize the greeting!
     let userName: String
-    var onContinue: () -> Void
-    var onBack: (() -> Void)? = nil
+    var onContinue: () -> Void // Runs when they click "Go to Dashboard".
+    var onBack: (() -> Void)? = nil // Optional back button closure.
 
+    // @State variables to control the entry animations.
     @State private var avatarScale: CGFloat = 0.5
     @State private var avatarOpacity: CGFloat = 0
     @State private var contentOpacity: CGFloat = 0
     @State private var contentOffset: CGFloat = 24
+    
     @Environment(AppSettings.self) private var appSettings
 
     private var pageBackground: Color { appSettings.themePage }
@@ -25,35 +30,28 @@ struct WelcomeBackView: View {
         ZStack(alignment: .topLeading) {
             pageBackground.ignoresSafeArea()
 
-            // Soft backdrop
+            // 1. Decorative background circle.
             Circle()
                 .fill(brand.opacity(0.05))
                 .frame(width: 340, height: 340)
                 .offset(x: 160, y: -200)
 
-            // Back button
-            Button(action: { onBack?() }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .glowzaFont(size: 15, weight: .semibold)
-                    Text("Back")
-                        .glowzaFont(size: 15, weight: .medium)
-                }
-                .foregroundStyle(Color(hex: "962043"))
-            }
-            .padding(.top, 60)
-            .padding(.leading, 24)
-            .opacity(onBack != nil ? 1 : 0)
+            // 2. Optional Back button (only shows if onBack is provided).
+            GlowzaCircleBackButton(action: { onBack?() })
+                .padding(.top, 60)
+                .padding(.leading, 24)
+                .opacity(onBack != nil ? 1 : 0)
+                
             VStack(spacing: 0) {
                 Spacer()
 
-                // ── Logo + greeting ──
+                // ── Logo & Greeting Section ──
                 VStack(spacing: 24) {
                     Image("logo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 500, height: 260)
-                        .scaleEffect(avatarScale)
+                        .scaleEffect(avatarScale) // Springs up!
                         .opacity(avatarOpacity)
                         .frame(maxWidth: .infinity, alignment: .center)
 
@@ -61,9 +59,12 @@ struct WelcomeBackView: View {
                         Text("Hello, Welcome Back ")
                             .glowzaFont(size: 20, weight: .semibold)
                             .foregroundColor(Color(hex: "4A4A4A"))
+                        
+                        // Displaying the dynamic user name here!
                         Text(userName)
                             .glowzaFont(size: 22, weight: .bold)
                             .foregroundColor(primaryText)
+                            
                         Text("Great to have you back!")
                             .glowzaFont(size: 14)
                             .foregroundColor(Color(hex: "8A8A8A"))
@@ -75,7 +76,9 @@ struct WelcomeBackView: View {
 
                 Spacer().frame(height: 32)
 
-                // ── Upcoming appointment card ──
+                // ── Upcoming Appointment Card (Mock Data) ──
+                // This is a great pattern for students: hardcoding data for a demo 
+                // when you don't have a full backend hooked up yet.
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Label("Upcoming Appointment", systemImage: "calendar.badge.clock")
@@ -107,7 +110,7 @@ struct WelcomeBackView: View {
                             Text("Tomorrow · 10:00 AM")
                                 .glowzaFont(size: 13)
                                 .foregroundColor(Color(hex: "6B6B6B"))
-                            Text("Haley Avenue, Colombo")
+                            Text("Golden Avenue, Colombo")
                                 .glowzaFont(size: 12)
                                 .foregroundColor(brand)
                         }
@@ -127,7 +130,7 @@ struct WelcomeBackView: View {
 
                 Spacer()
 
-                // ── CTA ──
+                // ── Call To Action Button (Go to Dashboard) ──
                 Button(action: onContinue) {
                     HStack(spacing: 8) {
                         Text("Go to Dashboard")
@@ -146,9 +149,11 @@ struct WelcomeBackView: View {
             }
         }
         .onAppear {
+            // Animate the logo with a springy bounce.
             withAnimation(.spring(response: 0.65, dampingFraction: 0.65).delay(0.1)) {
                 avatarScale = 1; avatarOpacity = 1
             }
+            // Animate the text and card sliding up.
             withAnimation(.easeOut(duration: 0.5).delay(0.35)) {
                 contentOpacity = 1; contentOffset = 0
             }

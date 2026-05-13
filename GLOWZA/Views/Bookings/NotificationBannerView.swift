@@ -2,135 +2,144 @@ import SwiftUI
 import UIKit
 
 // MARK: - Notification Banner View (Glass-Frosted Effect for OLED)
+// This view displays a custom in-app notification banner at the top of the screen.
 struct NotificationBannerView: View {
-    let notification: NotificationItem
+    let notification: NotificationItem // The data to display.
     
-    @State private var isAnimatingIn = false
-    
+    @State private var isAnimatingIn = false // Controls the entrance animation.
+    @State private var offset: CGFloat = 0 // Tracks the drag offset for dismissal.
+    @State private var isExpanded = false // Tracks if the banner is expanded to show full text.
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            // Status Icon
-            ZStack {
-                Circle()
-                    .fill(notification.type == .success ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                Image(systemName: notification.icon)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(notification.type == .success ? .green : .red)
+        Button(action: {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                isExpanded.toggle()
             }
+        }) {
+            HStack(alignment: .center, spacing: 14) {
+            // App Logo (Circular like the picture!)
+            Image("logo")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 42, height: 42)
+                .background(Color.white)
+                .clipShape(Circle())
             
             // Content
-            VStack(alignment: .leading, spacing: 6) {
-                // Header: Title + Time + Dismiss
+            VStack(alignment: .leading, spacing: 2) {
+                // Top line: Title and "now"
                 HStack {
                     Text(notification.title)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 15, weight: .semibold)) // Semibold instead of Bold!
                         .foregroundColor(.primary)
                     
                     Spacer()
                     
                     Text("now")
-                        .font(.system(size: 12))
+                        .font(.system(size: 13))
                         .foregroundColor(.secondary)
-                    
-                    Button(action: {
-                        triggerLightHaptic()
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            NotificationManager.shared.dismissAll()
-                        }
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                            .padding(4)
-                            .background(Color.gray.opacity(0.15))
-                            .clipShape(Circle())
-                    }
                 }
                 
-                // Body
+                // Body (Removed redundant "GLOWZA" text!)
                 Text(notification.subtitle)
-                    .font(.system(size: 13))
-                    .foregroundColor(.primary.opacity(0.9))
-                    .lineLimit(3)
-                
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(.secondary) // Use secondary color to make it look lighter!
+                    .lineLimit(isExpanded ? nil : 2)
             }
         }
-        .padding(14)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 5)
+            luminousGlassFrostedBackground()
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .shadow(color: .black.opacity(0.12), radius: 12, x: 0, y: 6)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(LinearGradient(colors: [Color(hex: "FFFDD0").opacity(0.7), .white.opacity(0.2)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 0.5) // Cream hairline!
+        )
+        .buttonStyle(NotificationButtonStyle()) // Apply custom style!
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
         .scaleEffect(isAnimatingIn ? 1.0 : 0.88, anchor: .top)
         .opacity(isAnimatingIn ? 1.0 : 0.0)
-        .offset(y: isAnimatingIn ? 0 : -14)
+        .offset(y: isAnimatingIn ? offset : -14)
+        // Drag gesture to swipe up and dismiss!
+        .gesture(
+            DragGesture()
+                .onChanged { gesture in
+                    if gesture.translation.height < 0 {
+                        offset = gesture.translation.height // Only allow dragging up!
+                    }
+                }
+                .onEnded { gesture in
+                    if gesture.translation.height < -30 {
+                        // If dragged up enough, dismiss it!
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            offset = -100
+                            isAnimatingIn = false
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            NotificationManager.shared.dismissAll()
+                        }
+                    } else {
+                        // Otherwise, snap back to original position.
+                        withAnimation(.spring()) {
+                            offset = 0
+                        }
+                    }
+                }
+        )
         .onAppear {
-            triggerLightHaptic()
-            withAnimation(.spring(response: 0.36, dampingFraction: 0.76, blendDuration: 0)) {
+            triggerHaptic(for: notification.type) // Synchronized haptic!
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0)) { // Weighted spring!
                 isAnimatingIn = true
             }
         }
     }
     
+    // Unused helper, but kept for reference or future use!
     private func luminousGlassFrostedBackground() -> some View {
         ZStack {
-            // Ultra-dark semi-transparent base for glass morphism
-            Color.black.opacity(0.24)
-            
-            // Frosted glass layer with blur effect
+            Color.white.opacity(0.01) // Even more transparent!
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color.white.opacity(0.17),
-                    Color.white.opacity(0.08)
+                    Color.white.opacity(0.05),
+                    Color.white.opacity(0.02)
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            
-            // Glass inner light reflection from top
             RadialGradient(
                 gradient: Gradient(colors: [
-                    Color.white.opacity(0.25),
-                    Color.white.opacity(0.08)
+                    Color.white.opacity(0.05),
+                    Color.white.opacity(0.01)
                 ]),
                 center: UnitPoint(x: 0.5, y: 0.1),
                 startRadius: 0,
                 endRadius: 100
             )
-            
-            // Strong accent glow from top
             RadialGradient(
                 gradient: Gradient(colors: [
-                    accentColor(for: notification.type).opacity(0.30),
-                    accentColor(for: notification.type).opacity(0.08)
+                    accentColor(for: notification.type).opacity(0.10),
+                    accentColor(for: notification.type).opacity(0.02)
                 ]),
                 center: .topLeading,
                 startRadius: 0,
                 endRadius: 120
             )
-            
-            // Secondary accent glow from bottom right
             RadialGradient(
                 gradient: Gradient(colors: [
-                    accentColor(for: notification.type).opacity(0.18),
+                    accentColor(for: notification.type).opacity(0.05),
                     Color.clear
                 ]),
                 center: .bottomTrailing,
                 startRadius: 0,
                 endRadius: 100
             )
-            
-            // Ambient accent fill
             LinearGradient(
                 gradient: Gradient(colors: [
-                    accentColor(for: notification.type).opacity(0.10),
+                    accentColor(for: notification.type).opacity(0.02),
                     Color.clear
                 ]),
                 startPoint: .center,
@@ -140,6 +149,7 @@ struct NotificationBannerView: View {
         .background(.ultraThinMaterial)
     }
     
+    // Returns a color based on the notification type.
     private func accentColor(for type: NotificationItem.NotificationType) -> Color {
         switch type {
         case .success:
@@ -153,54 +163,39 @@ struct NotificationBannerView: View {
         }
     }
 
-    private func triggerLightHaptic() {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        generator.impactOccurred(intensity: 0.9)
+    // Helper to trigger haptic feedback based on type.
+    private func triggerHaptic(for type: NotificationItem.NotificationType) {
+        let notificationGenerator = UINotificationFeedbackGenerator()
+        notificationGenerator.prepare()
+        
+        switch type {
+        case .success:
+            notificationGenerator.notificationOccurred(.success)
+        case .error:
+            notificationGenerator.notificationOccurred(.error)
+        case .warning:
+            notificationGenerator.notificationOccurred(.warning)
+        case .info:
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.prepare()
+            generator.impactOccurred(intensity: 0.9)
+        }
+    }
+}
+
+// Custom button style for shrink effect on press!
+struct NotificationButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
 // MARK: - Notification Container (for RootView)
+// This view sits at the top of the app and listens for notifications to display.
 struct NotificationContainer: View {
-    @State private var notificationManager = NotificationManager.shared
-
     var body: some View {
-        GeometryReader { proxy in
-            let hasNotification = notificationManager.notifications.first != nil
-
-            VStack(spacing: 0) {
-                if let notification = notificationManager.notifications.first {
-                    NotificationBannerView(notification: notification)
-                        .padding(.top, proxy.safeAreaInsets.top + 2)
-                        .allowsHitTesting(true)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
-                Spacer()
-                    .allowsHitTesting(false)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .allowsHitTesting(hasNotification)
-            .ignoresSafeArea(edges: .top)
-        }
-    }
-}
-
-#Preview {
-    ZStack {
-        Color.black.ignoresSafeArea()
-        
-        VStack {
-            NotificationBannerView(
-                notification: NotificationItem(
-                    title: "Booking Confirmed",
-                    subtitle: "Facial Treatment • Haley Avenue • Apr 27, 2026 at 2:00 PM",
-                    icon: "checkmark.circle.fill",
-                    type: .success
-                )
-            )
-            .padding(16)
-            
-            Spacer()
-        }
+        EmptyView() // In-app banners removed!
     }
 }

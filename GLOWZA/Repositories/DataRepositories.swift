@@ -3,14 +3,17 @@ import Foundation
 import UIKit
 
 // MARK: - Booking Repository (Core Data + Firebase)
+// This class handles all Core Data operations related to Bookings!
+// It abstracts the database work away from the ViewModels.
 final class BookingRepository {
-    static let shared = BookingRepository()
-    private let coreDataStack = CoreDataStack.shared
+    static let shared = BookingRepository() // Singleton instance!
+    private let coreDataStack = CoreDataStack.shared // Reference to the stack.
 
     private init() {}
 
+    // Saves a new booking to Core Data!
     func saveBookingToCore(
-        id: UUID = UUID(),
+        id: UUID = UUID(), 
         userId: String,
         userName: String,
         salonName: String,
@@ -26,8 +29,10 @@ final class BookingRepository {
         signatureImage: UIImage? = nil
     ) throws {
         let context = coreDataStack.context
+        // Create a new CDBooking object in the context!
         let booking = CDBooking(context: context)
 
+        // Map the properties!
         booking.id = id
         booking.userId = userId
         booking.userName = userName
@@ -45,26 +50,33 @@ final class BookingRepository {
         booking.updatedAt = Date()
         booking.firestoreID = firestoreID
 
+        // Convert the UIImage to Data for storage!
         if let image = signatureImage {
             booking.signatureImageData = image.jpegData(compressionQuality: 0.8)
         }
 
+        // Save the context to persist the changes!
         try coreDataStack.save()
     }
 
+    // Fetches bookings for a specific user!
     func fetchBookingsFromCore(userId: String) throws -> [CDBooking] {
         let request: NSFetchRequest<CDBooking> = CDBooking.fetchRequest()
+        // Filter by userId!
         request.predicate = NSPredicate(format: "userId == %@", userId)
+        // Sort by date (newest first)!
         request.sortDescriptors = [NSSortDescriptor(keyPath: \CDBooking.date, ascending: false)]
         return try coreDataStack.context.fetch(request)
     }
 
+    // Fetches all bookings (used by admin or sync managers)!
     func fetchAllBookingsFromCore() throws -> [CDBooking] {
         let request: NSFetchRequest<CDBooking> = CDBooking.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \CDBooking.date, ascending: false)]
         return try coreDataStack.context.fetch(request)
     }
 
+    // Updates the status of a booking!
     func updateBookingStatus(_ bookingId: UUID, status: String) throws {
         let request: NSFetchRequest<CDBooking> = CDBooking.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", bookingId as CVarArg)
@@ -76,22 +88,27 @@ final class BookingRepository {
         }
     }
 
+    // Adds a review to a completed booking!
     func addReviewToCore(bookingId: UUID, rating: Int, comment: String, reviewerName: String) throws {
         let request: NSFetchRequest<CDBooking> = CDBooking.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", bookingId as CVarArg)
 
         if let booking = try coreDataStack.context.fetch(request).first {
+            // Create a new CDReview object!
             let review = CDReview(context: coreDataStack.context)
             review.id = UUID()
             review.rating = Int16(rating)
             review.comment = comment
             review.date = Date()
             review.reviewerName = reviewerName
+            
+            // Link the review to the booking (One-to-One relationship)!
             booking.review = review
             try coreDataStack.save()
         }
     }
 
+    // Deletes a booking from Core Data!
     func deleteBookingFromCore(_ bookingId: UUID) throws {
         let request: NSFetchRequest<CDBooking> = CDBooking.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", bookingId as CVarArg)
@@ -102,12 +119,14 @@ final class BookingRepository {
         }
     }
 
+    // Updates a Core Data booking with its Firestore ID after syncing!
     func syncBookingWithFirebase(_ cdBooking: CDBooking, firestoreID: String) async throws {
         cdBooking.firestoreID = firestoreID
         cdBooking.updatedAt = Date()
         try coreDataStack.save()
     }
 
+    // Helper to convert a Core Data entity (CDBooking) into a clean Swift struct (Booking)!
     func convertCDBookingToBooking(_ cdBooking: CDBooking) -> Booking? {
         let salon = SalonCatalog.shared.salon(named: cdBooking.salonName)
         let service = salon.services.first(where: { $0.name == cdBooking.serviceName })
@@ -155,12 +174,14 @@ final class BookingRepository {
 }
 
 // MARK: - Notification Repository
+// This class handles all Core Data operations related to Notifications!
 final class NotificationRepository {
-    static let shared = NotificationRepository()
+    static let shared = NotificationRepository() // Singleton instance!
     private let coreDataStack = CoreDataStack.shared
 
     private init() {}
 
+    // Saves a new notification to Core Data!
     func saveNotificationToCore(
         title: String,
         subtitle: String,
@@ -180,6 +201,7 @@ final class NotificationRepository {
         try coreDataStack.save()
     }
 
+    // Fetches notifications for a specific user!
     func fetchNotificationsFromCore(userId: String? = nil) throws -> [CDNotification] {
         let request: NSFetchRequest<CDNotification> = CDNotification.fetchRequest()
         if let userId {
@@ -189,6 +211,16 @@ final class NotificationRepository {
         return try coreDataStack.context.fetch(request)
     }
 
+    // Clears all notifications from Core Data!
+    func clearAllNotifications() throws {
+        let request: NSFetchRequest<NSFetchRequestResult> = CDNotification.fetchRequest()
+        // Use batch delete for better performance!
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
+        try coreDataStack.context.execute(deleteRequest)
+        try coreDataStack.save()
+    }
+
+    // Marks a notification as read!
     func markNotificationAsRead(_ notificationId: UUID) throws {
         let request: NSFetchRequest<CDNotification> = CDNotification.fetchRequest()
         request.predicate = NSPredicate(format: "id == %@", notificationId as CVarArg)
@@ -201,12 +233,14 @@ final class NotificationRepository {
 }
 
 // MARK: - User Profile Repository
+// This class handles all Core Data operations related to User Profiles!
 final class UserProfileRepository {
-    static let shared = UserProfileRepository()
+    static let shared = UserProfileRepository() // Singleton instance!
     private let coreDataStack = CoreDataStack.shared
 
     private init() {}
 
+    // Saves or updates a user profile in Core Data!
     func saveOrUpdateProfile(
         userId: String,
         email: String,
@@ -221,6 +255,7 @@ final class UserProfileRepository {
         request.predicate = NSPredicate(format: "userId == %@", userId)
 
         let profile: CDUserProfile
+        // If profile exists, update it! Otherwise, create a new one!
         if let existing = try coreDataStack.context.fetch(request).first {
             profile = existing
         } else {
@@ -241,6 +276,7 @@ final class UserProfileRepository {
         try coreDataStack.save()
     }
 
+    // Fetches a user profile from Core Data!
     func fetchProfile(userId: String) throws -> CDUserProfile? {
         let request: NSFetchRequest<CDUserProfile> = CDUserProfile.fetchRequest()
         request.predicate = NSPredicate(format: "userId == %@", userId)
@@ -249,12 +285,15 @@ final class UserProfileRepository {
 }
 
 // MARK: - Salon Repository (Core Data offline cache)
+// This class handles all Core Data operations related to Salons!
+// It acts as an offline cache for the salon catalog.
 final class SalonRepository {
-    static let shared = SalonRepository()
+    static let shared = SalonRepository() // Singleton instance!
     private let coreDataStack = CoreDataStack.shared
 
     private init() {}
 
+    // Upserts (inserts or updates) a salon in Core Data!
     func upsertSalon(_ salon: Salon) throws {
         let context = coreDataStack.context
         let request: NSFetchRequest<CDSalon> = CDSalon.fetchRequest()
@@ -263,6 +302,7 @@ final class SalonRepository {
         let cdSalon: CDSalon
         if let existing = try context.fetch(request).first {
             cdSalon = existing
+            // Delete old services to avoid duplicates before adding new ones!
             if let oldServices = cdSalon.services as? Set<CDSalonService> {
                 oldServices.forEach { context.delete($0) }
             }
@@ -281,6 +321,7 @@ final class SalonRepository {
         cdSalon.phone = salon.phone
         cdSalon.openHours = salon.openHours
 
+        // Add services!
         for service in salon.services {
             let cdService = CDSalonService(context: context)
             cdService.id = UUID()
@@ -289,27 +330,35 @@ final class SalonRepository {
             cdService.duration = service.duration
             cdService.price = service.price
             cdService.category = service.category
+            
+            // Serialize benefits array to a JSON string for storage!
             cdService.benefits = (try? JSONSerialization.data(withJSONObject: service.benefits))
                 .flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+            
+            // Link service to salon (One-to-Many relationship)!
             cdService.salon = cdSalon
         }
 
         try coreDataStack.save()
     }
 
+    // Upserts multiple salons!
     func upsertSalons(_ salons: [Salon]) throws {
         for salon in salons { try upsertSalon(salon) }
     }
 
+    // Fetches all salons from Core Data and converts them to Swift models!
     func fetchAllSalons() throws -> [Salon] {
         let request: NSFetchRequest<CDSalon> = CDSalon.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \CDSalon.name, ascending: true)]
 
         return try coreDataStack.context.fetch(request).map { cd in
+            // Map services!
             let services = ((cd.services as? Set<CDSalonService>) ?? [])
                 .sorted { $0.name < $1.name }
                 .map { svc -> SalonService in
                     let benefits: [String]
+                    // Deserialize benefits string back into an array!
                     if let data = svc.benefits.data(using: .utf8),
                        let arr = try? JSONSerialization.jsonObject(with: data) as? [String] {
                         benefits = arr
@@ -326,6 +375,7 @@ final class SalonRepository {
                     )
                 }
 
+            // Map salon!
             return Salon(
                 id: cd.id,
                 name: cd.name,

@@ -1,7 +1,11 @@
+// This file handles the app's launch experience, including the animated splash screen 
+// and the landing screen where users choose to sign in or create an account.
 import SwiftUI
 
-// MARK: - Splash helpers
+// MARK: - Splash Helpers
+// These are small helper views used to create the effects on the splash screen.
 
+// This creates a single ring that can expand and fade out (ripple effect).
 private struct RippleRing: View {
     let ringSize: CGFloat
     let color: Color
@@ -17,14 +21,17 @@ private struct RippleRing: View {
     }
 }
 
+// A simple data structure to hold information about a floating particle.
 private struct SParticle: Identifiable {
     let id: Int; let x, y, size, drift: CGFloat; let isGold: Bool
 }
 
+// This creates a background filled with small floating dots (particles).
 private struct ParticleField: View {
     let brand: Color; let pink: Color
-    @State private var drifting = false
+    @State private var drifting = false // Controls the animation state.
 
+    // We hardcode the positions of 20 particles to make it look artistic and controlled.
     private let pts: [SParticle] = [
         .init(id:  0, x: -140, y: -320, size: 3, drift: -14, isGold: false),
         .init(id:  1, x:   80, y: -350, size: 2, drift: -10, isGold: true ),
@@ -54,11 +61,13 @@ private struct ParticleField: View {
                 Circle()
                     .fill(p.isGold ? pink.opacity(0.65) : brand.opacity(0.28))
                     .frame(width: p.size, height: p.size)
-                    .blur(radius: p.size * 0.4)
+                    .blur(radius: p.size * 0.4) // Softens the edges of the dots.
+                    // When drifting is true, the dots move up by their 'drift' amount.
                     .offset(x: p.x, y: p.y + (drifting ? p.drift : 0))
             }
         }
         .onAppear {
+            // This animation runs forever, moving the dots up and down slowly.
             withAnimation(.easeInOut(duration: 3.5).repeatForever(autoreverses: true)) {
                 drifting = true
             }
@@ -67,11 +76,16 @@ private struct ParticleField: View {
 }
 
 // MARK: - Glowza Splash Screen
+// This is the actual view that shows up when the app opens.
 
 struct SplashView: View {
 
+    // A closure (function) passed from outside. We run this when the animation finishes 
+    // to tell the app to switch to the next screen.
     var onFinished: (() -> Void)? = nil
 
+    // These @State variables control the animations. Changing them inside `withAnimation` 
+    // triggers the smooth movements you see on screen.
     @State private var logoScale:       CGFloat = 0.3
     @State private var logoOpacity:     CGFloat = 0
     @State private var particleOpacity: CGFloat = 0
@@ -83,101 +97,69 @@ struct SplashView: View {
     @State private var r2Scale:  CGFloat = 0.25; @State private var r2Opacity: CGFloat = 0.78
     @State private var r3Scale:  CGFloat = 0.25; @State private var r3Opacity: CGFloat = 0.68
 
+    // App's specific brand colors.
     private let brand = Color(hex: "962043")
     private let pink  = Color(hex: "F4A0BB")
 
     var body: some View {
         ZStack {
+            // Solid white background.
             Color.white.ignoresSafeArea()
 
-
-            // ── Logo + brand text ─────────────────────────────────────────
+            // ── Logo Section ─────────────────────────────────────────
             VStack(spacing: 28) {
                 ZStack {
-
-                    // Logo + shimmer scan (clipped together)
+                    // Here we draw the logo and a white light (shimmer) that slides over it.
                     ZStack {
                         Image("logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 250, height: 250)
+                            .frame(width: 200, height: 200)
                             .opacity(logoOpacity)
 
+                        // This is the shiny white bar that slides across the logo.
                         LinearGradient(
                             colors: [.clear, .white.opacity(0.55), .clear],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
-                        .frame(width: 80, height: 250)
+                        .frame(width: 60, height: 200)
                         .offset(x: shimmerX)
-                        .blendMode(.overlay)
+                        .blendMode(.overlay) // Blends the white nicely over the logo.
                         .opacity(logoOpacity)
                     }
-                    .frame(width: 250, height: 250)
-
-                    .clipped()
+                    .frame(width: 200, height: 200)
+                    .clipped() // Ensures the shimmer doesn't spill outside the logo box.
                     .scaleEffect(logoScale)
                 }
-
-                // Brand name + decorative line + tagline
-                VStack(spacing: 12) {
-                    Text("GLOWZA")
-                        .glowzaFont(size: 40, weight: .bold)
-                        .tracking(9)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [brand, Color(hex: "D63063"), brand],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [.clear, pink.opacity(0.80), .clear],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(height: 1)
-                        .padding(.horizontal, 30)
-                        .opacity(subtitleOpacity)
-
-                    Text("Premium Salon Experience")
-                        .glowzaFont(size: 13, weight: .light)
-                        .tracking(3.5)
-                        .foregroundColor(brand.opacity(0.50))
-                        .opacity(subtitleOpacity)
-                }
-                .offset(y: titleOffset)
-                .opacity(titleOpacity)
             }
         }
+        // When this screen appears on the phone, we start the animations!
         .onAppear { startAnimations() }
     }
 
+    // This function triggers all the animations in a timed sequence.
     private func startAnimations() {
-        // Ripple rings expand outward and fade to 0
+        // 1. The background circles expand outward and fade away.
         withAnimation(.easeOut(duration: 1.5).delay(0.05)) { r1Scale = 1.45; r1Opacity = 0 }
         withAnimation(.easeOut(duration: 1.8).delay(0.30)) { r2Scale = 1.45; r2Opacity = 0 }
         withAnimation(.easeOut(duration: 2.1).delay(0.55)) { r3Scale = 1.45; r3Opacity = 0 }
 
-        // Particles fade in
+        // 2. The little background dots fade in.
         withAnimation(.easeIn(duration: 1.2).delay(0.4)) { particleOpacity = 1 }
 
-        // Logo springs in with a bounce
+        // 3. The main logo pops in with a spring (bouncy) animation.
         withAnimation(.spring(response: 0.65, dampingFraction: 0.60).delay(0.28)) { logoScale = 1.0 }
         withAnimation(.easeOut(duration: 0.45).delay(0.28)) { logoOpacity = 1 }
 
-        // Brand text slides up
+        // 4. Any text (if added) would slide up here.
         withAnimation(.easeOut(duration: 0.55).delay(0.75)) { titleOpacity = 1; titleOffset = 0 }
         withAnimation(.easeOut(duration: 0.50).delay(1.05)) { subtitleOpacity = 1 }
 
-        // Shimmer scan across logo
+        // 5. The shiny light bar slides across the logo.
         withAnimation(.easeInOut(duration: 0.75).delay(1.35)) { shimmerX = 240 }
 
-        // Dismiss at 3.3 s
+        // 6. After 3.3 seconds, we run the onFinished closure to move to the next screen!
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.3) {
             onFinished?()
         }
@@ -185,12 +167,16 @@ struct SplashView: View {
 }
 
 // MARK: - Landing Screen (Sign In / Create Account)
+// This is the screen shown AFTER the splash screen finishes.
+
 struct LandingView: View {
 
+    // Closures to handle button clicks, passed in from the main app file.
     var onLogin:  (() -> Void)? = nil
     var onCreate: (() -> Void)? = nil
     var onGuest:  (() -> Void)? = nil
 
+    // Holds the animation states for fading in the content.
     @State private var contentOpacity: CGFloat = 0
     @State private var contentOffset: CGFloat  = 30
     @Environment(AppSettings.self) private var appSettings
@@ -205,29 +191,30 @@ struct LandingView: View {
             Color.white.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Spacer()
+                Spacer() // Pushes everything down to the center.
 
-                // Logo
+                // ── Logo & Text Section ─────────────────────────────────────────
                 VStack(spacing: 26) {
                     Image("logo")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 300, height: 246)
+                        .frame(width: 220, height: 180)
                         .frame(maxWidth: .infinity, alignment: .center)
 
                     VStack(spacing: 8) {
                         Text("GLOWZA")
-                            .glowzaFont(size: 34, weight: .bold)
+                            .glowzaFont(.h1, weight: .bold)
                             .foregroundStyle(
+                                // A premium gradient for the brand text.
                                 LinearGradient(
                                     colors: [brand, Color(hex: "D63063"), brand],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
-                            .tracking(6)
+                            .tracking(6) // Spreads the letters apart.
                         Text("Your beauty, simplified.")
-                            .glowzaFont(size: 15, weight: .regular)
+                            .glowzaFont(.body)
                             .foregroundColor(brand.opacity(0.45))
                     }
                     .multilineTextAlignment(.center)
@@ -235,33 +222,19 @@ struct LandingView: View {
                 .opacity(contentOpacity)
                 .offset(y: contentOffset)
 
-                Spacer()
+                Spacer() // Pushes buttons to the bottom.
 
-                // Buttons
+                // ── Action Buttons Section ─────────────────────────────────────────
                 VStack(spacing: 14) {
                     Button(action: { onLogin?() }) {
                         Text("Sign In")
-                            .glowzaFont(size: 17, weight: .semibold)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 55)
-                            .background(brand)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
+                    .buttonStyle(GlowzaPrimaryButtonStyle()) // Uses custom style defined elsewhere.
 
                     Button(action: { onCreate?() }) {
                         Text("Create Account")
-                            .glowzaFont(size: 17, weight: .semibold)
-                            .foregroundColor(brand)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 55)
-                            .background(secondaryBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(pink.opacity(0.35), lineWidth: 1)
-                            )
                     }
+                    .buttonStyle(GlowzaSecondaryButtonStyle())
 
                     Button(action: { onGuest?() }) {
                         Text("Continue as Guest")
@@ -277,12 +250,16 @@ struct LandingView: View {
             }
         }
         .onAppear {
+            // When screen loads, content smoothly fades in and slides up!
             withAnimation(.easeOut(duration: 0.4)) {
                 contentOpacity = 1; contentOffset = 0
             }
         }
     }
 }
+
+// MARK: - Previews
+// These let developers see the screen directly inside Xcode without running the app.
 
 #Preview("Splash") {
     SplashView()

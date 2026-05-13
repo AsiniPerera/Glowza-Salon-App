@@ -2,10 +2,13 @@ import SwiftUI
 import MapKit
 import PDFKit
 
+// MARK: - Receipt View
+// This view is shown after a successful booking. It displays a confirmation message,
+// a summary of the booking, and options to download the receipt or get directions.
 struct ReceiptView: View {
 
-    let booking: Booking
-    let onDone: () -> Void
+    let booking: Booking // The booking details passed from the previous screen.
+    let onDone: () -> Void // Callback to go back home.
 
     @Environment(\.openURL) private var openURL
     private var appSettings: AppSettings { AppSettings.shared }
@@ -25,23 +28,23 @@ struct ReceiptView: View {
 
                     detailCard
 
+                    // Action buttons in a grid
                     HStack(spacing: 14) {
                         squareActionButton(
                             title: "Download Receipt",
                             icon: "arrow.down.doc.fill",
-                            action: prepareReceiptFile
+                            action: prepareReceiptFile // Generates the PDF!
                         )
 
                         squareActionButton(
                             title: "Get Directions",
                             icon: "map.fill",
-                            action: openDirections
+                            action: openDirections // Opens Apple Maps!
                         )
                     }
                     .padding(.horizontal, 2)
 
                     VStack(spacing: 12) {
-
                         actionButton(
                             title: "Back to Home",
                             icon: "house.fill",
@@ -54,6 +57,7 @@ struct ReceiptView: View {
                 .padding(.horizontal, 20)
             }
         }
+        // Shows the system share sheet when the PDF is ready!
         .sheet(isPresented: $showShareSheet) {
             if let receiptFileURL {
                 ShareSheet(activityItems: [receiptFileURL])
@@ -61,6 +65,7 @@ struct ReceiptView: View {
         }
     }
 
+    // Header with checkmark animation (implied by design) and text.
     private var confirmationHeader: some View {
         VStack(spacing: 10) {
             ZStack {
@@ -88,6 +93,7 @@ struct ReceiptView: View {
         .frame(maxWidth: .infinity)
     }
 
+    // Card showing the booking details.
     private var detailCard: some View {
         VStack(spacing: 0) {
             HStack {
@@ -121,6 +127,7 @@ struct ReceiptView: View {
         .shadow(color: Color.black.opacity(appSettings.isDarkMode ? 0.2 : 0.04), radius: 8, y: 3)
     }
 
+    // Helper for key-value rows in the card.
     private func detailRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
@@ -133,6 +140,7 @@ struct ReceiptView: View {
         }
     }
 
+    // Big solid action button.
     private func actionButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
@@ -149,6 +157,7 @@ struct ReceiptView: View {
         .frame(maxWidth: .infinity)
     }
 
+    // Outlined action button.
     private func squareActionButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 8) {
@@ -172,13 +181,17 @@ struct ReceiptView: View {
         }
     }
 
+    // MARK: - PDF Generation
+    // This is a advanced topic! We are using UIKit's UIGraphicsPDFRenderer to programmatically
+    // draw a PDF receipt. This is like painting on a canvas with code!
     private func prepareReceiptFile() {
         let filename = "GLOWZA-\(booking.receiptNumber).pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
 
-        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842) // A4 at 72 DPI
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842) // A4 paper size at 72 DPI
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
 
+        // Define colors using UIKit (since we are using UIKit rendering APIs)
         let brandColor = UIColor(red: 150 / 255, green: 32 / 255, blue: 67 / 255, alpha: 1)
         let textPrimary = UIColor(red: 31 / 255, green: 33 / 255, blue: 38 / 255, alpha: 1)
         let textSecondary = UIColor(red: 130 / 255, green: 132 / 255, blue: 139 / 255, alpha: 1)
@@ -189,19 +202,22 @@ struct ReceiptView: View {
                 context.beginPage()
                 let cg = context.cgContext
 
+                // Draw background
                 UIColor.white.setFill()
                 cg.fill(pageRect)
 
                 let margin: CGFloat = 44
                 let contentWidth = pageRect.width - (margin * 2)
-                var y: CGFloat = 56
+                var y: CGFloat = 56 // Keeps track of vertical cursor position!
 
+                // Draw App Logo
                 if let appLogo = UIImage(named: "logo") {
                     let logoRect = CGRect(x: (pageRect.width - 132) / 2, y: y, width: 132, height: 90)
                     appLogo.draw(in: logoRect)
                     y += 104
                 }
 
+                // Define text styles (attributes)
                 let titleAttributes: [NSAttributedString.Key: Any] = [
                     .font: UIFont.systemFont(ofSize: 24, weight: .bold),
                     .foregroundColor: brandColor
@@ -211,6 +227,7 @@ struct ReceiptView: View {
                     .foregroundColor: textSecondary
                 ]
 
+                // Draw Title
                 let title = "GLOWZA BOOKING RECEIPT" as NSString
                 let titleSize = title.size(withAttributes: titleAttributes)
                 title.draw(
@@ -219,6 +236,7 @@ struct ReceiptView: View {
                 )
                 y += 36
 
+                // Draw Receipt Number
                 let receiptNo = "Receipt #\(booking.receiptNumber)" as NSString
                 let receiptSize = receiptNo.size(withAttributes: subtitleAttributes)
                 receiptNo.draw(
@@ -227,6 +245,7 @@ struct ReceiptView: View {
                 )
                 y += 26
 
+                // Draw a separator line
                 cg.setStrokeColor(lineColor.cgColor)
                 cg.setLineWidth(1)
                 cg.move(to: CGPoint(x: margin, y: y))
@@ -247,6 +266,7 @@ struct ReceiptView: View {
                     .foregroundColor: textPrimary
                 ]
 
+                // Draw Section Header
                 ("BOOKING SUMMARY" as NSString).draw(
                     at: CGPoint(x: margin, y: y),
                     withAttributes: sectionAttributes
@@ -262,6 +282,7 @@ struct ReceiptView: View {
                     ("Amount Paid", "LKR \(Int(booking.amountPaid))")
                 ]
 
+                // Loop through rows and draw key-value pairs!
                 for (label, value) in rows {
                     (label as NSString).draw(
                         at: CGPoint(x: margin, y: y),
@@ -273,6 +294,8 @@ struct ReceiptView: View {
                     valueText.draw(in: valueRect, withAttributes: valueAttributes)
 
                     y += 30
+                    
+                    // Draw mini separator line
                     cg.setStrokeColor(lineColor.cgColor)
                     cg.move(to: CGPoint(x: margin, y: y))
                     cg.addLine(to: CGPoint(x: pageRect.width - margin, y: y))
@@ -291,13 +314,16 @@ struct ReceiptView: View {
                 )
             }
 
+            // Verify the PDF was created successfully!
             guard let pdfDocument = PDFDocument(data: pdfData) else {
                 receiptFileURL = nil
                 return
             }
 
+            // Write the file to disk.
             pdfDocument.write(to: url)
 
+            // Update state to show the share sheet!
             receiptFileURL = url
             showShareSheet = true
         } catch {
@@ -305,6 +331,7 @@ struct ReceiptView: View {
         }
     }
 
+    // Opens Apple Maps with driving directions to the salon.
     private func openDirections() {
         let coordinate = coordinateForSalon(booking.salon.name)
         let destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
@@ -314,9 +341,10 @@ struct ReceiptView: View {
         ])
     }
 
+    // Helper to get coordinates for hardcoded salons (since we don't have a real DB).
     private func coordinateForSalon(_ name: String) -> CLLocationCoordinate2D {
         switch name {
-        case "Haley Avenue":
+        case "Golden Avenue":
             return CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820)
         case "Glow Studio":
             return CLLocationCoordinate2D(latitude: 6.7713, longitude: 79.8783)
@@ -329,6 +357,8 @@ struct ReceiptView: View {
 
 }
 
+// MARK: - Share Sheet
+// Bridges UIActivityViewController to SwiftUI to show the native iOS share sheet.
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
 
@@ -338,15 +368,3 @@ struct ShareSheet: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
-
-#Preview {
-    let salon = SalonCatalog.shared.salons[0]
-    let booking = Booking(
-        id: UUID(), salon: salon, service: salon.services[0],
-        date: Date(), timeSlot: "10:00 AM",
-        receiptNumber: "GLZ-12345", paymentMethod: .card,
-        amountPaid: 3850, signatureImage: nil, status: .upcoming, review: nil
-    )
-    return ReceiptView(booking: booking, onDone: {})
-    }
-

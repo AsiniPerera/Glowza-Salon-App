@@ -1,36 +1,41 @@
 import SwiftUI
-import Charts
+import Charts // We use SwiftUI's Charts framework to draw the price graph!
 
 // MARK: - Constants
 private let teal = Color(hex: "00A878")
 private let treatmentScopeName = "All Treatments"
 
 // MARK: - Helpers
- 
+
+// A simple wrapper model to make SalonService identifiable in lists.
 private struct CatalogEntry: Identifiable {
     let id: UUID
     let service: SalonService
 }
 
+// Extracts the numbers from a string like "55 min" and returns them as an Int!
 private func durationMins(_ s: SalonService) -> Int {
     Int(s.duration.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()) ?? 0
 }
 
+// Truncates long treatment names so they fit nicely on the screen!
 private func shortTreatmentName(_ name: String) -> String {
     if name.count <= 16 { return name }
     return String(name.prefix(16)) + "..."
 }
 
 // MARK: - CompareView
-
+// This view allows users to select multiple treatments and compare them 
+// side-by-side based on price, duration, and benefits.
 struct CompareView: View {
 
-    @Environment(TreatmentComparisonStore.self) private var store
+    @Environment(TreatmentComparisonStore.self) private var store // Shared store to manage selected items.
     @Environment(AppSettings.self) private var appSettings
     private var brand: Color { appSettings.themeBrand }
 
-    // MARK: Data
-
+    // MARK: Hardcoded Data
+    // Mock data for treatments that can be compared.
+    // In a real app, this would come from a database or API.
     private let comparisonTreatments: [SalonService] = [
         SalonService(name: "Hydra Facial", icon: "drop", duration: "55 min", price: 4500, category: "Skin", benefits: ["Hydration", "Glow", "Pore care"]),
         SalonService(name: "Oxygen Facial", icon: "wind", duration: "50 min", price: 5200, category: "Skin", benefits: ["Brightness", "Smooth texture", "Fresh look"]),
@@ -54,16 +59,19 @@ struct CompareView: View {
         SalonService(name: "Nail Strengthening", icon: "shield.lefthalf.filled", duration: "40 min", price: 2800, category: "Nails", benefits: ["Reduced breakage", "Hardening", "Healthy nails"])
     ]
 
+    // Converts the raw services into identifiable entries for lists.
     private var allEntries: [CatalogEntry] {
         comparisonTreatments.map { CatalogEntry(id: $0.id, service: $0) }
     }
 
+    // Finds the indices of the selected treatments that take the least time!
     private var shortestDurationIndices: Set<Int> {
         let mins = store.items.map { lowerDurationBound(for: $0.service) }
         guard let best = mins.filter({ $0 > 0 }).min() else { return [] }
         return Set(mins.indices.filter { mins[$0] == best })
     }
 
+    // Finds the indices of the selected treatments that cost the least!
     private var lowestPriceIndices: Set<Int> {
         let mins = store.items.map { lowerPriceBound(for: $0.service) }
         guard let minP = mins.min() else { return [] }
@@ -74,6 +82,7 @@ struct CompareView: View {
         service.benefits.count
     }
 
+    // We add a random margin to simulate a range instead of a fixed number!
     private func lowerDurationBound(for service: SalonService) -> Int {
         max(durationMins(service) - 8, 10)
     }
@@ -106,28 +115,30 @@ struct CompareView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Page title — plain Text, no toolbar pill
+                    // Page title
                     Text("Treatment Comparison")
                         .glowzaFont(size: 28, weight: .bold)
                         .foregroundColor(appSettings.themeText)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, 8)
 
-                    selectSection
+                    selectSection // The horizontal scroll list to pick treatments.
 
+                    // If user selected 2 or more treatments, show the charts!
                     if store.items.count >= 2 {
                         priceChartCard
                         durationTableCard
                         benefitsTableCard
                         clearBtn
                     } else {
+                        // Otherwise, show a banner asking to add more!
                         addMoreBanner
                     }
 
                     Spacer().frame(height: 36)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
+                .padding(.top, 24)
             }
             .background((appSettings.themePage).ignoresSafeArea())
             .navigationBarHidden(true)
@@ -135,7 +146,7 @@ struct CompareView: View {
     }
 
     // MARK: - Select Section
-
+    // UI to select treatments from a horizontal scrolling list.
     private var selectSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -143,13 +154,14 @@ struct CompareView: View {
                     .glowzaFont(size: 15, weight: .semibold)
                     .foregroundColor(brand)
                 Spacer()
-                Text("\(store.items.count)/10")
+                Text("\(store.items.count)/10") // Limit is 10!
                     .glowzaFont(size: 12, weight: .semibold)
                     .foregroundColor(Color(hex: "8A8A8A"))
             }
 
-            selectedTabsSection
+            selectedTabsSection // Shows pills for treatments already picked.
 
+            // The list of all available treatments to pick from.
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(allEntries) { entry in
@@ -164,6 +176,7 @@ struct CompareView: View {
         }
     }
 
+    // Shows small removable pills for treatments you already selected.
     private var selectedTabsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             if store.items.isEmpty {
@@ -209,6 +222,7 @@ struct CompareView: View {
         }
     }
 
+    // A single square card for a treatment in the selection list.
     private func treatmentTile(_ entry: CatalogEntry) -> some View {
         let added = store.isAdded(entry.service, from: treatmentScopeName)
         let canAdd = store.canAddMore || added
@@ -261,8 +275,8 @@ struct CompareView: View {
         .opacity(!canAdd ? 0.45 : 1)
     }
 
-    // MARK: - Price Chart
-
+    // MARK: - Price Chart Card
+    // This uses the SwiftUI Charts framework to draw vertical bars comparing prices.
     private var priceChartCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Price Level")
@@ -275,6 +289,7 @@ struct CompareView: View {
                         x: .value("Treatment", shortTreatmentName(item.service.name)),
                         y: .value("Price (LKR)", item.service.price)
                     )
+                    // Highlighting the cheapest one in teal!
                     .foregroundStyle(lowestPriceIndices.contains(idx) ? teal : brand.opacity(0.8))
                     .cornerRadius(4)
                 }
@@ -285,7 +300,7 @@ struct CompareView: View {
                         .foregroundStyle(Color(hex: "E0E0E0"))
                     AxisValueLabel {
                         if let d = val.as(Double.self) {
-                            Text("\(Int(d / 1000))k")
+                            Text("\(Int(d / 1000))k") // Formats 5000 as "5k"
                                 .glowzaFont(size: 10)
                                 .foregroundStyle(Color(hex: "8A8A8A"))
                         }
@@ -299,6 +314,7 @@ struct CompareView: View {
             }
             .frame(height: 160)
 
+            // Legend at the bottom of the chart.
             HStack(spacing: 16) {
                 HStack(spacing: 5) {
                     RoundedRectangle(cornerRadius: 3).fill(teal).frame(width: 12, height: 8)
@@ -321,8 +337,8 @@ struct CompareView: View {
         )
     }
 
-    // MARK: - Duration Table
-
+    // MARK: - Duration Table Card
+    // Compares how long each treatment takes.
     private var durationTableCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Duration")
@@ -330,6 +346,7 @@ struct CompareView: View {
                 .foregroundColor(appSettings.themeText)
 
             VStack(spacing: 0) {
+                // Table Header
                 HStack {
                     Text("Treatment")
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -342,6 +359,7 @@ struct CompareView: View {
                 .padding(.vertical, 9)
                 .background(Color(hex: "F7F7FA"))
 
+                // Table Rows
                 ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
                     let isFastest = shortestDurationIndices.contains(idx)
 
@@ -391,8 +409,8 @@ struct CompareView: View {
         )
     }
 
-    // MARK: - Benefits Table
-
+    // MARK: - Benefits Table Card
+    // Compares the bullet point benefits of each treatment.
     private var benefitsTableCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Benefits")
@@ -400,6 +418,7 @@ struct CompareView: View {
                 .foregroundColor(appSettings.themeText)
 
             VStack(spacing: 0) {
+                // Table Header
                 HStack {
                     Text("Treatment")
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -412,6 +431,7 @@ struct CompareView: View {
                 .padding(.vertical, 9)
                 .background(Color(hex: "F7F7FA"))
 
+                // Table Rows
                 ForEach(Array(store.items.enumerated()), id: \.element.id) { idx, item in
                     let maxBenefits = store.items.map { benefitCount($0.service) }.max() ?? 0
                     let isTop = benefitCount(item.service) == maxBenefits
@@ -422,6 +442,7 @@ struct CompareView: View {
                             .foregroundColor(appSettings.themeText)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
+                        // Joins array of strings with a dot separator!
                         Text(item.service.benefits.joined(separator: "  •  "))
                             .glowzaFont(size: 11)
                             .foregroundColor(isTop ? teal : Color(hex: "505050"))
@@ -453,26 +474,18 @@ struct CompareView: View {
     }
 
     // MARK: - Bottom Controls
-
     private var clearBtn: some View {
         Button { withAnimation { store.clear() } } label: {
             Label("Clear All", systemImage: "trash")
-                .glowzaFont(size: 14, weight: .semibold).foregroundColor(brand)
-                .frame(maxWidth: .infinity)
-                .frame(height: 36)
-                .background(appSettings.themeSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(brand.opacity(0.3), lineWidth: 1)
-                )
         }
+        .buttonStyle(GlowzaSecondaryButtonStyle())
     }
 
     private var missingSelectionCount: Int {
         max(0, 2 - store.items.count)
     }
 
+    // Banner shown when user needs to select more items.
     private var addMoreBanner: some View {
         HStack(spacing: 10) {
             Image(systemName: "info.circle.fill").foregroundColor(brand)

@@ -1,23 +1,21 @@
 import SwiftUI
 
-// MARK: - Glowza Design Tokens (Also defined in ThemeColors.swift for centralization)
-// Keep these for backward compatibility if needed, but prefer ThemeColors.swift
-
 // MARK: - View Extensions
+// Extensions on 'View' allow us to create custom modifiers that can be used on any SwiftUI view!
 extension View {
-    /// Applies the standard Glowza card style
-    /// Standard Glowza card.
-    /// In High Contrast: ultra-dark glass (#1A1A1A) + 2 px Electric Rose neon border + Electric Rose glow shadow.
+    /// Applies the standard Glowza card style.
+    /// In High Contrast: ultra-dark glass (#1A1A1A) + 3 px white border.
     func glowzaCard(radius: CGFloat = 16) -> some View {
+        // Read directly from UserDefaults for performance in this modifier!
         let isHC = UserDefaults.standard.bool(forKey: "app_highContrast")
         let rose  = Color(hex: "FF2D55")
         return self
             .background(
                 ZStack {
                     if isHC {
-                        // Glassmorphism base
+                        // Glassmorphism base!
                         Color(hex: "1A1A1A")
-                        // Subtle pink glass shimmer
+                        // Subtle pink glass shimmer!
                         rose.opacity(0.04)
                     } else {
                         Color.white
@@ -26,6 +24,7 @@ extension View {
             )
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay(
+                // Add a border for high contrast mode accessibility!
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .stroke(isHC ? Color.white.opacity(0.85) : Color.clear,
                             lineWidth: isHC ? 3 : 0)
@@ -34,12 +33,12 @@ extension View {
                     radius: isHC ? 12 : 10, x: 0, y: isHC ? 0 : 4)
     }
 
-    /// Applies the standard Glowza screen background
+    /// Applies the standard Glowza screen background!
     func glowzaBackground() -> some View {
         self.background(Color.glowzaBackground.ignoresSafeArea())
     }
 
-    /// Applies OLED-black + Electric Rose high-contrast style when enabled.
+    /// Applies OLED-black + Electric Rose high-contrast style when enabled!
     func glowzaHighContrastStyle(enabled: Bool) -> some View {
         self
             .tint(enabled ? Color(hex: "FF2D55") : Color.glowzaPrimary)
@@ -49,9 +48,7 @@ extension View {
 }
 
 // MARK: - Scaled Font ViewModifier
-/// Multiplies a fixed base size by the user's chosen font scale from AppSettings.
-/// Use `.glowzaFont(size:weight:design:)` on any Text or View instead of
-/// `.font(.system(size:))` so it responds to the in-app font-size preference.
+// This custom modifier scales fonts based on the user's preference in AppSettings!
 private struct GlowzaScaledFont: ViewModifier {
     private var appSettings: AppSettings { AppSettings.shared }
     let baseSize: CGFloat
@@ -59,18 +56,98 @@ private struct GlowzaScaledFont: ViewModifier {
     let design: Font.Design
 
     func body(content: Content) -> some View {
-        // Use .font() directly here — NOT .glowzaFont() — to avoid infinite recursion.
-        content.font(.system(size: baseSize * appSettings.fontMultiplier, weight: weight, design: design))
+        let fontName: String
+        // Map SwiftUI weights to custom font file names!
+        switch weight {
+        case .bold: fontName = "Urbanist-Bold"
+        case .semibold: fontName = "Urbanist-SemiBold"
+        case .medium: fontName = "Urbanist-Medium"
+        case .light: fontName = "Urbanist-Light"
+        default: fontName = "Urbanist-Regular"
+        }
+        
+        // Multiply base size by the scale factor from settings!
+        // Note: Make sure the "Urbanist" font files are added to your project!
+        return content.font(.custom(fontName, size: baseSize * appSettings.fontMultiplier))
+    }
+}
+
+// Enum to define standardized text sizes across the app!
+enum GlowzaTextSize {
+    case h1      // 34 (Large Title)
+    case h2      // 28 (Title)
+    case h3      // 24 (Header)
+    case h4      // 20 (Small Title / Subhead)
+    case callout // 17 (Buttons)
+    case body    // 15 (Body)
+    case caption // 12 (Caption)
+    
+    var size: CGFloat {
+        switch self {
+        case .h1: return 34
+        case .h2: return 28
+        case .h3: return 24
+        case .h4: return 20
+        case .callout: return 17
+        case .body: return 15
+        case .caption: return 12
+        }
     }
 }
 
 extension View {
+    // Convenience methods to apply the custom font modifier!
     func glowzaFont(size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
         modifier(GlowzaScaledFont(baseSize: size, weight: weight, design: design))
     }
+    
+    func glowzaFont(_ style: GlowzaTextSize, weight: Font.Weight = .regular) -> some View {
+        glowzaFont(size: style.size, weight: weight)
+    }
 }
 
-// MARK: - Global Button Style
+// MARK: - Global Button Styles
+// Custom button styles to keep the UI consistent!
+struct GlowzaPrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .glowzaFont(.callout, weight: .semibold)
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 55)
+            .background(Color(hex: "962043")) // Brand color!
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+            )
+            // Add visual feedback when pressed!
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+struct GlowzaSecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .glowzaFont(.callout, weight: .semibold)
+            .foregroundColor(Color(hex: "962043"))
+            .frame(maxWidth: .infinity)
+            .frame(height: 55)
+            .background(Color(hex: "962043").opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .stroke(Color(hex: "962043").opacity(0.35), lineWidth: 1)
+            )
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// Fallback style used globally!
 struct GlowzaRoundedButtonStyle: ButtonStyle {
     @Environment(\.isHighContrast) private var isHighContrast
 
@@ -90,7 +167,6 @@ struct GlowzaRoundedButtonStyle: ButtonStyle {
 
 extension View {
     /// Adds a 3 px WHITE border overlay on any card/container in HC — maximum contrast for accessibility.
-    /// Drop this after .clipShape(...) on any container that needs HC affordance.
     func hcBorder(radius: CGFloat = 16) -> some View {
         let isHC = UserDefaults.standard.bool(forKey: "app_highContrast")
         return self.overlay(
@@ -116,6 +192,7 @@ extension View {
 }
 
 // MARK: - Notification Names
+// Centralized list of Notification names for app-wide events!
 extension Notification.Name {
     static let glowzaSignOut = Notification.Name("glowzaSignOut")
     static let glowzaProfileUpdated = Notification.Name("glowzaProfileUpdated")
@@ -128,23 +205,27 @@ extension Notification.Name {
 
 // MARK: - Double Formatting
 extension Double {
+    // Formats a rating to 1 decimal place (e.g. 4.5)!
     var ratingFormatted: String { String(format: "%.1f", self) }
 }
 
 // MARK: - Date Extensions
 extension Date {
+    // Formats time (e.g. 10:30 AM)!
     var timeFormatted: String {
         let f = DateFormatter()
         f.timeStyle = .short
         return f.string(from: self)
     }
 
+    // Formats date (e.g. Oct 23, 2023)!
     var dateFormatted: String {
         let f = DateFormatter()
         f.dateStyle = .medium
         return f.string(from: self)
     }
 
+    // Formats to day and month (e.g. 23 Oct)!
     var dayMonth: String {
         let f = DateFormatter()
         f.dateFormat = "d MMM"
@@ -152,3 +233,19 @@ extension Date {
     }
 }
 
+// MARK: - Standard Back Button
+// A reusable circle back button used in many custom navigation bars!
+struct GlowzaCircleBackButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "chevron.left")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(Color(hex: "3A3A3C"))
+                .frame(width: 36, height: 36)
+                .background(Color(hex: "F2F2F7"))
+                .clipShape(Circle())
+        }
+    }
+}
