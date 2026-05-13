@@ -135,21 +135,21 @@ struct SignInView: View {
                         } else {
                             Image(systemName: viewModel.biometricIconName)
                                 .glowzaFont(size: 22, weight: .medium)
-                            Text(viewModel.biometricButtonTitle)
+                            Text(email.isEmpty ? "Enter Email to use Face ID" : viewModel.biometricButtonTitle)
                                 .glowzaFont(size: 16, weight: .semibold)
                         }
                     }
-                    .foregroundColor(brand)
+                    .foregroundColor(email.isEmpty ? Color(hex: "8E8E93") : brand)
                     .frame(maxWidth: .infinity)
                     .frame(height: 55)
-                    .background(Color.white)
+                    .background(email.isEmpty ? Color(hex: "F2F2F7") : Color.white)
                     .clipShape(Capsule())
                     .overlay(
                         Capsule()
-                            .stroke(brand, lineWidth: 1)
+                            .stroke(email.isEmpty ? Color(hex: "E5E5EA") : brand, lineWidth: 1)
                     )
                 }
-                .disabled(viewModel.isAuthenticating)
+                .disabled(viewModel.isAuthenticating || email.isEmpty)
                 .padding(.horizontal, 24)
 
                 // Biometric error message if Face ID fails.
@@ -200,7 +200,19 @@ struct SignInView: View {
         .fullScreenCover(isPresented: $showFaceIDAuth) {
             FaceIDAuthView(onAuthSuccess: {
                 showFaceIDAuth = false
-                onSignIn?()
+                // Call simulated Face ID sign in matching the entered email!
+                Task {
+                    do {
+                        try await AuthService.shared.signInWithFaceID(email: email)
+                        await MainActor.run {
+                            onSignIn?()
+                        }
+                    } catch {
+                        await MainActor.run {
+                            emailAuthError = error.localizedDescription
+                        }
+                    }
+                }
             }, onCancel: {
                 showFaceIDAuth = false
             })

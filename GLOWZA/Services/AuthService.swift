@@ -159,6 +159,32 @@ final class AuthService {
         }
     }
 
+    // MARK: - Sign In with Face ID (Simulated)
+    // Logs the user in without a password, matching the entered email!
+    func signInWithFaceID(email: String) async throws {
+        // 1. Find user by email in Firestore
+        let snapshot = try await db.collection(GlowzaUser.collection)
+            .whereField("email", isEqualTo: email)
+            .getDocuments()
+        
+        guard let doc = snapshot.documents.first else {
+            throw NSError(domain: "AuthService", code: 404, userInfo: [NSLocalizedDescriptionKey: "No account found with this email."])
+        }
+        
+        let uid = doc.documentID
+        
+        // 2. Fetch profile
+        await fetchProfile(uid: uid)
+        
+        // 3. Mark as signed in
+        self.isSignedIn = true
+        
+        // 4. Background sync
+        Task.detached(priority: .utility) { [uid] in
+            await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
+        }
+    }
+
     // MARK: - Fetch Profile from Firestore
     func fetchProfile(uid: String) async {
         do {

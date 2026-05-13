@@ -63,7 +63,7 @@ struct HomeView: View {
         .init(name: "Facial Care", icon: "face.smiling", category: "Skin"),
         .init(name: "Skin Therapy", icon: "leaf", category: "Skin"),
         .init(name: "Chemical Peel", icon: "flask", category: "Skin"),
-        .init(name: "HydraFacial", icon: "drop.fill", category: "Skin"),
+        .init(name: "HydraFacial", icon: "drop", category: "Skin"),
         .init(name: "Microneedling", icon: "syringe", category: "Skin"),
         .init(name: "Hair Cut", icon: "scissors", category: "Hair"),
         .init(name: "Hair Color", icon: "paintbrush.pointed", category: "Hair"),

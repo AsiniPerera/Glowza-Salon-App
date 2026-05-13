@@ -58,8 +58,8 @@ enum PaymentMethodType: String, CaseIterable {
     // Returns a SF Symbol name for each payment method!
     var icon: String {
         switch self {
-        case .card:   return "creditcard.fill"
-        case .cash:   return "banknote.fill"
+        case .card:   return "creditcard"
+        case .cash:   return "banknote"
         case .online: return "globe"
         }
     }
@@ -137,19 +137,19 @@ struct SalonCatalog {
             services: [
                 SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3500,  category: "Skin",      benefits: ["Hydration", "Glow", "Anti-aging"]),
                 SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5500,  category: "Skin",      benefits: ["Exfoliation", "Brightening", "Acne care"]),
-                SalonService(name: "Laser Hair Removal",  icon: "sun.max.fill",     duration: "30 min", price: 8000,  category: "Hair",      benefits: ["Smooth skin", "Permanent", "Fast"]),
-                SalonService(name: "Hair Treatment",      icon: "leaf.fill",        duration: "90 min", price: 4500,  category: "Hair",      benefits: ["Repair", "Shine", "Nourishment"]),
-                SalonService(name: "Manicure & Pedicure", icon: "hand.raised.fill", duration: "60 min", price: 2500,  category: "Nails",     benefits: ["Clean nails", "Relaxing", "Polish"]),
+                SalonService(name: "Laser Hair Removal",  icon: "sun.max",          duration: "30 min", price: 8000,  category: "Hair",      benefits: ["Smooth skin", "Permanent", "Fast"]),
+                SalonService(name: "Hair Treatment",      icon: "leaf",             duration: "90 min", price: 4500,  category: "Hair",      benefits: ["Repair", "Shine", "Nourishment"]),
+                SalonService(name: "Manicure & Pedicure", icon: "hand.raised",      duration: "60 min", price: 2500,  category: "Nails",     benefits: ["Clean nails", "Relaxing", "Polish"]),
                 SalonService(name: "Microneedling",       icon: "syringe",          duration: "75 min", price: 12000, category: "Skin",      benefits: ["Collagen boost", "Scar reduction"]),
-                SalonService(name: "HydraFacial",         icon: "drop.fill",        duration: "60 min", price: 15000, category: "Skin",      benefits: ["Deep hydration", "Pore cleaning"]),
+                SalonService(name: "HydraFacial",         icon: "drop",             duration: "60 min", price: 15000, category: "Skin",      benefits: ["Deep hydration", "Pore cleaning"]),
                 SalonService(name: "Body Scrub",          icon: "bubbles.and.sparkles", duration: "60 min", price: 6500, category: "Body",      benefits: ["Smooth skin", "Detox"]),
                 SalonService(name: "Deep Tissue Massage", icon: "figure.walk",      duration: "90 min", price: 7500,  category: "Body",      benefits: ["Muscle relief", "Stress reduction"]),
-                SalonService(name: "Eyelash Extensions",  icon: "eye.fill",         duration: "120 min", price: 8500, category: "Eyes",      benefits: ["Long lashes", "Full volume"]),
+                SalonService(name: "Eyelash Extensions",  icon: "eye",              duration: "120 min", price: 8500, category: "Eyes",      benefits: ["Long lashes", "Full volume"]),
                 SalonService(name: "Eyebrow Threading",   icon: "scissors",         duration: "15 min", price: 800,   category: "Face",      benefits: ["Defined brows", "Quick"]),
-                SalonService(name: "Teeth Whitening",     icon: "mouth.fill",       duration: "45 min", price: 18000, category: "Aesthetic", benefits: ["Brighter smile", "Fast results"]),
+                SalonService(name: "Teeth Whitening",     icon: "mouth",            duration: "45 min", price: 18000, category: "Aesthetic", benefits: ["Brighter smile", "Fast results"]),
                 SalonService(name: "Aromatherapy",        icon: "wind",             duration: "60 min", price: 5000,  category: "Body",      benefits: ["Relaxation", "Healing"]),
-                SalonService(name: "Nail Art",            icon: "paintpalette.fill", duration: "45 min", price: 3500,  category: "Nails",     benefits: ["Creative design", "Unique"]),
-                SalonService(name: "Bridal Makeup",       icon: "star.fill",        duration: "180 min", price: 45000, category: "Makeup",    benefits: ["Perfect look", "Long-lasting"])
+                SalonService(name: "Nail Art",            icon: "paintpalette",     duration: "45 min", price: 3500,  category: "Nails",     benefits: ["Creative design", "Unique"]),
+                SalonService(name: "Bridal Makeup",       icon: "star",             duration: "180 min", price: 45000, category: "Makeup",    benefits: ["Perfect look", "Long-lasting"])
             ],
             about: "Premier aesthetic salon offering sophisticated beauty treatments.",
             phone: "+94 11 234 5678",
@@ -162,19 +162,19 @@ struct SalonCatalog {
             rating: 4.7, reviewCount: 312, score: 0.88,
             services: [
                 SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3000,  category: "Skin",      benefits: ["Deep cleanse", "Moisture", "Radiance"]),
-                SalonService(name: "Botox / Anti-Aging",  icon: "cross.case.fill",  duration: "45 min", price: 25000, category: "Aesthetic", benefits: ["Wrinkle-free", "Lift", "Youthful"]),
-                SalonService(name: "Dermal Fillers",      icon: "syringe.fill",     duration: "60 min", price: 35000, category: "Aesthetic", benefits: ["Volume", "Contouring", "Plumpness"]),
-                SalonService(name: "Manicure & Pedicure", icon: "hand.raised.fill", duration: "60 min", price: 2200,  category: "Nails",     benefits: ["Soft skin", "Colour", "Relaxation"]),
+                SalonService(name: "Botox / Anti-Aging",  icon: "cross.case",       duration: "45 min", price: 25000, category: "Aesthetic", benefits: ["Wrinkle-free", "Lift", "Youthful"]),
+                SalonService(name: "Dermal Fillers",      icon: "syringe",          duration: "60 min", price: 35000, category: "Aesthetic", benefits: ["Volume", "Contouring", "Plumpness"]),
+                SalonService(name: "Manicure & Pedicure", icon: "hand.raised",      duration: "60 min", price: 2200,  category: "Nails",     benefits: ["Soft skin", "Colour", "Relaxation"]),
                 SalonService(name: "Microblading",        icon: "pencil",           duration: "150 min", price: 28000, category: "Eyes",      benefits: ["Perfect brows", "Semi-permanent"]),
                 SalonService(name: "Lip Filler",          icon: "mouth",            duration: "45 min", price: 22000, category: "Aesthetic", benefits: ["Fuller lips", "Definition"]),
-                SalonService(name: "Carbon Peel",         icon: "cloud.fill",       duration: "60 min", price: 12000, category: "Skin",      benefits: ["Clear skin", "Oil control"]),
+                SalonService(name: "Carbon Peel",         icon: "cloud",            duration: "60 min", price: 12000, category: "Skin",      benefits: ["Clear skin", "Oil control"]),
                 SalonService(name: "Oxygen Facial",       icon: "wind",             duration: "60 min", price: 9500,  category: "Skin",      benefits: ["Plumping", "Brightening"]),
                 SalonService(name: "Vampire Facial",      icon: "drop.triangle",    duration: "90 min", price: 32000, category: "Aesthetic", benefits: ["Skin rejuvenation", "Youth"]),
                 SalonService(name: "PRP for Hair",        icon: "heart.text.square", duration: "60 min", price: 25000, category: "Hair",      benefits: ["Hair regrowth", "Strength"]),
                 SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5000,  category: "Skin",      benefits: ["Refining", "Glowing"]),
                 SalonService(name: "Swedish Massage",     icon: "figure.mind.and.body", duration: "60 min", price: 6000,  category: "Body",      benefits: ["Stress relief", "Relaxation"]),
-                SalonService(name: "Gel Manicure",        icon: "hand.point.up.fill", duration: "45 min", price: 3200,  category: "Nails",     benefits: ["Shiny", "Long-lasting"]),
-                SalonService(name: "Skin Tightening",     icon: "bolt.fill",        duration: "60 min", price: 18000, category: "Aesthetic", benefits: ["Firm skin", "Lifting"]),
+                SalonService(name: "Gel Manicure",        icon: "hand.point.up",    duration: "45 min", price: 3200,  category: "Nails",     benefits: ["Shiny", "Long-lasting"]),
+                SalonService(name: "Skin Tightening",     icon: "bolt",             duration: "60 min", price: 18000, category: "Aesthetic", benefits: ["Firm skin", "Lifting"]),
                 SalonService(name: "Eyelash Lift",        icon: "eye",              duration: "60 min", price: 4500,  category: "Eyes",      benefits: ["Curled lashes", "Natural look"])
             ],
             about: "Specializes in non-invasive aesthetic treatments and advanced skincare.",
@@ -188,20 +188,20 @@ struct SalonCatalog {
             rating: 4.5, reviewCount: 198, score: 0.82,
             services: [
                 SalonService(name: "Chemical Peel",         icon: "sparkles",       duration: "45 min", price: 6000,  category: "Skin",      benefits: ["Resurfacing", "Even tone", "Clarity"]),
-                SalonService(name: "Laser Hair Removal",    icon: "sun.max.fill",   duration: "30 min", price: 9000,  category: "Hair",      benefits: ["Precision", "Long-lasting", "Safe"]),
-                SalonService(name: "Fairness Injections",   icon: "syringe.fill",   duration: "30 min", price: 12000, category: "Aesthetic", benefits: ["Skin glow", "Even skin", "Brightening"]),
-                SalonService(name: "Dark Circle Treatment", icon: "eye.fill",       duration: "45 min", price: 8500,  category: "Aesthetic", benefits: ["Refreshed eyes", "Lightening", "Hydration"]),
+                SalonService(name: "Laser Hair Removal",    icon: "sun.max",        duration: "30 min", price: 9000,  category: "Hair",      benefits: ["Precision", "Long-lasting", "Safe"]),
+                SalonService(name: "Fairness Injections",   icon: "syringe",        duration: "30 min", price: 12000, category: "Aesthetic", benefits: ["Skin glow", "Even skin", "Brightening"]),
+                SalonService(name: "Dark Circle Treatment", icon: "eye",            duration: "45 min", price: 8500,  category: "Aesthetic", benefits: ["Refreshed eyes", "Lightening", "Hydration"]),
                 SalonService(name: "IV Drip Therapy",       icon: "ivfluid.bag",    duration: "60 min", price: 15000, category: "Wellness",  benefits: ["Energy boost", "Skin glow", "Immunity"]),
                 SalonService(name: "HIFU Lifting",          icon: "waveform.path",  duration: "90 min", price: 45000, category: "Aesthetic", benefits: ["V-shape face", "Lifting"]),
-                SalonService(name: "Micro-Needling",        icon: "square.grid.3x3.fill", duration: "60 min", price: 13500, category: "Skin",      benefits: ["Pore refining", "Texture"]),
-                SalonService(name: "Luxury Facial",         icon: "crown.fill",     duration: "90 min", price: 12000, category: "Skin",      benefits: ["Ultimate glow", "Deep relaxation"]),
+                SalonService(name: "Micro-Needling",        icon: "square.grid.3x3", duration: "60 min", price: 13500, category: "Skin",      benefits: ["Pore refining", "Texture"]),
+                SalonService(name: "Luxury Facial",         icon: "crown",          duration: "90 min", price: 12000, category: "Skin",      benefits: ["Ultimate glow", "Deep relaxation"]),
                 SalonService(name: "Dandruff Treatment",    icon: "snow",           duration: "45 min", price: 3500,  category: "Hair",      benefits: ["Scalp health", "Clean hair"]),
-                SalonService(name: "Foot Reflexology",      icon: "shoeprints.fill", duration: "45 min", price: 4500,  category: "Wellness",  benefits: ["Better sleep", "Detox"]),
-                SalonService(name: "Detox Body Wrap",       icon: "bandage.fill",   duration: "75 min", price: 8000,  category: "Body",      benefits: ["Weight loss", "Skin toning"]),
+                SalonService(name: "Foot Reflexology",      icon: "shoeprints",     duration: "45 min", price: 4500,  category: "Wellness",  benefits: ["Better sleep", "Detox"]),
+                SalonService(name: "Detox Body Wrap",       icon: "bandage",        duration: "75 min", price: 8000,  category: "Body",      benefits: ["Weight loss", "Skin toning"]),
                 SalonService(name: "Chin Contouring",       icon: "faceid",         duration: "45 min", price: 28000, category: "Aesthetic", benefits: ["Sharp jawline", "Fat reduction"]),
-                SalonService(name: "Acne Scar Removal",     icon: "dot.circle.and.hand.point.up.fill", duration: "60 min", price: 11000, category: "Skin",      benefits: ["Smooth skin", "Confidence"]),
-                SalonService(name: "Hair Coloring",         icon: "paintbrush.pointed.fill", duration: "120 min", price: 12500, category: "Hair",      benefits: ["Vibrant color", "Shiny"]),
-                SalonService(name: "Paraffin Wax",          icon: "drop.fill",      duration: "30 min", price: 3800,  category: "Nails",     benefits: ["Soft hands", "Moisture"])
+                SalonService(name: "Acne Scar Removal",     icon: "dot.circle.and.hand.point.up", duration: "60 min", price: 11000, category: "Skin",      benefits: ["Smooth skin", "Confidence"]),
+                SalonService(name: "Hair Coloring",         icon: "paintbrush.pointed", duration: "120 min", price: 12500, category: "Hair",      benefits: ["Vibrant color", "Shiny"]),
+                SalonService(name: "Paraffin Wax",          icon: "drop",           duration: "30 min", price: 3800,  category: "Nails",     benefits: ["Soft hands", "Moisture"])
             ],
             about: "Boutique clinic focusing on premium aesthetic medicine and transformations.",
             phone: "+94 11 456 7890",

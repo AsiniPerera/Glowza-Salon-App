@@ -231,10 +231,10 @@ struct FaceIDAuthView: View {
                             .frame(width: 200, height: 200)
 
                         if successAnimation {
-                            // Shows big green checkmark when authenticated!
+                            // Shows big pink checkmark when authenticated!
                             Image(systemName: "checkmark.circle.fill")
                                 .glowzaFont(size: 80, weight: .semibold)
-                                .foregroundColor(.green)
+                                .foregroundColor(brand)
                                 .scaleEffect(1.0)
                                 .transition(.scale)
                         } else {
