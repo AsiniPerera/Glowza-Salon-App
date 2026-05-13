@@ -2,8 +2,9 @@ import Foundation
 import FirebaseFirestore
 
 // MARK: - Firestore Salon Review Model
+// This model represents a review stored in the 'salonReviews' collection!
 struct FirestoreSalonReview: Codable, Identifiable {
-    @DocumentID var documentId: String?
+    @DocumentID var documentId: String? // Firestore auto-generated ID.
     var id: String
     var salonId: String
     var userId: String
@@ -11,10 +12,11 @@ struct FirestoreSalonReview: Codable, Identifiable {
     var rating: Int
     var comment: String
     var createdAt: Date
-    var userAvatarBase64: String?
+    var userAvatarBase64: String? // Optional avatar stored as base64 string!
 }
 
 // MARK: - Firestore Salon Model
+// This model represents a salon document in the 'salons' collection!
 struct FirestoreSalon: Codable {
     var id: String
     var name: String
@@ -31,25 +33,27 @@ struct FirestoreSalon: Codable {
 }
 
 // MARK: - Salon Firestore Service
+// This class handles all Firestore operations related to salons and reviews!
 @MainActor
 final class SalonFirestoreService {
 
-    static let shared = SalonFirestoreService()
+    static let shared = SalonFirestoreService() // Singleton instance!
     private init() {}
 
-    private let db = Firestore.firestore()
-    private var cachedSalons: [FirestoreSalon]?
+    private let db = Firestore.firestore() // Firestore reference.
+    private var cachedSalons: [FirestoreSalon]? // Local memory cache!
 
     // MARK: - Upload Full Salon Catalog to Firestore
     /// Saves all salons from SalonCatalog into the `salons` Firestore collection.
-    /// Uses merge: true so existing data (e.g. live ratings) is NOT overwritten.
+    /// Uses merge: true so existing data (e.g. live ratings) is NOT overwritten!
     func uploadSalonCatalog() async {
         let salons = SalonCatalog.shared.salons
         for salon in salons {
             let id = salonId(for: salon.name)
+            // Extract unique categories from the services!
             let categories = Array(Set(salon.services.map { $0.category }))
 
-            // Build service sub-documents
+            // Build service sub-documents (array of maps in Firestore).
             let serviceDocs: [[String: Any]] = salon.services.map { s in
                 ["name": s.name, "icon": s.icon, "duration": s.duration,
                  "price": s.price, "category": s.category, "benefits": s.benefits]
@@ -71,16 +75,18 @@ final class SalonFirestoreService {
                 "updatedAt":   Timestamp()
             ]
             do {
+                // Use merge: true to avoid blowing away existing fields!
                 try await db.collection("salons").document(id).setData(data, merge: true)
-                print("✅ Salon saved to Firestore: \(salon.name)")
+                print("Salon saved to Firestore: \(salon.name)")
             } catch {
-                print("❌ Failed to save salon \(salon.name): \(error)")
+                print("Failed to save salon \(salon.name): \(error)")
             }
         }
     }
 
     // MARK: - Fetch All Salons from Firestore
     func fetchAllSalons(forceRefresh: Bool = false) async throws -> [FirestoreSalon] {
+        // Return cached data if available and refresh is not forced!
         if !forceRefresh, let cached = cachedSalons {
             return cached
         }
@@ -105,11 +111,12 @@ final class SalonFirestoreService {
                 updatedAt:   (d["updatedAt"] as? Timestamp)?.dateValue()
             )
         }
-        self.cachedSalons = salons
+        self.cachedSalons = salons // Update memory cache!
         return salons
     }
 
-    // MARK: - Upsert Individual Salon (used when rating/review changes)
+    // MARK: - Upsert Individual Salon
+    // Used when rating or review count changes!
     func upsertSalon(
         name: String,
         location: String,
@@ -122,7 +129,7 @@ final class SalonFirestoreService {
         let id = salonId(for: name)
 
         // Only include non-empty fields so a partial call (e.g. rating update)
-        // never overwrites existing location/distance/categories in Firestore.
+        // never overwrites existing location/distance/categories in Firestore!
         var data: [String: Any] = [
             "id":          id,
             "name":        name,
@@ -144,8 +151,9 @@ final class SalonFirestoreService {
             .whereField("salonId", isEqualTo: salonId)
             .getDocuments()
         
+        // Map documents to our Swift model!
         let reviews = try snapshot.documents.compactMap { try $0.data(as: FirestoreSalonReview.self) }
-        return reviews.sorted(by: { $0.createdAt > $1.createdAt })
+        return reviews.sorted(by: { $0.createdAt > $1.createdAt }) // Newest first!
     }
 
     // MARK: - Add Salon Review
@@ -165,6 +173,7 @@ final class SalonFirestoreService {
             "rating": rating,
             "comment": comment,
             "createdAt": Timestamp(),
+            // Grab the current user's avatar if available!
             "userAvatarBase64": AuthService.shared.currentUserProfile?.avatarBase64 ?? ""
         ]
         try await db.collection("salonReviews").document(reviewId).setData(data)
@@ -180,7 +189,8 @@ final class SalonFirestoreService {
     }
 
     // MARK: - Seed Mock Reviews
-    /// Populates the database with 8 high-quality reviews for each of the main salons.
+    /// Populates the database with 10 high-quality reviews for each of the main salons.
+    /// This is great for demonstrating the app with realistic data!
     func seedMockReviews() async {
         let salonIds = [
             "haley_avenue", "glow_studio", "luxe_aesthetics", "velvet_touch",
@@ -217,14 +227,15 @@ final class SalonFirestoreService {
                     ]
                     try await db.collection("salonReviews").document(reviewId).setData(data, merge: true)
                 }
-                print("✅ Seeded/Updated 10 reviews for \(sId)")
+                print("Seeded/Updated 10 reviews for \(sId)")
             } catch {
-                print("❌ Failed to seed reviews for \(sId): \(error)")
+                print("Failed to seed reviews for \(sId): \(error)")
             }
         }
     }
 
     // MARK: - Map salon display name → Firestore salonId
+    // Helper to generate a consistent ID key for Firestore documents!
     func salonId(for salonName: String) -> String {
         let knownIds: [String: String] = [
             "Golden Avenue":       "haley_avenue",
@@ -244,6 +255,8 @@ final class SalonFirestoreService {
             "Petal Spa":          "petal_spa"
         ]
         if let id = knownIds[salonName] { return id }
+        
+        // Fallback: convert to lowercase and replace spaces with underscores!
         return salonName.lowercased()
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: "&", with: "and")

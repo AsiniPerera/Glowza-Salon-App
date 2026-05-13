@@ -5,11 +5,13 @@ import FirebaseFirestore
 import FirebaseAuth
 
 // MARK: - Notification Models
+// This struct represents a single notification item!
+// It conforms to Identifiable (so it can be used in Lists) and Codable (for JSON).
 struct NotificationItem: Identifiable, Codable {
     let id: UUID
     let title: String
     let subtitle: String
-    let icon: String
+    let icon: String // SFSymbol name.
     let type: NotificationType
     let timestamp: Date
     
@@ -20,6 +22,7 @@ struct NotificationItem: Identifiable, Codable {
         case warning
     }
     
+    // Custom initializer to automatically generate a UUID and default timestamp!
     init(title: String, subtitle: String, icon: String, type: NotificationType, timestamp: Date = Date()) {
         self.id = UUID()
         self.title = title
@@ -31,20 +34,25 @@ struct NotificationItem: Identifiable, Codable {
 }
 
 // MARK: - Notification Manager
+// This class handles all notifications in the app:
+// 1. System notifications (that appear in the iOS notification center).
+// 2. In-app banners (that slide down from the top).
+// 3. Notification history (saved to Core Data and Firestore).
 @Observable
-class NotificationManager {
-    static let shared = NotificationManager()
-    let bookingSuccessBannerDuration: TimeInterval = 30.0
+class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationManager() // Singleton instance!
+    let bookingSuccessBannerDuration: TimeInterval = 30.0 // Duration for success banner.
     
-    var notifications: [NotificationItem] = []
-    var notificationHistory: [NotificationItem] = []
+    var notificationHistory: [NotificationItem] = [] // All past notifications.
     
-    private let historyKey = "glowza_notification_history"
+    private let historyKey = "glowza_notification_history" // UserDefaults key.
     
-    private let db = Firestore.firestore()
-    private let notificationRepo = NotificationRepository.shared
+    private let db = Firestore.firestore() // Firestore reference.
+    private let notificationRepo = NotificationRepository.shared // Core Data repo.
     
-    private init() {
+    override private init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self // Set delegate!
         loadNotificationHistory()
         requestNotificationPermission()
         Task {
@@ -53,14 +61,15 @@ class NotificationManager {
     }
     
     // MARK: - Load & Save History
+    // Loads history from UserDefaults and Core Data!
     private func loadNotificationHistory() {
-        // Load from UserDefaults first (fastest)
+        // Load from UserDefaults first (fastest access!).
         if let data = UserDefaults.standard.data(forKey: historyKey),
            let decoded = try? JSONDecoder().decode([NotificationItem].self, from: data) {
             self.notificationHistory = decoded
         }
         
-        // Also load from Core Data (offline persistence)
+        // Also load from Core Data (ensures data is persisted offline!).
         let userId = Auth.auth().currentUser?.uid
         if let cdNotifs = try? notificationRepo.fetchNotificationsFromCore(userId: userId) {
             let existingIds = Set(notificationHistory.map { $0.id })
@@ -87,6 +96,7 @@ class NotificationManager {
         }
     }
     
+    // Saves history to UserDefaults!
     private func saveNotificationHistory() {
         if let encoded = try? JSONEncoder().encode(notificationHistory) {
             UserDefaults.standard.set(encoded, forKey: historyKey)
@@ -94,6 +104,7 @@ class NotificationManager {
     }
     
     // MARK: - Fetch from Firestore
+    // Pulls notifications from the cloud!
     func fetchNotificationsFromFirestore() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         do {
@@ -128,13 +139,14 @@ class NotificationManager {
             }
             
             await MainActor.run {
-                // Merge with existing history (avoid duplicates)
+                // Merge with existing history (avoid duplicates!).
                 let existingTitles = Set(self.notificationHistory.map { $0.title + $0.subtitle })
                 for item in firestoreNotifs {
                     if !existingTitles.contains(item.title + item.subtitle) {
                         self.notificationHistory.append(item)
                     }
                 }
+                // Sort by timestamp (newest first).
                 self.notificationHistory.sort(by: { $0.timestamp > $1.timestamp })
                 self.saveNotificationHistory()
             }
@@ -144,11 +156,12 @@ class NotificationManager {
     }
     
     // MARK: - Persist to Core Data & Firestore
+    // Saves a new notification to both local and remote DBs!
     private func persistNotification(_ item: NotificationItem) {
         let userId = Auth.auth().currentUser?.uid
         let typeStr = typeString(item.type)
         
-        // Save to Core Data
+        // Save to Core Data.
         try? notificationRepo.saveNotificationToCore(
             title: item.title,
             subtitle: item.subtitle,
@@ -157,7 +170,7 @@ class NotificationManager {
             userId: userId
         )
         
-        // Save to Firestore
+        // Save to Firestore.
         guard let uid = userId else { return }
         let data: [String: Any] = [
             "id": item.id.uuidString,
@@ -196,13 +209,16 @@ class NotificationManager {
     }
     
     // MARK: - Local Notification (System)
+    // Sends a real iOS system notification!
     func sendLocalNotification(title: String, subtitle: String, delay: TimeInterval = 1.0) {
         let content = UNMutableNotificationContent()
         content.title = title
         content.subtitle = subtitle
         content.sound = .default
+        // Increment the app badge number!
         content.badge = NSNumber(value: UIApplication.shared.applicationIconBadgeNumber + 1)
         
+        // Trigger the notification after a short delay.
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         
@@ -213,35 +229,27 @@ class NotificationManager {
         }
     }
     
-    // MARK: - In-App Banner Notification
+    // MARK: - Save Notification to History
+    // Saves a notification to history and persists it.
     func showNotification(_ item: NotificationItem, duration: TimeInterval = 3.0) {
         DispatchQueue.main.async {
             withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                self.notifications.append(item)
-                self.notificationHistory.insert(item, at: 0)  // Add to history at top
+                self.notificationHistory.insert(item, at: 0)  // Add to history at top!
             }
             self.saveNotificationHistory()
-            self.persistNotification(item)  // Save to Core Data & Firestore
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
-                if let index = self.notifications.firstIndex(where: { $0.id == item.id }) {
-                    withAnimation(.easeInOut(duration: 0.9)) {
-                        self.notifications.remove(at: index)
-                    }
-                }
-            }
+            self.persistNotification(item)  // Save to Core Data & Firestore!
         }
     }
     
     // MARK: - Booking Success Notification
     func notifyBookingSuccess(serviceName: String, salonName: String, time: String, date: String) {
         let title = "Booking Confirmed"
-        let subtitle = "\(serviceName) • \(salonName) • \(date) at \(time)"
+        let subtitle = "\(serviceName) at \(salonName)" // Clean and short!
         
-        // System notification
+        // Send native iOS local push notification!
         sendLocalNotification(title: title, subtitle: subtitle, delay: 0.3)
         
-        // In-app banner
+        // Save to history!
         let notification = NotificationItem(
             title: title,
             subtitle: subtitle,
@@ -263,10 +271,12 @@ class NotificationManager {
     }
     
     // MARK: - Request Permission
+    // Requests permission from the user to send notifications!
     private func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if granted {
                 DispatchQueue.main.async {
+                    // Register for remote notifications if permission is granted!
                     UIApplication.shared.registerForRemoteNotifications()
                 }
             }
@@ -275,14 +285,17 @@ class NotificationManager {
     
     // MARK: - Dismiss All
     func dismissAll() {
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                self.notifications.removeAll()
-            }
-        }
+        // Do nothing as in-app banners are removed!
+    }
+    
+    // MARK: - UNUserNotificationCenterDelegate
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // This allows notifications to show while the app is in the foreground!
+        completionHandler([.banner, .sound, .badge])
     }
     
     // MARK: - Helper
+    // Converts enum to string for storage!
     private func typeString(_ type: NotificationItem.NotificationType) -> String {
         switch type {
         case .success: return "success"

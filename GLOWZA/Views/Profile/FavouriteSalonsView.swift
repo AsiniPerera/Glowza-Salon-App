@@ -1,6 +1,8 @@
 import SwiftUI
 
 // MARK: - Favourite Salons View
+// This view displays a list of salons that the user has marked as favorites.
+// Users can tap on a salon to view its details or tap the heart to remove it.
 struct FavouriteSalonsView: View {
 
     @Environment(AppSettings.self) private var appSettings
@@ -12,7 +14,7 @@ struct FavouriteSalonsView: View {
         NavigationStack {
             VStack(spacing: 0) {
 
-                // MARK: Nav bar
+                // MARK: Custom Navigation Bar
                 HStack {
                     Button(action: { dismiss() }) {
                         HStack(spacing: 5) {
@@ -32,7 +34,7 @@ struct FavouriteSalonsView: View {
                         .foregroundColor(appSettings.themeText)
 
                     Spacer()
-                    Spacer().frame(width: 70)
+                    Spacer().frame(width: 70) // To balance the back button width!
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 16)
@@ -42,6 +44,7 @@ struct FavouriteSalonsView: View {
                     .fill(appSettings.themeDivider)
                     .frame(height: 0.5)
 
+                // Show empty state if no favorites!
                 if favourites.favouriteNames.isEmpty {
                     emptyState
                 } else {
@@ -59,10 +62,12 @@ struct FavouriteSalonsView: View {
             }
             .background(appSettings.themePage.ignoresSafeArea())
             .navigationBarHidden(true)
-            .task { await favourites.load() }
+            .task { await favourites.load() } // Load favorites on appear!
         }
     }
 
+    // MARK: - Empty State
+    // Shown when there are no favorite salons.
     private var emptyState: some View {
         VStack(spacing: 16) {
             Spacer()
@@ -83,6 +88,7 @@ struct FavouriteSalonsView: View {
 }
 
 // MARK: - Individual Row
+// Displays a single favorite salon with its image, rating, and location.
 private struct FavouriteSalonRow: View {
     let salonName: String
     @Environment(AppSettings.self) private var appSettings
@@ -92,14 +98,17 @@ private struct FavouriteSalonRow: View {
     private var favourites: FavouritesStore { FavouritesStore.shared }
 
     var body: some View {
+        // NavigationLink to go to the salon detail view!
         NavigationLink(destination: SalonDetailView(salonName: salonName)) {
             HStack(spacing: 14) {
+                // Salon Image
                 Image(mappedSalonImageName(salonName))
                     .resizable()
                     .scaledToFill()
                     .frame(width: 72, height: 72)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
+                // Salon Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(salon.name)
                         .font(.system(size: 15, weight: .semibold))

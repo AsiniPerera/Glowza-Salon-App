@@ -2,6 +2,9 @@ import SwiftUI
 import FirebaseAuth
 
 // MARK: - Change Password View
+// This view allows the user to change their account password.
+// It requires the user to enter their current password for security,
+// and enforces a strong new password with validation rules.
 struct ChangePasswordView: View {
 
     @Environment(\.dismiss) private var dismiss
@@ -10,7 +13,7 @@ struct ChangePasswordView: View {
     @State private var currentPassword  = ""
     @State private var newPassword      = ""
     @State private var confirmPassword  = ""
-    @State private var showCurrent      = false
+    @State private var showCurrent      = false // Toggle to show/hide password!
     @State private var showNew          = false
     @State private var showConfirm      = false
     @State private var errorMessage: String? = nil
@@ -22,6 +25,7 @@ struct ChangePasswordView: View {
     private var pageBackground: Color { appSettings.themePage }
     private var surfaceBackground: Color { appSettings.themeSurface }
 
+    // Computed properties for validation!
     private var passwordsMatch: Bool   { newPassword == confirmPassword }
     private var newIsStrong: Bool      { newPassword.count >= 8 }
     private var canSubmit: Bool        { !currentPassword.isEmpty && newIsStrong && passwordsMatch && !isUpdating }
@@ -34,7 +38,7 @@ struct ChangePasswordView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
 
-                        // Info banner
+                        // MARK: Info Banner
                         HStack(alignment: .top, spacing: 10) {
                             Image(systemName: "lock.shield")
                                 .foregroundColor(accent)
@@ -46,7 +50,7 @@ struct ChangePasswordView: View {
                         .background(accent.opacity(0.06))
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                        // Fields card
+                        // MARK: Password Fields Card
                         VStack(spacing: 0) {
                             passwordField(label: "Current Password",     text: $currentPassword, show: $showCurrent)
                             passwordField(label: "New Password",         text: $newPassword,     show: $showNew)
@@ -62,7 +66,7 @@ struct ChangePasswordView: View {
                                 )
                         )
 
-                        // Strength indicators
+                        // MARK: Strength Indicators
                         VStack(alignment: .leading, spacing: 8) {
                             strengthRow(label: "At least 8 characters", met: newPassword.count >= 8)
                             strengthRow(label: "Contains a number",     met: newPassword.contains { $0.isNumber })
@@ -70,7 +74,7 @@ struct ChangePasswordView: View {
                         }
                         .padding(.horizontal, 4)
 
-                        // Error
+                        // Error Message
                         if let err = errorMessage {
                             Text(err).glowzaFont(size: 13).foregroundColor(.red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -82,7 +86,7 @@ struct ChangePasswordView: View {
                     .padding(.bottom, 120)
                 }
 
-                // Bottom button
+                // MARK: Bottom Button
                 VStack(spacing: 0) {
                     Button(action: submit) {
                         Group {
@@ -127,6 +131,7 @@ struct ChangePasswordView: View {
         }
     }
 
+    // Helper to create a password field with a show/hide toggle.
     private func passwordField(label: String, text: Binding<String>, show: Binding<Bool>, isLast: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
@@ -144,6 +149,7 @@ struct ChangePasswordView: View {
                     .glowzaFont(size: 15)
                     .foregroundColor(Color(hex: "1F2126"))
                 }
+                // Show/hide password button!
                 Button(action: { show.wrappedValue.toggle() }) {
                     Image(systemName: show.wrappedValue ? "eye.slash" : "eye")
                         .glowzaFont(size: 16)
@@ -158,6 +164,7 @@ struct ChangePasswordView: View {
         }
     }
 
+    // Helper to create a requirement row (e.g., "At least 8 characters").
     private func strengthRow(label: String, met: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
@@ -170,6 +177,7 @@ struct ChangePasswordView: View {
     }
 
     // MARK: - Firebase Auth Password Update
+    // Handles the update process including re-authentication.
     private func submit() {
         guard canSubmit else { return }
         errorMessage = nil
@@ -186,14 +194,15 @@ struct ChangePasswordView: View {
                     return
                 }
 
-                // Step 1: Re-authenticate with current password (required by Firebase)
+                // Step 1: Re-authenticate with current password (required by Firebase)!
+                // This is a safety measure to ensure it's the actual user.
                 let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
                 try await user.reauthenticate(with: credential)
 
-                // Step 2: Update to the new password
+                // Step 2: Update to the new password!
                 try await user.updatePassword(to: newPassword)
 
-                print("✅ Password updated in Firebase Auth")
+                print("Password updated in Firebase Auth")
 
                 await MainActor.run {
                     isUpdating = false
@@ -203,7 +212,7 @@ struct ChangePasswordView: View {
             } catch let error as NSError {
                 await MainActor.run {
                     isUpdating = false
-                    // Map Firebase error codes to friendly messages
+                    // Map Firebase error codes to friendly messages!
                     switch error.code {
                     case AuthErrorCode.wrongPassword.rawValue:
                         errorMessage = "Current password is incorrect."

@@ -1,6 +1,11 @@
+// This file handles the "Forgot Password" flow.
+// It uses a 3-step wizard (Email -> Verification -> Reset Password).
+// Since Firebase doesn't natively support code verification without a custom backend,
+// this file uses a simulation (hardcoded code "123456") to show how the UI would work!
 import SwiftUI
 
 // MARK: - Forgot Password Step Enum
+// This enum defines the steps in our flow. It helps us keep track of where the user is.
 enum ForgotPasswordStep: Int {
     case email = 1
     case verification = 2
@@ -13,22 +18,28 @@ struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
     var onBack: (() -> Void)? = nil
+    
+    // This variable holds the current step. Changing it updates the screen automatically!
     @State private var step: ForgotPasswordStep = .email
+    
+    // State variables for inputs.
     @State private var email = ""
     @State private var verificationCode = ""
     @State private var newPassword = ""
     @State private var confirmPassword = ""
-    @State private var isLoading = false
-    @State private var errorMessage: String? = nil
-    @State private var showSuccess = false
-    @State private var showNewPassword = false
-    @State private var showConfirmPassword = false
+    
+    @State private var isLoading = false // Shows spinner on the button.
+    @State private var errorMessage: String? = nil // Holds error messages.
+    @State private var showSuccess = false // Shows success alert.
+    @State private var showNewPassword = false // Toggles eye icon.
+    @State private var showConfirmPassword = false // Toggles eye icon.
 
     private var accent: Color { appSettings.themeBrand }
     private var dark: Color { appSettings.themeText }
     private var pageBackground: Color { appSettings.themePage }
     private var surfaceBackground: Color { appSettings.themeSurface }
 
+    // Computed properties to validate inputs for each step.
     private var canProceedEmail: Bool {
         !email.isEmpty && email.contains("@")
     }
@@ -57,7 +68,7 @@ struct ForgotPasswordView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 24) {
 
-                        // Header
+                        // 1. Header (Changes text based on current step).
                         VStack(alignment: .leading, spacing: 8) {
                             Text(headerTitle)
                                 .glowzaFont(size: 28, weight: .bold)
@@ -69,7 +80,7 @@ struct ForgotPasswordView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 20)
 
-                        // Progress indicators
+                        // 2. Progress Indicators (The 1-2-3 steps circles).
                         HStack(spacing: 12) {
                             progressCircle(1, isActive: step.rawValue >= 1)
                             progressLine(step.rawValue >= 2)
@@ -79,7 +90,7 @@ struct ForgotPasswordView: View {
                         }
                         .padding(.vertical, 8)
 
-                        // Content based on step
+                        // 3. Content Area (Switching views based on step).
                         Group {
                             switch step {
                             case .email:
@@ -91,7 +102,7 @@ struct ForgotPasswordView: View {
                             }
                         }
 
-                        // Error message
+                        // 4. Error Message Display.
                         if let error = errorMessage {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.circle.fill")
@@ -112,10 +123,10 @@ struct ForgotPasswordView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, 120) // Extra padding so scroll doesn't hide behind button.
                 }
 
-                // Bottom button
+                // 5. Bottom Action Button (Text changes based on step).
                 VStack(spacing: 0) {
                     Button(action: handleNext) {
                         if isLoading {
@@ -129,6 +140,7 @@ struct ForgotPasswordView: View {
                     }
                     .frame(height: 55)
                     .frame(maxWidth: .infinity)
+                    // Button color and disabled state change dynamically!
                     .background(isButtonEnabled ? accent : Color(hex: "D4829E"))
                     .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                     .disabled(!isButtonEnabled || isLoading)
@@ -136,6 +148,7 @@ struct ForgotPasswordView: View {
                     .padding(.vertical, 14)
                     .background(surfaceBackground)
 
+                    // Back button for steps 2 and 3.
                     if step != .email {
                         Button(action: handleBack) {
                             Text("Back")
@@ -169,6 +182,7 @@ struct ForgotPasswordView: View {
                     .fixedSize()
                 }
             }
+            // Success Alert shown when everything is done!
             .alert("Password Reset Successful", isPresented: $showSuccess) {
                 Button("OK") { dismiss() }
             } message: {
@@ -178,7 +192,9 @@ struct ForgotPasswordView: View {
     }
 
     // MARK: - Step Views
+    // These are small computed views for each step to keep the body clean.
 
+    // Step 1: Email Input View.
     private var emailStep: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 20) {
@@ -201,6 +217,7 @@ struct ForgotPasswordView: View {
                                     lineWidth: appSettings.isHighContrast ? 3 : 1
                                 )
                         )
+                        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 }
             }
 
@@ -218,6 +235,7 @@ struct ForgotPasswordView: View {
         }
     }
 
+    // Step 2: Code Verification View.
     private var verificationStep: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 20) {
@@ -229,7 +247,7 @@ struct ForgotPasswordView: View {
                         .glowzaFont(size: 18, weight: .semibold, design: .monospaced)
                         .foregroundColor(dark)
                         .keyboardType(.numberPad)
-                        .tracking(8)
+                        .tracking(8) // Spreads out the numbers!
                         .frame(height: 50)
                         .padding(14)
                         .background(surfaceBackground)
@@ -264,7 +282,7 @@ struct ForgotPasswordView: View {
                 Text("Didn't receive the code?")
                     .glowzaFont(size: 13)
                     .foregroundColor(Color(hex: "8A8D94"))
-                Button(action: { /* Resend logic */ }) {
+                Button(action: { /* Resend logic would go here */ }) {
                     Text("Resend")
                         .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(accent)
@@ -274,9 +292,10 @@ struct ForgotPasswordView: View {
         }
     }
 
+    // Step 3: New Password View.
     private var resetPasswordStep: some View {
         VStack(spacing: 16) {
-            // Password strength info
+            // Password strength info box.
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "lock.shield")
                     .foregroundColor(accent)
@@ -288,7 +307,7 @@ struct ForgotPasswordView: View {
             .background(accent.opacity(0.06))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            // Password fields
+            // Password fields inside a clipped box.
             VStack(spacing: 0) {
                 passwordField(
                     label: "New Password",
@@ -316,7 +335,7 @@ struct ForgotPasswordView: View {
                     )
             )
 
-            // Strength indicators
+            // Live strength indicators (Checkmarks turn green when conditions are met!).
             VStack(alignment: .leading, spacing: 8) {
                 strengthRow(label: "At least 8 characters", met: newPassword.count >= 8)
                 strengthRow(label: "Contains a number", met: newPassword.contains { $0.isNumber })
@@ -327,7 +346,9 @@ struct ForgotPasswordView: View {
     }
 
     // MARK: - Components
+    // Small UI building blocks.
 
+    // Creates the numbered circles (1, 2, 3).
     private func progressCircle(_ step: Int, isActive: Bool) -> some View {
         ZStack {
             Circle()
@@ -339,12 +360,14 @@ struct ForgotPasswordView: View {
         }
     }
 
+    // Creates the line between circles.
     private func progressLine(_ isActive: Bool) -> some View {
         Rectangle()
             .fill(isActive ? accent : Color(hex: "E8E8EC"))
             .frame(height: 2)
     }
 
+    // Custom password field with eye icon.
     private func passwordField(
         label: String,
         text: Binding<String>,
@@ -378,6 +401,7 @@ struct ForgotPasswordView: View {
         }
     }
 
+    // Helper for the strength rules list.
     private func strengthRow(label: String, met: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: met ? "checkmark.circle.fill" : "circle")
@@ -390,6 +414,7 @@ struct ForgotPasswordView: View {
     }
 
     // MARK: - Computed Properties
+    // These clean up the body by deciding what text to show based on the current step!
 
     private var headerTitle: String {
         switch step {
@@ -437,32 +462,37 @@ struct ForgotPasswordView: View {
 
     // MARK: - Actions
 
+    // This handles clicking the main bottom button.
     private func handleNext() {
         errorMessage = nil
         isLoading = true
 
+        // Simulate a network delay (like calling an API).
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            // Simulate API calls - replace with real API calls
             switch step {
             case .email:
-                // Validate email exists in system
+                // Move to step 2!
                 step = .verification
             case .verification:
-                // Validate verification code
-                step = .resetPassword
+                // Check if code is valid (Simulated with "123456").
+                if verificationCode == "123456" {
+                    step = .resetPassword
+                } else {
+                    errorMessage = "Invalid verification code. Try 123456."
+                }
             case .resetPassword:
-                // Update password in system
+                // Finish flow and show success alert!
                 showSuccess = true
             }
             isLoading = false
         }
     }
 
+    // Handles going back to the previous step.
     private func handleBack() {
         if step.rawValue > 1 {
             step = ForgotPasswordStep(rawValue: step.rawValue - 1)!
         } else {
-            // At email step - go back to SignIn
             onBack?() ?? dismiss()
         }
         errorMessage = nil

@@ -1,29 +1,38 @@
+// This file contains the view where users can see their bookings and add reviews.
 import SwiftUI
 
+// A shortcut to use the app's primary color easily.
 private var brand: Color { Color.glowzaPrimary }
 
-// MARK: - Add Review View
+// This is the sheet that pops up when a user clicks "Add Review".
 struct AddReviewView: View {
 
+    // We pass these values from the list to know WHICH booking we are reviewing.
     let bookingID: UUID
     let salonName: String
     let serviceName: String
-    let onSubmit: () -> Void
+    let onSubmit: () -> Void // A function to run after the review is successfully saved.
 
+    // These @State variables hold the data as the user types or clicks stars.
     @State private var rating: Int = 0
     @State private var comment: String = ""
-    @State private var isSubmitting = false
-    @Environment(\.dismiss) private var dismiss
-    @Environment(AppSettings.self) private var appSettings
+    @State private var isSubmitting = false // To show a loading spinner if needed.
+    @State private var errorMessage: String? = nil // To show alerts if something fails.
+    
+    // Environment variables provided by SwiftUI or our app.
+    @Environment(\.dismiss) private var dismiss // This lets us close this sheet programmatically.
+    @Environment(AppSettings.self) private var appSettings // Holds our dark mode and theme colors.
 
     var body: some View {
         NavigationStack {
             ZStack {
+                // Background color that respects the safe area.
                 (appSettings.themePage).ignoresSafeArea()
+                
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
 
-                        // Salon info
+                        // 1. Header showing Salon and Service info.
                         VStack(alignment: .leading, spacing: 2) {
                             Text(salonName)
                                 .glowzaFont(size: 15, weight: .bold).foregroundColor(appSettings.themeText)
@@ -31,20 +40,29 @@ struct AddReviewView: View {
                                 .glowzaFont(size: 12).foregroundColor(Color(hex: "8A8A8A"))
                         }
 
-                        // Star rating
+                        // 2. Star Rating Section.
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Your Rating")
                                 .glowzaFont(size: 15, weight: .semibold).foregroundColor(appSettings.themeText)
+                            
                             HStack(spacing: 12) {
+                                // We loop 5 times to create the 5 stars.
                                 ForEach(1...5, id: \.self) { star in
                                     Image(systemName: star <= rating ? "star.fill" : "star")
                                         .glowzaFont(size: 34)
+                                        // Gold color if selected, gray if not.
                                         .foregroundColor(star <= rating ? Color(hex: "F59E0B") : Color(hex: "CCCCCC"))
-                                        .onTapGesture { withAnimation(.spring(response: 0.25)) { rating = star } }
+                                        .onTapGesture { 
+                                            // Smooth spring animation when tapping a star.
+                                            withAnimation(.spring(response: 0.25)) { rating = star } 
+                                        }
+                                        // Slight pop effect when selected.
                                         .scaleEffect(star <= rating ? 1.1 : 1.0)
                                         .animation(.spring(response: 0.25), value: rating)
                                 }
                             }
+                            
+                            // Show a text label like "Excellent" if they picked stars.
                             if rating > 0 {
                                 Text(ratingLabel)
                                     .glowzaFont(size: 13, weight: .medium).foregroundColor(brand)
@@ -102,6 +120,14 @@ struct AddReviewView: View {
             }
             .navigationTitle(BookingStore.shared.bookings.first(where: { $0.id == bookingID })?.review != nil ? "Edit Review" : "Add Review")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Error", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK") { errorMessage = nil }
+            } message: {
+                Text(errorMessage ?? "Unknown error")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -152,14 +178,6 @@ struct AddReviewView: View {
 
         // 2. Save review + update salon rating in Firestore
         Task {
-            defer {
-                Task { @MainActor in
-                    isSubmitting = false
-                    onSubmit()
-                    dismiss()
-                }
-            }
-            
             do {
                 // Determine if we're editing an existing review
                 let existingReview = BookingStore.shared.bookings.first(where: { $0.id == bookingID })?.review
@@ -197,24 +215,34 @@ struct AddReviewView: View {
                     BookingStore.shared.bookings
                         .first(where: { $0.id == bookingID })
                         .flatMap { b in
-                            BookingStore.shared.firestoreBookings
-                                .first(where: { $0.bookingSummary.receiptNumber == b.receiptNumber })?.id
+                            BookingStore.shared.receiptToFirestoreId[b.receiptNumber]
                         } ?? "",
                     rating: Double(rating),
                     review: reviewComment
                 )
 
-                print("✅ Review saved to Firestore for salon: \(salonName)")
+                print("Review saved to Firestore for salon: \(salonName)")
+                
+                await MainActor.run {
+                    isSubmitting = false
+                    onSubmit()
+                    dismiss()
+                }
             } catch {
-                print("❌ Failed to save review: \(error)")
-                // The defer block will still dismiss the view, so user isn't stuck.
+                print("Failed to save review: \(error)")
+                await MainActor.run {
+                    isSubmitting = false
+                    errorMessage = error.localizedDescription
+                }
             }
         }
     }
 }
 
 // MARK: - Shared Booking Card
+// Reusable components for booking cards.
 
+// Displays the salon image with a consistent size and corner radius.
 private struct BookingCardImage: View {
     let salonName: String
     @Environment(AppSettings.self) private var appSettings
@@ -233,6 +261,9 @@ private struct BookingCardImage: View {
     }
 }
 
+// Helper function to map a salon name to a specific asset image.
+// If the salon name isn't recognized, it generates a random but consistent image!
+// Great example of handling missing data gracefully.
 private func mappedSalonImageName(_ salonName: String) -> String {
     switch salonName {
     case "Golden Avenue": return "Salon1"
@@ -246,13 +277,14 @@ private func mappedSalonImageName(_ salonName: String) -> String {
     case "Crystal Beauty": return "salon9"
     case "Radiant Aesthetic": return "salon10"
     default: 
-        // Fallback: Generate a consistent image index based on the name
+        // Fallback: Generate a consistent image index based on the name hash.
         let hash = abs(salonName.hashValue)
         let index = (hash % 10) + 1
         return index == 1 ? "Salon1" : "salon\(index)"
     }
 }
 
+// Helper to format the date and time for display.
 private func bookingDateLabel(_ booking: Booking) -> String {
     let df = DateFormatter()
     df.dateFormat = "MMM d, yyyy"
@@ -260,16 +292,16 @@ private func bookingDateLabel(_ booking: Booking) -> String {
 }
 
 // MARK: - Upcoming Bookings View
-
+// Shows a list of future appointments.
 struct UpcomingBookingsView: View {
-    @State private var store = BookingStore.shared
-    @Binding var receiptBooking: Booking?
-    @State private var cancelTarget: Booking? = nil
+    @State private var store = BookingStore.shared // Accessing the shared store.
+    @Binding var receiptBooking: Booking? // Bound to parent to show receipt sheet.
+    @State private var cancelTarget: Booking? = nil // Tracks which booking to cancel.
     @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 14) {
+            LazyVStack(spacing: 14) { // LazyVStack loads views only when they appear on screen!
                 if store.upcoming.isEmpty {
                     BookingEmptyState(icon: "calendar.badge.clock", label: "No upcoming bookings",
                                       subtitle: "Your upcoming bookings will appear here.")
@@ -282,6 +314,7 @@ struct UpcomingBookingsView: View {
             .padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 40)
         }
         .background(appSettings.themePage)
+        // Alert for cancellation confirmation.
         .alert("Cancel Booking", isPresented: Binding(
             get: { cancelTarget != nil },
             set: { if !$0 { cancelTarget = nil } }
@@ -296,6 +329,7 @@ struct UpcomingBookingsView: View {
         }
     }
 
+    // Helper view for a single upcoming booking card.
     private func upcomingCard(_ booking: Booking) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Date header
@@ -361,11 +395,13 @@ struct UpcomingBookingsView: View {
 
 // MARK: - Completed Bookings View
 
+// MARK: - Completed Bookings View
+// Shows a list of past appointments.
 struct CompletedBookingsView: View {
     @State private var store = BookingStore.shared
     @Binding var receiptBooking: Booking?
     @Binding var reviewBooking: Booking?
-    let onRebook: (Booking) -> Void
+    let onRebook: (Booking) -> Void // Callback function to handle rebooking!
     @Environment(AppSettings.self) private var appSettings
 
     var body: some View {
@@ -385,6 +421,7 @@ struct CompletedBookingsView: View {
         .background(appSettings.themePage)
     }
 
+    // Helper view for a single completed booking card.
     private func completedCard(_ booking: Booking) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Date header
@@ -395,6 +432,7 @@ struct CompletedBookingsView: View {
 
                 Spacer()
 
+                // Rebook Button.
                 Button(action: { onRebook(booking) }) {
                     Text("Rebook")
                         .glowzaFont(size: 13, weight: .semibold)
@@ -431,6 +469,7 @@ struct CompletedBookingsView: View {
             }
             .padding(.horizontal, 16).padding(.vertical, 14)
 
+            // Action buttons
             HStack(spacing: 12) {
                 Button(action: { receiptBooking = booking }) {
                     Text("View Receipt")
@@ -463,7 +502,7 @@ struct CompletedBookingsView: View {
 }
 
 // MARK: - Cancelled Bookings View
-
+// Shows a list of cancelled appointments.
 struct CancelledBookingsView: View {
     @State private var store = BookingStore.shared
     let onRebook: (Booking) -> Void
@@ -486,6 +525,7 @@ struct CancelledBookingsView: View {
         .background(appSettings.themePage)
     }
 
+    // Helper view for a single cancelled booking card.
     private func cancelledCard(_ booking: Booking) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Date header
@@ -516,6 +556,7 @@ struct CancelledBookingsView: View {
 
             // Salon info
             HStack(alignment: .top, spacing: 14) {
+                // We reduce opacity to make it look faded/disabled!
                 BookingCardImage(salonName: booking.salon.name)
                     .opacity(0.55)
                 VStack(alignment: .leading, spacing: 5) {
@@ -528,6 +569,8 @@ struct CancelledBookingsView: View {
                     Text("Services: \(booking.service.name)")
                         .glowzaFont(size: 13)
                         .foregroundColor(Color(hex: "8A8A8A").opacity(0.7))
+                    
+                    // Cancelled Badge.
                     Text("Cancelled")
                         .glowzaFont(size: 11, weight: .semibold)
                         .foregroundColor(.white)
@@ -547,7 +590,7 @@ struct CancelledBookingsView: View {
 }
 
 // MARK: - Shared Empty State
-
+// A reusable view to show when a list has no items.
 struct BookingEmptyState: View {
     let icon: String
     let label: String
@@ -573,11 +616,13 @@ struct BookingEmptyState: View {
 
 // MARK: - BookingsView
 
+// MARK: - BookingsView
+// The main container view that holds the tabs for Upcoming, Completed, and Cancelled bookings.
 struct BookingsView: View {
-    @State private var selectedTab = 0
-    @State private var receiptBooking: Booking? = nil
-    @State private var reviewBooking: Booking? = nil
-    @State private var rebookDraft: BookingDraft? = nil
+    @State private var selectedTab = 0 // Tracks which tab is selected.
+    @State private var receiptBooking: Booking? = nil // Holds the booking to show receipt for.
+    @State private var reviewBooking: Booking? = nil // Holds the booking to show review for.
+    @State private var rebookDraft: BookingDraft? = nil // Holds the draft when rebooking.
     @Environment(AppSettings.self) private var appSettings
 
     private let tabs = ["Upcoming", "Completed", "Cancelled"]
@@ -593,6 +638,7 @@ struct BookingsView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 8)
 
+                // Segmented Picker for switching tabs!
                 Picker("Booking Status", selection: $selectedTab) {
                     ForEach(tabs.indices, id: \.self) { i in
                         Text(tabs[i]).tag(i)
@@ -603,6 +649,7 @@ struct BookingsView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 10)
 
+                // TabView with .page style allows swiping between tabs!
                 TabView(selection: $selectedTab) {
                     UpcomingBookingsView(receiptBooking: $receiptBooking)
                         .tag(0)
@@ -610,6 +657,7 @@ struct BookingsView: View {
                         receiptBooking: $receiptBooking,
                         reviewBooking: $reviewBooking,
                         onRebook: { booking in
+                            // Creates a draft for the same salon and service.
                             var draft = BookingDraft(salon: booking.salon)
                             draft.service = booking.service
                             draft.date = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
@@ -632,11 +680,13 @@ struct BookingsView: View {
         }
         .background(appSettings.themePage.ignoresSafeArea())
         .task {
-            await BookingStore.shared.fetchUserBookings()
+            await BookingStore.shared.fetchUserBookings() // Fetches bookings when view appears.
         }
+        // Listens for a notification to switch to the Upcoming tab.
         .onReceive(NotificationCenter.default.publisher(for: .glowzaShowUpcomingBookings)) { _ in
             selectedTab = 0
         }
+        // Sheets for showing details/forms.
         .sheet(item: $receiptBooking) { booking in
             ReceiptView(booking: booking) { receiptBooking = nil }
         }

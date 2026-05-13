@@ -1,6 +1,7 @@
 import Foundation
 import EventKit
 
+// Enum to represent the result of saving to the calendar!
 enum CalendarSaveResult {
     case saved(eventId: String)
     case permissionDenied
@@ -8,16 +9,21 @@ enum CalendarSaveResult {
     case saveFailed
 }
 
+// MARK: - EventKit Service
+// This class handles all interactions with Apple's Calendar and Reminders apps!
 final class EventKitService {
-    static let shared = EventKitService()
+    static let shared = EventKitService() // Singleton instance!
 
+    // The event store is the database of all calendar events and reminders!
     private let store = EKEventStore()
 
     private init() {}
 
     // MARK: - Permissions
+    // Requests access to the user's calendar!
     @MainActor
     func requestCalendarAccess() async -> Bool {
+        // iOS 17 introduced a new API for this!
         if #available(iOS 17.0, *) {
             do {
                 return try await store.requestFullAccessToEvents()
@@ -26,6 +32,8 @@ final class EventKitService {
             }
         }
 
+        // Fallback for older iOS versions using a closure-based API.
+        // we use withCheckedContinuation to turn a closure into an async function!
         return await withCheckedContinuation { continuation in
             store.requestAccess(to: .event) { granted, _ in
                 continuation.resume(returning: granted)
@@ -33,6 +41,7 @@ final class EventKitService {
         }
     }
 
+    // Requests access to the user's reminders!
     func requestReminderAccess() async -> Bool {
         if #available(iOS 17.0, *) {
             do {
@@ -50,6 +59,7 @@ final class EventKitService {
     }
 
     // MARK: - Booking Calendar Integration
+    // Saves a completed booking to the user's calendar!
     @MainActor
     func saveBookingToCalendar(_ booking: Booking) async -> CalendarSaveResult {
         let granted = await requestCalendarAccess()
@@ -58,6 +68,7 @@ final class EventKitService {
         guard let calendar = writableCalendar() else { return .noWritableCalendar }
         let (startDate, endDate) = appointmentRange(for: booking)
 
+        // Create a new event!
         let event = EKEvent(eventStore: store)
         event.calendar = calendar
         event.title = "\(booking.service.name) - \(booking.salon.name)"
@@ -65,6 +76,8 @@ final class EventKitService {
         event.startDate = startDate
         event.endDate = endDate
         event.notes = "Receipt: \(booking.receiptNumber)\nPayment: LKR \(Int(booking.amountPaid))\nBooked via GLOWZA"
+        
+        // Add an alarm for 1 hour before the appointment!
         event.alarms = [EKAlarm(relativeOffset: -60 * 60)]
 
         do {
@@ -76,6 +89,7 @@ final class EventKitService {
     }
 
     // MARK: - Calendar CRUD
+    // Fetches events between two dates!
     func fetchEvents(from start: Date, to end: Date) async -> [EKEvent] {
         let granted = await requestCalendarAccess()
         guard granted else { return [] }
@@ -84,6 +98,7 @@ final class EventKitService {
         return store.events(matching: predicate)
     }
 
+    // Updates an existing event!
     func updateEvent(
         eventId: String,
         newTitle: String? = nil,
@@ -107,6 +122,7 @@ final class EventKitService {
         }
     }
 
+    // Deletes an event!
     func deleteEvent(eventId: String) async -> Bool {
         let granted = await requestCalendarAccess()
         guard granted, let event = store.event(withIdentifier: eventId) else { return false }
@@ -120,6 +136,7 @@ final class EventKitService {
     }
 
     // MARK: - Reminder CRUD
+    // Creates a new reminder!
     func createReminder(title: String, dueDate: Date?, notes: String?) async -> String? {
         let granted = await requestReminderAccess()
         guard granted, let calendar = store.defaultCalendarForNewReminders() else { return nil }
@@ -142,6 +159,7 @@ final class EventKitService {
         }
     }
 
+    // Fetches all reminders!
     func fetchReminders() async -> [EKReminder] {
         let granted = await requestReminderAccess()
         guard granted else { return [] }
@@ -154,6 +172,7 @@ final class EventKitService {
         }
     }
 
+    // Updates an existing reminder!
     func updateReminder(id: String, newTitle: String? = nil, newDueDate: Date? = nil) async -> Bool {
         let granted = await requestReminderAccess()
         guard granted else { return false }
@@ -177,6 +196,7 @@ final class EventKitService {
         }
     }
 
+    // Deletes a reminder!
     func deleteReminder(id: String) async -> Bool {
         let granted = await requestReminderAccess()
         guard granted else { return false }
@@ -193,6 +213,7 @@ final class EventKitService {
     }
 
     // MARK: - Helpers
+    // Helper to calculate the start and end time of an appointment!
     private func appointmentRange(for booking: Booking) -> (Date, Date) {
         let calendar = Calendar.current
         let parsedTime = parseSlotTime(booking.timeSlot)
@@ -213,6 +234,7 @@ final class EventKitService {
         return (startDate, endDate)
     }
 
+    // Helper to find a calendar that we are allowed to write to!
     private func writableCalendar() -> EKCalendar? {
         if let defaultCalendar = store.defaultCalendarForNewEvents,
            defaultCalendar.allowsContentModifications {
@@ -222,6 +244,7 @@ final class EventKitService {
         return store.calendars(for: .event).first(where: { $0.allowsContentModifications })
     }
 
+    // Helper to parse strings like "10:30 AM" into a Date object!
     private func parseSlotTime(_ raw: String) -> Date? {
         let normalized = raw
             .replacingOccurrences(of: " ", with: " ")
@@ -240,6 +263,7 @@ final class EventKitService {
         return nil
     }
 
+    // Helper to extract the number of minutes from a string like "60 min"!
     private func durationFromService(_ text: String) -> Int {
         let digits = text.filter { $0.isNumber }
         return Int(digits) ?? 60

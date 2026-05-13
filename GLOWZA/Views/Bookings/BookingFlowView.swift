@@ -1,32 +1,36 @@
 import SwiftUI
 
 // MARK: - Booking Flow Steps
+// An enum to represent the different steps in the booking process.
+// This is a great way to manage state in a multi-step flow (wizard)!
 enum BookingFlowStep {
     case dateTime, summary, consent, payment, confirmation, receipt
 }
 
 // MARK: - BookingFlowView (Container)
+// This is the parent view that hosts all the steps and manages navigation between them.
 struct BookingFlowView: View {
 
-    @State var draft: BookingDraft
-    @State private var step: BookingFlowStep = .dateTime
-    @State private var completedBooking: Booking? = nil
-    @State private var isSubmittingPayment = false
-    @Environment(\.dismiss) private var dismiss
+    @State var draft: BookingDraft // Holds the current state of the booking being built.
+    @State private var step: BookingFlowStep = .dateTime // Current step in the flow.
+    @State private var completedBooking: Booking? = nil // Holds the final booking data after success.
+    @State private var isSubmittingPayment = false // Prevents double-tapping the pay button.
+    @Environment(\.dismiss) private var dismiss // To close the sheet.
 
     var body: some View {
+        // A switch statement is perfect for rendering different views based on the current step!
         switch step {
         case .dateTime:
             BookAppointmentView(draft: $draft) {
-                step = .summary
+                step = .summary // Move to next step!
             } onBack: {
-                dismiss()
+                dismiss() // Close the flow!
             }
         case .summary:
             BookingSummaryView(draft: $draft) {
                 step = .consent
             } onBack: {
-                step = .dateTime
+                step = .dateTime // Go back!
             }
         case .consent:
             ConsentFormView(draft: $draft) {
@@ -46,6 +50,7 @@ struct BookingFlowView: View {
                 dateFormatter.dateFormat = "MMM d, yyyy"
                 let dateString = dateFormatter.string(from: booking.date)
 
+                // Trigger in-app notification!
                 NotificationManager.shared.notifyBookingSuccess(
                     serviceName: booking.service.name,
                     salonName: booking.salon.name,
@@ -57,10 +62,11 @@ struct BookingFlowView: View {
                     step = .confirmation
                 }
 
-                // Add to local store immediately so BookingsView shows it right away
+                // Add to local store immediately so BookingsView shows it right away.
                 BookingStore.shared.add(booking)
 
                 // ── Step 5: Sync to widget via App Group ──────────────────────
+                // This updates the iOS home screen widget!
                 WidgetBookingSyncService.shared.saveUpcomingBooking(booking)
 
                 // Save appointment to iOS Calendar (simulator/device) in background.
@@ -113,6 +119,7 @@ struct BookingFlowView: View {
                     }
                 }
 
+                // Save to Firestore in background.
                 Task {
                     await BookingStore.shared.createBooking(
                         salonName: booking.salon.name,
@@ -161,14 +168,15 @@ struct BookingFlowView: View {
 }
 
 // MARK: - Book Appointment View (Date + Time selection)
+// This screen lets the user pick a date from a custom calendar and a time slot.
 struct BookAppointmentView: View {
 
-    @Binding var draft: BookingDraft
+    @Binding var draft: BookingDraft // Bound to parent to share data.
     let onNext: () -> Void
     let onBack: () -> Void
 
     @State private var selectedTime: String = ""
-    @State private var displayMonth: Date = Date()
+    @State private var displayMonth: Date = Date() // Tracks which month the calendar is showing.
 
     private var appSettings: AppSettings { AppSettings.shared }
 
@@ -177,31 +185,42 @@ struct BookAppointmentView: View {
     private var selectedService: SalonService { draft.service ?? draft.salon.services[0] }
 
     // MARK: - Calendar Calculations
+    // These helpers calculate the grid of dates for the current month!
+    
+    // Returns the month and year string (e.g., "MAY 2026").
     private var monthYear: String {
         let f = DateFormatter()
         f.dateFormat = "MMMM yyyy"
         return f.string(from: displayMonth).uppercased()
     }
 
+    // Calculates all the dates to show in the calendar grid, including padding.
     private var calendarDates: [Date?] {
         let calendar = Calendar.current
         let range = calendar.range(of: .day, in: .month, for: displayMonth)!
         let numDays = range.count
 
+        // Find the first day of the month.
         let first = calendar.date(from: calendar.dateComponents([.year, .month], from: displayMonth))!
         let firstWeekday = calendar.component(.weekday, from: first) - 1 // 0 = Sunday
 
+        // Padding for days from the previous month.
         let paddingDays = Array(repeating: Optional<Date>(nil), count: firstWeekday)
+        
+        // Days of the current month.
         let dateDays: [Date?] = (0..<numDays).map { day in
             calendar.date(byAdding: .day, value: day, to: first)!
         }
 
         let combined = paddingDays + dateDays
         let remainder = combined.count % 7
+        
+        // Padding for days in the next month to fill the row.
         let trailing = remainder == 0 ? [] : Array(repeating: Optional<Date>(nil), count: 7 - remainder)
         return combined + trailing
     }
 
+    // Chunks the flat array of dates into weeks (arrays of 7 days).
     private var calendarWeeks: [[Date?]] {
         calendarDates.chunked(into: 7)
     }
@@ -233,6 +252,7 @@ struct BookAppointmentView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
+            // Set defaults if not already set!
             if draft.service == nil {
                 draft.service = draft.salon.services.first
             }
@@ -252,6 +272,7 @@ struct BookAppointmentView: View {
             .padding(.top, 6)
     }
 
+    // Displays the selected salon and service details.
     private var selectedServiceCard: some View {
         HStack(spacing: 0) {
             // Left accent bar
@@ -303,8 +324,10 @@ struct BookAppointmentView: View {
         .shadow(color: Color.black.opacity(appSettings.isDarkMode ? 0.3 : 0.07), radius: 8, x: 0, y: 3)
     }
 
+    // The calendar grid view.
     private var dateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Month navigation header.
             HStack {
                 Button(action: {
                     let cal = Calendar.current
@@ -332,7 +355,8 @@ struct BookAppointmentView: View {
                 }
             }
 
-            // Day of week headers
+            // Day of week headers (SUN, MON, etc.).
+            // We use GeometryReader to split the width equally into 7 columns!
             GeometryReader { geo in
                 let cellW = geo.size.width / 7
                 HStack(spacing: 0) {
@@ -346,7 +370,7 @@ struct BookAppointmentView: View {
             }
             .frame(height: 26)
 
-            // Calendar grid
+            // The grid of days.
             GeometryReader { geo in
                 let cellW = geo.size.width / 7
                 let cellH: CGFloat = 34
@@ -363,7 +387,7 @@ struct BookAppointmentView: View {
                                     if let date = date {
                                         let day = Calendar.current.component(.day, from: date)
                                         Button(action: {
-                                            guard isFuture else { return }
+                                            guard isFuture else { return } // Can't pick past dates!
                                             draft.date = date
                                         }) {
                                             Text("\(day)")
@@ -398,6 +422,7 @@ struct BookAppointmentView: View {
         }
     }
 
+    // The grid of time slots.
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Available Times")
@@ -406,6 +431,7 @@ struct BookAppointmentView: View {
                 .tracking(0.5)
                 .padding(.top, 10)
 
+            // LazyVGrid creates a grid with a fixed number of columns (3 in this case).
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                 ForEach(BookingDraft.timeSlots, id: \.time) { slot in
                     let isSelected = selectedTime == slot.time
@@ -432,13 +458,14 @@ struct BookAppointmentView: View {
                                     .stroke(isSelected ? Color.clear : Color(hex: "EBEBF0"), lineWidth: isSelected ? 0 : 1.5)
                             )
                     }
-                    .disabled(!slot.available)
+                    .disabled(!slot.available) // Disables the button if slot is taken!
                 }
             }
             .padding(.bottom, 6)
         }
     }
 
+    // Bottom bar with the confirm button.
     private var bottomBar: some View {
         let canProceed = !selectedTime.isEmpty
         return VStack(spacing: 0) {
@@ -461,6 +488,8 @@ struct BookAppointmentView: View {
 }
 
 // MARK: - Array extension for calendar grid
+// A very useful helper to split an array into chunks of a specific size!
+// Used here to split a list of days into weeks of 7 days.
 extension Array {
     func chunked(into size: Int) -> [[Element]] {
         stride(from: 0, to: count, by: size).map {

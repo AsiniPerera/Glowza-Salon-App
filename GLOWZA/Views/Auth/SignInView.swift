@@ -1,32 +1,36 @@
+// This file handles the "Sign In" screen, allowing users to log in with Email or Face ID.
 import SwiftUI
-import LocalAuthentication
+import LocalAuthentication // Needed for Face ID / Touch ID biometrics.
 
 // MARK: - Sign In View
 struct SignInView: View {
 
+    // These closures (functions) are passed in from the parent view to handle navigation.
     var onSignIn: (() -> Void)? = nil
     var onCreateAccount: (() -> Void)? = nil
     var onBack: (() -> Void)? = nil
     var onForgotPassword: (() -> Void)? = nil
 
+    // We use a separate ViewModel to handle the complex Face ID logic.
     @StateObject private var viewModel = AuthViewModel()
 
+    // @State variables hold the text as the user types.
     @State private var email = ""
     @State private var password = ""
-    @State private var showPassword = false
-    @State private var isLoading = false
-    @State private var emailAuthError: String? = nil
-    @State private var showFaceIDAuth = false
+    @State private var showPassword = false // Controls whether to show dots or real letters.
+    @State private var isLoading = false // Shows a spinner while logging in.
+    @State private var emailAuthError: String? = nil // Holds error messages from Firebase.
+    @State private var showFaceIDAuth = false // Triggers the Face ID sheet.
 
 
-    @Environment(AppSettings.self) private var appSettings
-    private var brand: Color { Color.glowzaPrimary }
+    @Environment(AppSettings.self) private var appSettings // For dark mode support.
+    private var brand: Color { Color.glowzaPrimary } // Quick access to app's main color.
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
 
-                // Back
+                // 1. Back Button
                 Button(action: { onBack?() }) {
                     Image(systemName: "chevron.left")
                         .glowzaFont(size: 17, weight: .semibold)
@@ -40,7 +44,7 @@ struct SignInView: View {
 
                 Spacer().frame(height: 32)
 
-                // Heading
+                // 2. Welcome Headers
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Welcome back")
                         .glowzaFont(size: 34, weight: .bold)
@@ -53,9 +57,11 @@ struct SignInView: View {
 
                 Spacer().frame(height: 36)
 
-                // Fields
+                // 3. Input Fields (Email & Password)
                 VStack(spacing: 14) {
                     authInput(placeholder: "Email address", text: $email, isSecure: false)
+                    
+                    // Password field has an "eye" icon to toggle visibility.
                     ZStack(alignment: .trailing) {
                         authInput(placeholder: "Password", text: $password, isSecure: !showPassword)
                         Button(action: { showPassword.toggle() }) {
@@ -68,7 +74,7 @@ struct SignInView: View {
                 }
                 .padding(.horizontal, 24)
 
-                // Forgot
+                // 4. Forgot Password Button
                 HStack {
                     Spacer()
                     Button(action: { onForgotPassword?() }) {
@@ -82,11 +88,11 @@ struct SignInView: View {
 
                 Spacer().frame(height: 32)
 
-                // Sign In button
+                // 5. Sign In Button
                 Button(action: signIn) {
                     Group {
                         if isLoading {
-                            ProgressView().tint(.white)
+                            ProgressView().tint(.white) // Loading spinner.
                         } else {
                             Text("Sign In")
                                 .glowzaFont(size: 17, weight: .semibold)
@@ -95,12 +101,14 @@ struct SignInView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 55)
+                    // Button changes color and disables if fields are empty.
                     .background(canSignIn ? Color.glowzaPrimary : Color.hotPinkDisabled)
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .disabled(!canSignIn || isLoading)
                 .padding(.horizontal, 24)
 
+                // Shows error if login fails.
                 if let err = emailAuthError {
                     Text(err)
                         .glowzaFont(size: 13)
@@ -113,15 +121,14 @@ struct SignInView: View {
 
                 Spacer().frame(height: 16)
 
-                // Or divider
+                // 6. "OR" Divider
                 dividerText("or")
                     .padding(.horizontal, 24)
 
                 Spacer().frame(height: 16)
 
-                // Face ID button
+                // 7. Face ID / Biometric Login Button
                 Button(action: { showFaceIDAuth = true }) {
-
                     HStack(spacing: 10) {
                         if viewModel.isAuthenticating {
                             ProgressView().tint(brand)
@@ -145,7 +152,7 @@ struct SignInView: View {
                 .disabled(viewModel.isAuthenticating)
                 .padding(.horizontal, 24)
 
-                // Biometric error
+                // Biometric error message if Face ID fails.
                 if let err = viewModel.authenticationError {
                     Text(err)
                         .glowzaFont(size: 13)
@@ -158,6 +165,7 @@ struct SignInView: View {
 
                 Spacer().frame(height: 20)
 
+                // 8. Social Login Icons (UI only for demonstration).
                 HStack(spacing: 12) {
                     socialIcon(imageName: "fb", labelColor: Color(hex: "1877F2"))
                     socialIcon(imageName: "google", labelColor: Color(hex: "DB4437"))
@@ -168,7 +176,7 @@ struct SignInView: View {
 
                 Spacer().frame(height: 36)
 
-                // Footer
+                // 9. Footer (Sign Up link).
                 HStack(spacing: 4) {
                     Text("Don't have an account?")
                         .glowzaFont(size: 14)
@@ -184,9 +192,11 @@ struct SignInView: View {
             }
         }
         .background(appSettings.themePage.ignoresSafeArea())
+        // Listeners for success states.
         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
             if authenticated { onSignIn?() }
         }
+        // Shows the Face ID scan view as a full screen cover.
         .fullScreenCover(isPresented: $showFaceIDAuth) {
             FaceIDAuthView(onAuthSuccess: {
                 showFaceIDAuth = false
@@ -199,9 +209,12 @@ struct SignInView: View {
 
 
     // MARK: - Helpers
+    // These functions clean up the main body code by extracting repeated UI elements.
 
+    // Checks if the user has typed anything before allowing them to click Sign In.
     private var canSignIn: Bool { !email.isEmpty && !password.isEmpty }
 
+    // Creates a custom styled text field or secure field.
     private func authInput(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {
         Group {
             if isSecure {
@@ -227,6 +240,7 @@ struct SignInView: View {
         )
     }
 
+    // Creates the horizontal line with text in the middle (e.g. "--- or ---").
     private func dividerText(_ text: String) -> some View {
         HStack(spacing: 12) {
             Rectangle().fill(Color(hex: "E5E5EA")).frame(height: 1)
@@ -238,6 +252,7 @@ struct SignInView: View {
         }
     }
 
+    // Creates circular buttons for Facebook, Google, and Apple login.
     @ViewBuilder
     private func socialIcon(imageName: String? = nil, label: String? = nil, sfSymbol: String? = nil, labelColor: Color) -> some View {
         Button(action: {}) {
@@ -268,6 +283,7 @@ struct SignInView: View {
     }
 
 
+    // Calls Firebase to verify the email and password.
     private func signIn() {
         guard canSignIn else { return }
         isLoading = true

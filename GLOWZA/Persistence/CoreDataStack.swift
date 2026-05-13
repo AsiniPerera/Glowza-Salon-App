@@ -2,38 +2,48 @@ import CoreData
 import Foundation
 
 // MARK: - Core Data Stack
-// Uses a programmatic model — no .xcdatamodeld file required.
+// This class manages the Core Data stack for the app.
+// Note: It uses a programmatic model — no .xcdatamodeld file required!
+// This means we define our database tables and columns in code.
 final class CoreDataStack {
-    static let shared = CoreDataStack()
+    static let shared = CoreDataStack() // Singleton instance!
     
     let container: NSPersistentContainer
     
+    // Helper to get the main context easily!
     var context: NSManagedObjectContext {
         container.viewContext
     }
     
     private init() {
+        // We initialize the container with our custom programmatic model!
         container = NSPersistentContainer(name: "GLOWZA", managedObjectModel: Self.makeModel())
+        
         let description = NSPersistentStoreDescription()
+        // Enable history tracking (good for background sync!).
         description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
         description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         
         container.persistentStoreDescriptions = [description]
         
+        // Load the actual database file!
         container.loadPersistentStores { _, error in
             if let error { print("Core Data Error: \(error)") }
             else          { print("Core Data initialized") }
         }
         
+        // Automatically merge changes from parent contexts!
         container.viewContext.automaticallyMergesChangesFromParent = true
+        // If there are conflicts, the store wins!
         container.viewContext.mergePolicy = NSMergeByPropertyStoreTrumpMergePolicy
     }
     
     // MARK: - Programmatic Core Data Model
+    // This function builds the database schema in code!
     private static func makeModel() -> NSManagedObjectModel {
         let model = NSManagedObjectModel()
 
-        // ── CDBooking ──
+        // ── CDBooking Entity ──
         let booking = makeEntity("CDBooking", props: [
             makeAttr("id",                 .UUIDAttributeType),
             makeAttr("salonName",          .stringAttributeType),
@@ -50,11 +60,11 @@ final class CoreDataStack {
             makeAttr("userName",           .stringAttributeType),
             makeAttr("createdAt",          .dateAttributeType),
             makeAttr("updatedAt",          .dateAttributeType),
-            makeAttr("firestoreID",        .stringAttributeType, opt: true),
-            makeAttr("signatureImageData", .binaryDataAttributeType, opt: true),
+            makeAttr("firestoreID",        .stringAttributeType, opt: true), // Optional!
+            makeAttr("signatureImageData", .binaryDataAttributeType, opt: true), // Optional!
         ])
 
-        // ── CDReview ──
+        // ── CDReview Entity ──
         let review = makeEntity("CDReview", props: [
             makeAttr("id",           .UUIDAttributeType),
             makeAttr("rating",       .integer16AttributeType),
@@ -63,7 +73,7 @@ final class CoreDataStack {
             makeAttr("reviewerName", .stringAttributeType),
         ])
 
-        // ── CDSalon ──
+        // ── CDSalon Entity ──
         let salon = makeEntity("CDSalon", props: [
             makeAttr("id",          .UUIDAttributeType),
             makeAttr("name",        .stringAttributeType),
@@ -77,7 +87,7 @@ final class CoreDataStack {
             makeAttr("openHours",   .stringAttributeType),
         ])
 
-        // ── CDSalonService ──
+        // ── CDSalonService Entity ──
         let salonService = makeEntity("CDSalonService", props: [
             makeAttr("id",       .UUIDAttributeType),
             makeAttr("name",     .stringAttributeType),
@@ -85,10 +95,10 @@ final class CoreDataStack {
             makeAttr("duration", .stringAttributeType),
             makeAttr("price",    .doubleAttributeType),
             makeAttr("category", .stringAttributeType),
-            makeAttr("benefits", .stringAttributeType),  // JSON-encoded [String]
+            makeAttr("benefits", .stringAttributeType),  // Stored as JSON-encoded [String]
         ])
 
-        // ── CDNotification ──
+        // ── CDNotification Entity ──
         let notification = makeEntity("CDNotification", props: [
             makeAttr("id",        .UUIDAttributeType),
             makeAttr("title",     .stringAttributeType),
@@ -100,7 +110,7 @@ final class CoreDataStack {
             makeAttr("userId",    .stringAttributeType, opt: true),
         ])
 
-        // ── CDUserProfile ──
+        // ── CDUserProfile Entity ──
         let userProfile = makeEntity("CDUserProfile", props: [
             makeAttr("userId",           .stringAttributeType),
             makeAttr("email",            .stringAttributeType),
@@ -130,32 +140,38 @@ final class CoreDataStack {
         return model
     }
 
+    // Helper to create an entity description!
     private static func makeEntity(_ name: String, props: [NSPropertyDescription]) -> NSEntityDescription {
         let e = NSEntityDescription()
         e.name = name; e.managedObjectClassName = name; e.properties = props; return e
     }
 
+    // Helper to create an attribute description!
     private static func makeAttr(_ name: String, _ type: NSAttributeType, opt: Bool = false) -> NSAttributeDescription {
         let a = NSAttributeDescription()
         a.name = name; a.attributeType = type; a.isOptional = opt; return a
     }
 
+    // Helper to create a relationship description!
     private static func makeRel(_ name: String, dest: NSEntityDescription, toMany: Bool, delete: NSDeleteRule) -> NSRelationshipDescription {
         let r = NSRelationshipDescription()
         r.name = name; r.destinationEntity = dest
-        r.minCount = 0; r.maxCount = toMany ? 0 : 1
+        r.minCount = 0; r.maxCount = toMany ? 0 : 1 // 0 means many!
         r.deleteRule = delete; r.isOptional = true; return r
     }
 
     // MARK: - CRUD helpers
+    // Saves changes to the persistent store if there are any!
     func save() throws {
         if context.hasChanges { try context.save() }
     }
 
+    // Deletes a specific object!
     func delete(_ object: NSManagedObject) throws {
         context.delete(object); try save()
     }
 
+    // Deletes all objects of a specific entity type!
     func deleteAll(_ entityName: String) throws {
         let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
         try context.fetch(request).forEach { context.delete($0) }

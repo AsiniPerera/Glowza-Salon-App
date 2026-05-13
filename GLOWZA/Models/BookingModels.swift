@@ -3,14 +3,17 @@ import SwiftUI
 import UIKit
 
 // MARK: - Salon Service
+// Represents a specific service offered by a salon (e.g., "Facial Treatment").
+// It conforms to Identifiable so it can be used in SwiftUI lists easily!
+// It conforms to Equatable so we can compare two services!
 struct SalonService: Identifiable, Equatable {
-    let id = UUID()
+    let id = UUID() // Automatically generates a unique ID!
     let name: String
-    let icon: String
-    let duration: String
+    let icon: String // SF Symbol name.
+    let duration: String // e.g., "60 min"
     let price: Double
-    let category: String
-    let benefits: [String]
+    let category: String // e.g., "Skin", "Hair"
+    let benefits: [String] // Bullet points of what this service does.
 
     init(name: String, icon: String, duration: String, price: Double,
          category: String, benefits: [String] = []) {
@@ -20,15 +23,16 @@ struct SalonService: Identifiable, Equatable {
 }
 
 // MARK: - Salon (full model)
+// Represents a salon with all its details.
 struct Salon: Identifiable {
     let id: UUID
     let name: String
     let location: String
-    let distance: String
-    let rating: Double
+    let distance: String // Distance from the user.
+    let rating: Double // Star rating (e.g., 4.7)
     let reviewCount: Int
-    let score: Double
-    let services: [SalonService]
+    let score: Double // Internal reputation score.
+    let services: [SalonService] // List of services offered!
     let about: String
     let phone: String
     let openHours: String
@@ -45,11 +49,13 @@ struct Salon: Identifiable {
 }
 
 // MARK: - Payment Method
+// Enum for the available payment methods in the app.
 enum PaymentMethodType: String, CaseIterable {
     case card   = "Credit / Debit Card"
     case cash   = "Pay at Salon"
     case online = "Online Banking"
 
+    // Returns a SF Symbol name for each payment method!
     var icon: String {
         switch self {
         case .card:   return "creditcard.fill"
@@ -59,15 +65,18 @@ enum PaymentMethodType: String, CaseIterable {
     }
 }
 
-// MARK: - Booking Draft (mutable, flows through UI steps)
+// MARK: - Booking Draft
+// This is used to hold the state while the user is filling out the booking form!
+// It is mutable (var) because the user changes these values step-by-step.
 struct BookingDraft {
     var salon: Salon
     var service: SalonService?           = nil
     var date: Date                       = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
     var timeSlot: String                 = ""
-    var signatureImage: UIImage?         = nil
+    var signatureImage: UIImage?         = nil // Digital signature!
     var paymentMethod: PaymentMethodType = .card
 
+    // Hardcoded time slots for the demo.
     static let timeSlots: [(time: String, available: Bool)] = [
         ("9:00 AM",  true),  ("9:45 AM",  true),  ("10:30 AM", true),
         ("11:15 AM", true),  ("12:00 PM", true),  ("12:45 PM", true),
@@ -79,39 +88,46 @@ struct BookingDraft {
     ]
 }
 
-// MARK: - Booking (immutable record stored in BookingStore)
+// MARK: - Booking
+// This represents a completed booking.
+// It is immutable (let) because once a booking is made, its core details shouldn't change!
 struct Booking: Identifiable {
     let id: UUID
     let salon: Salon
     let service: SalonService
     let date: Date
     let timeSlot: String
-    let receiptNumber: String
+    let receiptNumber: String // e.g., "GLZ-12345"
     let paymentMethod: PaymentMethodType
     let amountPaid: Double
     let signatureImage: UIImage?
-    var status: BookingStatus
-    var review: BookingReview?
+    var status: BookingStatus // Can be updated (upcoming, completed, cancelled).
+    var review: BookingReview? // Optional review added by the user!
 
+    // Helper to generate a random receipt number!
     static func generateReceiptNumber() -> String { "GLZ-\(Int.random(in: 10000...99999))" }
 }
 
 enum BookingStatus { case upcoming, completed, cancelled }
 
 // MARK: - Review
+// Represents a review left by a user for a booking.
 struct BookingReview: Identifiable {
     let id = UUID()
-    let rating: Int       // 1–5
+    let rating: Int       // 1–5 stars.
     let comment: String
     let date: Date
     let reviewerName: String
 }
 
 // MARK: - Static Salon Catalog
+// This acts as a mock database of salons for the app.
+// It uses the Singleton pattern (`shared`) so it can be accessed anywhere!
 struct SalonCatalog {
     static let shared = SalonCatalog()
-    private init() {}
+    private init() {} // Prevents creating other instances!
 
+    // Hardcoded list of salons with their services!
     let salons: [Salon] = [
         Salon(
             name: "Golden Avenue",
@@ -193,6 +209,7 @@ struct SalonCatalog {
         )
     ]
 
+    // Helper function to find a salon by name!
     func salon(named name: String) -> Salon {
         if let matched = salons.first(where: { $0.name == name }) {
             return matched

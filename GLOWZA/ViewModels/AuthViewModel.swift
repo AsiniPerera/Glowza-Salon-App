@@ -3,16 +3,24 @@ import Combine
 import LocalAuthentication
 import FirebaseAuth
 
+// MARK: - Auth View Model
+// This class manages the authentication state and flows for the app!
+// It connects the UI to the AuthService and handle biometrics.
+// @MainActor ensures that all updates to @Published properties happen on the main thread!
 @MainActor
 final class AuthViewModel: ObservableObject {
+    // @Published properties automatically notify SwiftUI views when they change!
     @Published var isAuthenticated = false
     @Published var isAuthenticating = false
     @Published var authenticationError: String?
+    
+    // Form fields!
     @Published var email = ""
     @Published var password = ""
     @Published var fullName = ""
     @Published var phone = ""
 
+    // Provider closure for LAContext (allows mocking in tests!).
     private let contextProvider: () -> LAContext
     private let authService = AuthService.shared
 
@@ -20,6 +28,7 @@ final class AuthViewModel: ObservableObject {
         self.contextProvider = contextProvider
     }
 
+    // Dynamic titles and icons based on Face ID vs Touch ID!
     var biometricButtonTitle: String {
         supportsFaceID ? "Continue with Face ID" : "Continue with Biometrics"
     }
@@ -36,6 +45,7 @@ final class AuthViewModel: ObservableObject {
     
     // MARK: - Sign Up
     func signUp() async {
+        // Validate fields!
         guard !email.isEmpty, !password.isEmpty, !fullName.isEmpty, !phone.isEmpty else {
             authenticationError = "All fields are required"
             return
@@ -56,6 +66,7 @@ final class AuthViewModel: ObservableObject {
             isAuthenticating = false
             clearFields()
         } catch {
+            // Convert technical Firebase errors to friendly student/user messages!
             authenticationError = friendlyMessage(for: error)
             isAuthenticating = false
         }
@@ -101,6 +112,7 @@ final class AuthViewModel: ObservableObject {
     }
 
     // MARK: - Friendly Firebase error messages
+    // This helper maps complex Firebase error codes to nice, human-readable strings!
     private func friendlyMessage(for error: Error) -> String {
         let code = AuthErrorCode(_bridgedNSError: error as NSError)?.code
         switch code {
@@ -127,12 +139,15 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Biometric Authentication
+    // Triggers Face ID or Touch ID!
     func authenticate() {
         let context = contextProvider()
         var error: NSError?
 
         authenticationError = nil
 
+        // Check if biometrics are available!
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
             authenticationError = errorMessage(for: error)
             return
@@ -140,6 +155,7 @@ final class AuthViewModel: ObservableObject {
 
         isAuthenticating = true
 
+        // Run the async evaluation in a Task!
         Task {
             do {
                 let success = try await context.evaluatePolicy(
@@ -164,6 +180,7 @@ final class AuthViewModel: ObservableObject {
         authenticationError = nil
     }
 
+    // Maps LocalAuthentication errors to friendly strings!
     private func errorMessage(for error: NSError?) -> String {
         guard let error else {
             return "Biometric authentication is not available on this device."

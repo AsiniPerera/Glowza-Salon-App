@@ -6,10 +6,12 @@ private let brandDark = Color(hex: "8A1538")
 private let brandTint = Color(hex: "FFF0F4")
 
 // MARK: - Standard Card
+// A reusable card container that gives a consistent background and shadow!
 struct StandardCard<Content: View>: View {
     let content: Content
     var cornerRadius: CGFloat = CornerRadius.base
 
+    // @ViewBuilder allows us to pass multiple views inside the closure!
     init(@ViewBuilder content: @escaping () -> Content) {
         self.content = content()
     }
@@ -23,6 +25,7 @@ struct StandardCard<Content: View>: View {
 }
 
 // MARK: - Primary Button (hot pink)
+// The main action button used across the app!
 struct PrimaryButton: View {
     let title: String
     let action: () -> Void
@@ -35,6 +38,7 @@ struct PrimaryButton: View {
         Button(action: action) {
             Group {
                 if isLoading {
+                    // Show a spinner if loading!
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
@@ -45,6 +49,7 @@ struct PrimaryButton: View {
             .frame(width: 330, height: 55)
             .foregroundColor(.white)
             .background(
+                // Change color if disabled or loading!
                 (isDisabled || isLoading) ? Color(hex: "D4829E") : hotPink
             )
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -54,6 +59,7 @@ struct PrimaryButton: View {
 }
 
 // MARK: - Secondary Button (hot pink outline)
+// Used for secondary actions (like "Cancel" or "Clear").
 struct SecondaryButton: View {
     let title: String
     let action: () -> Void
@@ -78,7 +84,7 @@ struct SecondaryButton: View {
 
 // MARK: - Standard Search Bar
 struct StandardSearchBar: View {
-    @Binding var text: String
+    @Binding var text: String // Binding allows this view to update the parent's state!
     var placeholder: String = "Search..."
     var onSearch: (() -> Void)? = nil
 
@@ -94,6 +100,7 @@ struct StandardSearchBar: View {
                 .onSubmit { onSearch?() }
 
             if !text.isEmpty {
+                // Show a clear button if there is text!
                 Button(action: { text = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .glowzaFont(size: 15)
@@ -109,6 +116,7 @@ struct StandardSearchBar: View {
 }
 
 // MARK: - Standard Badge
+// A small pill-shaped label (e.g. for tags or status).
 struct StandardBadge: View {
     let title: String
     var backgroundColor: Color = Color(hex: "962043")
@@ -126,6 +134,7 @@ struct StandardBadge: View {
 }
 
 // MARK: - Section Header
+// Used at the top of lists or sections!
 struct SectionHeader: View {
     let title: String
     let subtitle: String?
@@ -163,6 +172,7 @@ struct SectionHeader: View {
 }
 
 // MARK: - Rating Stars View
+// Displays 5 stars based on a rating value (handles half stars!).
 struct RatingView: View {
     let rating: Double
     var size: CGFloat = 14
@@ -170,6 +180,7 @@ struct RatingView: View {
     var body: some View {
         HStack(spacing: 2) {
             ForEach(1...5, id: \.self) { i in
+                // Determine which star image to use!
                 Image(systemName: Double(i) <= rating ? "star.fill" : (Double(i) - 0.5 <= rating ? "star.leadinghalf.filled" : "star"))
                     .glowzaFont(size: size)
                     .foregroundColor(Double(i) <= rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
@@ -207,6 +218,7 @@ struct LocationChip: View {
 }
 
 // MARK: - Filter Chip
+// A selectable pill used for filtering lists!
 struct FilterChip: View {
     let title: String
     let isSelected: Bool
@@ -229,6 +241,7 @@ struct FilterChip: View {
 }
 
 // MARK: - Glowza Text Field
+// A styled text field with an optional icon and secure entry toggle!
 struct GlowzaTextField: View {
     let placeholder: String
     @Binding var text: String
@@ -248,6 +261,7 @@ struct GlowzaTextField: View {
                     .foregroundColor(appSettings.themeTextSecondary)
                     .frame(width: 20)
             }
+            // Switch between SecureField and TextField!
             if isSecure && !showPassword {
                 SecureField(placeholder, text: $text)
                     .glowzaFont(size: 15)
@@ -258,6 +272,8 @@ struct GlowzaTextField: View {
                     .keyboardType(keyboardType)
                     .foregroundColor(appSettings.themeText)
             }
+            
+            // Show eye toggle for passwords!
             if isSecure {
                 Button(action: { showPassword.toggle() }) {
                     Image(systemName: showPassword ? "eye.slash" : "eye")

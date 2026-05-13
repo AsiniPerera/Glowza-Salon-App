@@ -4,30 +4,39 @@ import MapKit
 private let brand = Color(hex: "962043")
 
 // MARK: - Salon Detail View
+// This view shows the details of a specific salon, including its services,
+// about information, and reviews. Users can also book services from here.
 struct SalonDetailView: View {
 
-    let salonName: String
+    let salonName: String // The name of the salon to display.
 
     @Environment(TreatmentComparisonStore.self) private var comparisonStore
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
 
-    @State private var showBookingFlow = false
-    @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0])
-    @State private var isFavourited    = false
-    @State private var photoIndex      = 0
-    @State private var selectedTab     = 0
-    @State private var selectedServiceID: UUID? = nil
-    @State private var firestoreReviews: [FirestoreSalonReview] = []
-    @State private var showReviewSheet = false
-    @State private var reviewToEdit: FirestoreSalonReview? = nil
+    @State private var showBookingFlow = false // Controls the booking flow sheet.
+    @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0]) // Holds the booking state.
+    @State private var isFavourited    = false // Tracks if the salon is favorited.
+    @State private var photoIndex      = 0 // Tracks the current photo in the gallery.
+    @State private var selectedTab     = 0 // Tracks the selected tab (Services, About, Reviews).
+    @State private var selectedServiceID: UUID? = nil // Tracks the selected service.
+    @State private var firestoreReviews: [FirestoreSalonReview] = [] // Reviews fetched from Firestore.
+    @State private var showReviewSheet = false // Controls the review sheet.
+    @State private var reviewToEdit: FirestoreSalonReview? = nil // Holds the review to edit.
     @State private var errorMessage: String? = nil
     @State private var showErrorAlert = false
+    @State private var selectedReviewer: FirestoreSalonReview? = nil // Holds the review of the user to show!
+    @State private var mapRoute: MKRoute? = nil // Holds the real route!
+    @State private var userAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData") // User avatar!
 
+    // Helper to get the full Salon object from the catalog.
     private var salon: Salon {
         SalonCatalog.shared.salon(named: salonName)
     }
+    
 
+
+    // Combines Firestore reviews with hardcoded sample reviews for display!
     private var displayReviews: [FirestoreSalonReview] {
         var allReviews = firestoreReviews
         let dummyReviews = sampleReviews.map { br in
@@ -37,6 +46,7 @@ struct SalonDetailView: View {
         return allReviews
     }
 
+    // Hardcoded sample reviews to make the app look full!
     private let sampleReviews: [BookingReview] = [
         BookingReview(rating: 5, comment: "Absolutely loved the facial treatment! Skin is glowing.", date: Date(), reviewerName: "Dilnoza R."),
         BookingReview(rating: 4, comment: "Professional staff, clean environment. Will return.", date: Date(), reviewerName: "Amara S."),
@@ -56,13 +66,14 @@ struct SalonDetailView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    heroSection
-                    infoSheet
-                        .padding(.top, -15)
+                    heroSection // The top image and title section.
+                    infoSheet // The bottom section with tabs.
+                        .padding(.top, -15) // Overlap the hero section slightly!
                 }
             }
             .ignoresSafeArea(edges: .top)
 
+            // Shows the "Book Now" bar if a service is selected!
             if showBookNow {
                 bookNowBar
                     .transition(.move(edge: .bottom))
@@ -80,7 +91,6 @@ struct SalonDetailView: View {
             Task {
                 await FavouritesStore.shared.load()
                 isFavourited = FavouritesStore.shared.favouriteNames.contains(salonName)
-                await SalonFirestoreService.shared.seedMockReviews()
                 await fetchFirestoreReviews()
             }
         }
@@ -96,6 +106,9 @@ struct SalonDetailView: View {
                 Task { await fetchFirestoreReviews() }
             }
         }
+        .sheet(item: $selectedReviewer) { review in
+            UserProfileSheet(review: review, reviewCount: displayReviews.filter { $0.userName == review.userName }.count)
+        }
         .alert("Review Error", isPresented: $showErrorAlert, presenting: errorMessage) { _ in
             Button("OK") { errorMessage = nil }
         } message: { msg in
@@ -103,11 +116,13 @@ struct SalonDetailView: View {
         }
     }
 
+    // Fetches reviews from Firestore.
     private func fetchFirestoreReviews() async {
         let sId = SalonFirestoreService.shared.salonId(for: salonName)
         let results = (try? await SalonFirestoreService.shared.fetchReviews(forSalonId: sId)) ?? []
         
         var allReviews = results
+        // If there are fewer than 10 reviews, add some mock reviews!
         if allReviews.count < 10 {
             let mockReviews = generateLocalMockReviews(for: sId)
             let needed = 10 - allReviews.count
@@ -116,6 +131,7 @@ struct SalonDetailView: View {
         self.firestoreReviews = allReviews
     }
 
+    // Generates local mock reviews if Firestore doesn't have enough.
     private func generateLocalMockReviews(for salonId: String) -> [FirestoreSalonReview] {
         let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
         let comments = [
@@ -144,7 +160,8 @@ struct SalonDetailView: View {
         }
     }
 
-    // MARK: - Hero
+    // MARK: - Hero Section
+    // This section displays the big salon image, rating, name, and location.
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
             Rectangle()
@@ -158,6 +175,7 @@ struct SalonDetailView: View {
                         .clipped()
                 )
 
+            // Dark gradient to make text readable!
             LinearGradient(
                 colors: [Color.black.opacity(0.65), Color.clear],
                 startPoint: .bottom,
@@ -201,6 +219,7 @@ struct SalonDetailView: View {
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
+                // Favorite button
                 Button(action: {
                     isFavourited.toggle()
                     Task {
@@ -215,6 +234,8 @@ struct SalonDetailView: View {
                         .clipShape(Circle())
                         .shadow(color: .black.opacity(0.12), radius: 5)
                 }
+                
+                // Share button
                 Button(action: {}) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 15))
@@ -229,6 +250,7 @@ struct SalonDetailView: View {
             .padding(.top, 56)
         }
         .overlay(alignment: .bottomTrailing) {
+            // Contact buttons (Phone, Facebook, WhatsApp)
             HStack(spacing: 10) {
                 heroContactBtn(color: Color(hex: "34C759"), symbol: "phone.fill")
                 heroContactBtn(color: Color(hex: "1877F2"), letter: "f")
@@ -240,6 +262,7 @@ struct SalonDetailView: View {
     }
 
     // MARK: - Info Sheet
+    // This is the bottom sheet that contains the tabs for Services, About, and Reviews.
     private var infoSheet: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(salon.about)
@@ -252,6 +275,7 @@ struct SalonDetailView: View {
                 .padding(.top, 24)
                 .padding(.bottom, 16)
 
+            // Segmented picker for tabs!
             Picker("Salon Section", selection: $selectedTab) {
                 Text("Services").tag(0)
                 Text("About").tag(1)
@@ -262,6 +286,7 @@ struct SalonDetailView: View {
             .padding(.top, 8)
             .padding(.bottom, 2)
 
+            // Content changes based on the selected tab!
             Group {
                 switch selectedTab {
                 case 0: servicesContent
@@ -277,13 +302,12 @@ struct SalonDetailView: View {
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 15))
     }
 
-    
-
-    // MARK: - Helpers
-
+    // MARK: - About Content
+    // Displays availability, location, and a gallery.
     private var aboutContent: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .top, spacing: 0) {
+                // Availability
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: "clock")
@@ -302,7 +326,10 @@ struct SalonDetailView: View {
                         .foregroundColor(Color(hex: "8A8A8A"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                
                 Divider().padding(.horizontal, 20)
+                
+                // Location
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Image(systemName: "location")
@@ -326,6 +353,63 @@ struct SalonDetailView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 20)
+            
+            // Mini Map with Route (Full width!)
+            Map {
+                // Salon Annotation with image!
+                Annotation(salonName, coordinate: coordinateForSalon(salonName)) {
+                    VStack(spacing: 4) {
+                        Image(mappedSalonImageName(salonName)) // Use the salon's header image!
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 32, height: 32)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    }
+                }
+                
+                // User Annotation with profile image!
+                Annotation("My Location", coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)) {
+                    VStack(spacing: 4) {
+                        if let data = userAvatarData, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 32, height: 32)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 32, height: 32)
+                                .foregroundColor(brand)
+                                .background(Color.white)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        }
+                    }
+                }
+                
+                // Detailed route (Hardcoded for reliability) highlighted in Dark Pink!
+                MapPolyline(coordinates: [
+                    CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612),
+                    CLLocationCoordinate2D(latitude: 6.9000, longitude: 79.8550),
+                    CLLocationCoordinate2D(latitude: 6.8700, longitude: 79.8650),
+                    CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8600),
+                    CLLocationCoordinate2D(latitude: 6.8200, longitude: 79.8700),
+                    coordinateForSalon(salonName)
+                ])
+                .stroke(Color(hex: "C2185B"), lineWidth: 4) // Deep Magenta / Dark Pink!
+            }
+            .frame(height: 150)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .hcBorder(radius: 12)
+            .padding(.horizontal, 24)
+            .padding(.top, 4)
 
             Text(salon.about)
                 .font(.system(size: 13))
@@ -333,6 +417,7 @@ struct SalonDetailView: View {
                 .lineSpacing(5)
                 .padding(.horizontal, 24)
 
+            // Gallery
             VStack(alignment: .leading, spacing: 10) {
                 Text("Gallery")
                     .font(.system(size: 13))
@@ -353,6 +438,7 @@ struct SalonDetailView: View {
             }
             .padding(.horizontal, 24)
 
+            // Page indicator for gallery!
             HStack(spacing: 8) {
                 ForEach(0..<galleryImageNames.count, id: \.self) { i in
                     Circle()
@@ -365,10 +451,12 @@ struct SalonDetailView: View {
         }
     }
 
+    // Hardcoded gallery images.
     private var galleryImageNames: [String] {
         ["galery1", "galery2", "galery3", "galery4", "galery5"]
     }
 
+    // Maps salon names to image assets.
     private func mappedSalonImageName(_ salonName: String) -> String {
         switch salonName {
         case "Golden Avenue": return "Salon1"
@@ -385,6 +473,7 @@ struct SalonDetailView: View {
         }
     }
 
+    // Maps service names to image assets. This is a big helper!
     private func imageForService(_ name: String) -> String {
         let lowerName = name.lowercased()
         
@@ -413,6 +502,8 @@ struct SalonDetailView: View {
         return "facial"
     }
 
+    // MARK: - Services Content
+    // Displays a list of services offered by the salon.
     private var servicesContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(salon.services) { service in
@@ -494,12 +585,15 @@ struct SalonDetailView: View {
         }
     }
 
+    // MARK: - Reviews Content
+    // Displays the reviews for the salon.
     private var reviewsContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Customer Reviews")
                     .glowzaFont(size: 18, weight: .bold)
                 Spacer()
+                // Button to write a review!
                 Button(action: { 
                     reviewToEdit = nil
                     showReviewSheet = true 
@@ -519,6 +613,7 @@ struct SalonDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
             } else {
+                // Show only the first 10 reviews!
                 ForEach(displayReviews.prefix(10)) { review in
                     reviewRow(review)
                     Divider().padding(.horizontal, 20)
@@ -527,19 +622,26 @@ struct SalonDetailView: View {
         }
     }
 
+    // Helper to create a single review row.
     private func reviewRow(_ review: FirestoreSalonReview) -> some View {
         let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
         
         let imageName: String
         var customImage: UIImage? = nil
         
-        // Always use the current profile image if the review belongs to the current user
-        if review.userId == AuthService.shared.currentUID,
-           let currentAvatar = AuthService.shared.currentUserProfile?.avatarBase64, !currentAvatar.isEmpty,
-           let data = Data(base64Encoded: currentAvatar),
-           let uiImage = UIImage(data: data) {
-            customImage = uiImage
-            imageName = ""
+        // Always use the current profile image if the review belongs to the current user!
+        if review.userId == AuthService.shared.currentUID {
+            if let data = userAvatarData, let uiImage = UIImage(data: data) {
+                customImage = uiImage
+                imageName = ""
+            } else if let currentAvatar = AuthService.shared.currentUserProfile?.avatarBase64, !currentAvatar.isEmpty,
+                      let data = Data(base64Encoded: currentAvatar),
+                      let uiImage = UIImage(data: data) {
+                customImage = uiImage
+                imageName = ""
+            } else {
+                imageName = ""
+            }
         } else if let base64 = review.userAvatarBase64, !base64.isEmpty,
            let data = Data(base64Encoded: base64),
            let uiImage = UIImage(data: data) {
@@ -555,6 +657,7 @@ struct SalonDetailView: View {
         
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
+                // Avatar image
                 ZStack {
                     if let uiImage = customImage {
                         Image(uiImage: uiImage)
@@ -575,12 +678,14 @@ struct SalonDetailView: View {
                             .foregroundColor(brand)
                     }
                 }
+                
                 let displayName = (review.userId == AuthService.shared.currentUID && AuthService.shared.currentUserProfile != nil) ? AuthService.shared.currentUserProfile!.fullName : review.userName
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(displayName)
                         .glowzaFont(size: 15, weight: .semibold)
                         .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
+                    // Star rating
                     HStack(spacing: 3) {
                         ForEach(1...5, id: \.self) { i in
                             Image(systemName: i <= review.rating ? "star.fill" : "star")
@@ -591,6 +696,7 @@ struct SalonDetailView: View {
                 }
                 Spacer()
                 
+                // Show edit button only for the user's own reviews!
                 if review.userId == AuthService.shared.currentUID {
                     Button(action: {
                         reviewToEdit = review
@@ -620,17 +726,21 @@ struct SalonDetailView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
+        .contentShape(Rectangle()) // Make the whole area tappable!
+        .onTapGesture {
+            selectedReviewer = review
+        }
     }
-
+    // Computed property to control the visibility of the Book Now bar.
     private var showBookNow: Bool {
         switch selectedTab {
-        case 0: return selectedServiceID != nil
+        case 0: return selectedServiceID != nil // Show if a service is selected!
         case 1: return false                       // About tab — hidden
         default: return false                      // Reviews tab — hidden
         }
     }
 
-    // Book Now Bar
+    // The Book Now bar that appears at the bottom.
     private var bookNowBar: some View {
         VStack(spacing: 0) {
             Rectangle().fill(Color(hex: "962043")).frame(height: 1)
@@ -638,7 +748,7 @@ struct SalonDetailView: View {
                 if let svc = bookingDraft.service {
                     // Action
                 }
-                showBookingFlow = true
+                showBookingFlow = true // Open the booking flow!
             }) {
                 HStack(spacing: 10) {
                     if let svc = bookingDraft.service, selectedTab == 0 {
@@ -675,6 +785,7 @@ struct SalonDetailView: View {
     }
 
     // MARK: - Hero Contact Buttons
+    // Helper to create small action buttons on the hero section.
     private func heroContactBtn(color: Color, symbol: String) -> some View {
         Button(action: {}) {
             Circle()
@@ -691,14 +802,15 @@ struct SalonDetailView: View {
     }
 
 // MARK: - Salon Review Sheet
+// This view allows the user to write or edit a review.
 struct SalonReviewSheet: View {
     let salonName: String
-    let reviewToEdit: FirestoreSalonReview?
+    let reviewToEdit: FirestoreSalonReview? // Pass a review here to edit it!
     let existingReviews: [FirestoreSalonReview]
     let onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var rating: Int = 5
+    @State private var rating: Int = 5 // Default rating is 5!
     @State private var comment: String = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String? = nil
@@ -788,6 +900,7 @@ struct SalonReviewSheet: View {
         }
     }
 
+    // Submits the review to Firestore.
     private func submitReview() {
         let salonId = SalonFirestoreService.shared.salonId(for: salonName)
         let userId = AuthService.shared.currentUID ?? "GUEST"
@@ -805,11 +918,14 @@ struct SalonReviewSheet: View {
         
         isSubmitting = true
         
+        // We use Task to run async code from a non-async function!
         Task {
             do {
                 if let r = reviewToEdit, let docId = r.documentId {
+                    // Update existing review!
                     try await SalonFirestoreService.shared.updateReview(reviewId: docId, rating: rating, comment: comment)
                 } else {
+                    // Add new review!
                     try await SalonFirestoreService.shared.addSalonReview(
                         salonId: salonId,
                         userId: userId,
@@ -824,9 +940,10 @@ struct SalonReviewSheet: View {
                     dismiss()
                 }
             } catch {
-                print("❌ Review submission failed: \(error)")
+                print("Review submission failed: \(error)")
                 
-                // FALLBACK: If Firestore fails, save locally for demonstration
+                // FALLBACK: If Firestore fails, save locally for demonstration!
+                // This is a good practice to prevent the app from breaking.
                 let fallbackReview = FirestoreSalonReview(
                     id: UUID().uuidString,
                     salonId: salonId,
@@ -848,6 +965,7 @@ struct SalonReviewSheet: View {
     }
 }
 
+    // Helper for letter-based contact buttons (like 'f' for Facebook).
     private func heroContactBtn(color: Color, letter: String) -> some View {
         Button(action: {}) {
             Circle()
@@ -862,6 +980,28 @@ struct SalonReviewSheet: View {
         }
         .buttonStyle(.plain)
     }
+
+    // Fetches a real route from Apple Maps!
+    private func fetchRoute() async {
+        let request = MKDirections.Request()
+        request.source = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinateForSalon(salonName)))
+        request.transportType = .automobile
+        
+        let directions = MKDirections(request: request)
+        do {
+            let response = try await directions.calculate()
+            if let route = response.routes.first {
+                await MainActor.run {
+                    self.mapRoute = route
+                }
+            }
+        } catch {
+            print("Failed to fetch route: \(error)")
+        }
+    }
+
+    // Opens Apple Maps with driving directions.
     private func openDirections() {
         let coordinate = coordinateForSalon(salonName)
         let destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
@@ -871,6 +1011,7 @@ struct SalonReviewSheet: View {
         ])
     }
 
+    // Helper to get coordinates for hardcoded salons.
     private func coordinateForSalon(_ name: String) -> CLLocationCoordinate2D {
         switch name {
         case "Golden Avenue":
@@ -882,6 +1023,109 @@ struct SalonReviewSheet: View {
         default:
             return CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)
         }
+    }
+}
+
+// Sheet to display a simple user profile when tapping on a review!
+struct UserProfileSheet: View {
+    let review: FirestoreSalonReview
+    let reviewCount: Int // Dynamic review count!
+    @Environment(\.dismiss) var dismiss
+    private let brand = Color(hex: "962043") // Match the brand color!
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header
+            HStack {
+                Spacer()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding([.top, .trailing])
+            
+            // Avatar
+            let avatarImage = getAvatarImage()
+            if let uiImage = avatarImage {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 100, height: 100)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
+                    .shadow(radius: 5)
+            } else {
+                ZStack {
+                    Circle().fill(brand.opacity(0.12)).frame(width: 100, height: 100)
+                    Text(String(review.userName.prefix(1)))
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundColor(brand)
+                }
+            }
+            
+            // Name
+            Text(review.userName)
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            Text("Glowza Member")
+                .font(.subheadline)
+                .foregroundColor(.gray)
+            
+            Divider()
+                .padding(.horizontal)
+            
+            // Stats or info
+            HStack(spacing: 40) {
+                VStack {
+                    Text("\(reviewCount)")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                    Text(reviewCount == 1 ? "Review" : "Reviews")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                VStack {
+                    Text("\(reviewCount)") // Assuming 1 visit per review!
+                        .font(.title3)
+                        .fontWeight(.bold)
+                    Text(reviewCount == 1 ? "Visit" : "Visits")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .presentationDetents([.medium]) // Show as a bottom sheet!
+    }
+    
+    private func getAvatarImage() -> UIImage? {
+        let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
+        
+        if review.userId == AuthService.shared.currentUID {
+            // Check local storage first!
+            let userAvatarData = UserDefaults.standard.data(forKey: "profile_avatarData")
+            if let data = userAvatarData, let uiImage = UIImage(data: data) {
+                return uiImage
+            } else if let currentAvatar = AuthService.shared.currentUserProfile?.avatarBase64, !currentAvatar.isEmpty,
+                      let data = Data(base64Encoded: currentAvatar),
+                      let uiImage = UIImage(data: data) {
+                return uiImage
+            }
+        } else if let base64 = review.userAvatarBase64, !base64.isEmpty,
+           let data = Data(base64Encoded: base64),
+           let uiImage = UIImage(data: data) {
+            return uiImage
+        } else if review.userName == "Anuki" {
+            return UIImage(named: "r5")
+        } else if let idx = mockUsers.firstIndex(of: review.userName) {
+            return UIImage(named: "r\(idx + 1)")
+        }
+        return nil
     }
 }
 

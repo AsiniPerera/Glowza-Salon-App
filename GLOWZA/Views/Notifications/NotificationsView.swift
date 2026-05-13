@@ -1,13 +1,16 @@
-
 import SwiftUI
 
+// This view shows the history of notifications received by the user.
+// It groups them by date and allows clearing them.
 struct NotificationsView: View {
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.dismiss) var dismiss
     
+    // We use the shared NotificationManager to access the history!
     @State private var notificationManager = NotificationManager.shared
     
     // MARK: - Computed Colors
+    // These adapt to dark mode and theme settings!
     private var pageBackground:    Color { appSettings.themePage }
     private var surfaceBackground: Color { appSettings.themeSurface }
     private var primaryText:       Color { appSettings.themeText }
@@ -20,8 +23,9 @@ struct NotificationsView: View {
             pageBackground.ignoresSafeArea()
             
             VStack(spacing: 0) {
-                // Content
+                // Empty state or List
                 if notificationManager.notificationHistory.isEmpty {
+                    // Show this when there are no notifications!
                     VStack(spacing: 12) {
                         Image(systemName: "bell.slash.fill")
                             .font(.system(size: 48))
@@ -37,16 +41,20 @@ struct NotificationsView: View {
                     }
                     .frame(maxHeight: .infinity)
                 } else {
+                    // Show the list of notifications!
                     ScrollView {
                         LazyVStack(spacing: 12) {
+                            // Loop through the grouped dates (sorted newest first)
                             ForEach(groupedNotifications.keys.sorted(by: >), id: \.self) { date in
                                 Section {
+                                    // Show rows for each notification on this date
                                     ForEach(groupedNotifications[date] ?? []) { notification in
                                         NotificationRow(notification: notification, onDismiss: {
                                             notificationManager.dismissFromHistory(notification)
                                         })
                                     }
                                 } header: {
+                                    // Section header (Today, Yesterday, etc.)
                                     Text(dateLabel(date))
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(secondaryText)
@@ -72,7 +80,7 @@ struct NotificationsView: View {
                             .font(.system(size: 17))
                             .fixedSize()
                     }
-                    .foregroundColor(Color(hex: "9E1B4C")) // Match the pink/burgundy color in image
+                    .foregroundColor(Color(hex: "9E1B4C")) // Custom brand pink
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -91,11 +99,13 @@ struct NotificationsView: View {
             }
         }
         .onAppear {
+            // Refresh the manager on appear to get latest state
             notificationManager = NotificationManager.shared
         }
     }
     
     // MARK: - Grouped Notifications by Date
+    // This computed property splits the array into a dictionary keyed by date (start of day).
     private var groupedNotifications: [Date: [NotificationItem]] {
         let calendar = Calendar.current
         var grouped: [Date: [NotificationItem]] = [:]
@@ -113,6 +123,7 @@ struct NotificationsView: View {
     }
     
     // MARK: - Date Label Helper
+    // Converts a date into a friendly string like "Today" or "Yesterday".
     private func dateLabel(_ date: Date) -> String {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -131,11 +142,12 @@ struct NotificationsView: View {
 }
 
 // MARK: - Notification Row
+// Represents a single notification card in the list!
 struct NotificationRow: View {
     @Environment(AppSettings.self) private var appSettings
     
     let notification: NotificationItem
-    let onDismiss: () -> Void
+    let onDismiss: () -> Void // Callback to remove it from history.
     
     private var surfaceBackground: Color { appSettings.themeSurface }
     private var primaryText:       Color { appSettings.themeText }
@@ -143,6 +155,7 @@ struct NotificationRow: View {
     private var borderColor:       Color { appSettings.themeBorder }
     private var brand:             Color { appSettings.themeBrand }
     
+    // Pick an accent color based on the notification type!
     private var accentColor: Color {
         switch notification.type {
         case .success: return .green
@@ -154,7 +167,7 @@ struct NotificationRow: View {
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            // App Icon (Square with rounded corners)
+            // Icon with colored background
             Image(systemName: notification.icon)
                 .font(.system(size: 16))
                 .foregroundColor(.white)
@@ -162,9 +175,9 @@ struct NotificationRow: View {
                 .background(accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             
-            // Content
+            // Content area
             VStack(alignment: .leading, spacing: 4) {
-                // Header: Title + Time + Dismiss
+                // Header: Title + Time + Dismiss Button
                 HStack {
                     Text(notification.title)
                         .font(.system(size: 14, weight: .bold))
@@ -186,7 +199,7 @@ struct NotificationRow: View {
                     }
                 }
                 
-                // Body
+                // Body message
                 Text(notification.subtitle)
                     .font(.system(size: 13))
                     .foregroundColor(primaryText.opacity(0.9))
@@ -195,6 +208,7 @@ struct NotificationRow: View {
         }
         .padding(14)
         .background(
+            // We use .ultraThinMaterial for a modern blurred look!
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 5)
@@ -204,6 +218,7 @@ struct NotificationRow: View {
     }
     
     // MARK: - Time Ago Helper
+    // Formats the timestamp into a string relative to now (e.g. "5m ago").
     private func timeAgo(_ date: Date) -> String {
         let calendar = Calendar.current
         let now = Date()

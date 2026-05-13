@@ -2,9 +2,13 @@ import SwiftUI
 
 // MARK: - Color Hex Extension
 extension Color {
+    // Allows creating a Color using a hex string (e.g. Color(hex: "FF2D55"))!
     init(hex: String) {
         let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted).uppercased()
+        
+        // Remap the hex if high contrast mode is enabled!
         let effectiveHex = Color.highContrastRemappedHexIfNeeded(cleaned)
+        
         var int: UInt64 = 0
         Scanner(string: effectiveHex).scanHexInt64(&int)
         let a, r, g, b: UInt64
@@ -21,16 +25,18 @@ extension Color {
                   opacity: Double(a) / 255)
     }
 
+    // Helper to remap colors for High Contrast mode!
+    // This ensures that even if we use hardcoded hexes in views, they look correct in HC.
     private static func highContrastRemappedHexIfNeeded(_ hex: String) -> String {
         guard UserDefaults.standard.bool(forKey: "app_highContrast") else {
             return hex
         }
 
-        // Electric Rose HC: OLED #000000 bg + Electric Rose #FF2D55 accents + crisp white text
+        // Electric Rose HC palette values!
         let electricRose = "FF2D55"   // Electric Rose — primary CTA + neon border
-        let deepMagenta  = "C2185B"   // Deep Magenta  — subtle gradient partner
+        let deepMagenta  = "C2185B"   // Deep Magenta — subtle gradient partner
 
-        // Brand, action, and accent colors → Electric Rose.
+        // Brand, action, and accent colors → Electric Rose!
         let brandLike: Set<String> = [
             "962043", "8A1538", "D4829E", "FF69B4", "E5A820", "C8860A", "4A3828",
             "F59E0B", "DB4437", "1877F2", "2196F3", "4CAF50", "FF9800", "F44336", "00A878"
@@ -39,13 +45,13 @@ extension Color {
             return electricRose
         }
 
-        // Secondary brand variants → Deep Magenta.
+        // Secondary brand variants → Deep Magenta!
         let magentaLike: Set<String> = ["F5E8EE", "FFF0F4", "E8C8D4"]
         if magentaLike.contains(hex) {
             return deepMagenta
         }
 
-        // Light surfaces → pure OLED black.
+        // Light surfaces → pure OLED black!
         let lightSurfaces: Set<String> = [
             "FFFFFF", "FAFAFA", "F8F8F8", "F2F2F7", "EBEBEB", "E5E5EA", "E8E8EC",
             "F0F0F0", "EDEBE9", "EEEAE5", "F7F7FA", "F7F7F7", "FCFCFC", "F9F9F9"
@@ -54,7 +60,7 @@ extension Color {
             return "000000"
         }
 
-        // Common text grays become white for readability.
+        // Common text grays become white for readability!
         let textLike: Set<String> = [
             "1A1A1A", "1C1C1E", "1F2126", "3A3A3C", "5A5D65", "5E5E5E", "8A8A8A", "8A8D94",
             "8E8E93", "9A9A9F", "ABABAB", "C7C7CC"
@@ -68,6 +74,7 @@ extension Color {
 }
 
 // MARK: - Spacing Constants
+// Centralized spacing system to avoid magic numbers!
 struct Spacing {
     static let xs: CGFloat = 4
     static let sm: CGFloat = 8
@@ -79,6 +86,7 @@ struct Spacing {
 }
 
 // MARK: - Corner Radius Constants
+// Centralized corner radius system!
 struct CornerRadius {
     static let xs: CGFloat = 4
     static let sm: CGFloat = 8
@@ -90,6 +98,7 @@ struct CornerRadius {
 }
 
 // MARK: - Typography
+// Centralized typography system using system fonts (Urbanist is applied via view modifiers).
 struct Typography {
     static let largeTitle = Font.system(size: 34, weight: .bold)
     static let title = Font.system(size: 28, weight: .bold)
@@ -114,6 +123,7 @@ struct ShadowStyle {
 }
 
 // MARK: - Color Extensions
+// Dynamic colors that change based on High Contrast mode!
 extension Color {
     private static var neonHighContrastEnabled: Bool {
         UserDefaults.standard.bool(forKey: "app_highContrast")
@@ -121,7 +131,7 @@ extension Color {
 
     // Electric Rose HC palette
     private static let hcRose    = Color(hex: "FF2D55")   // Electric Rose — primary CTA & neon border
-    private static let hcMagenta = Color(hex: "C2185B")   // Deep Magenta   — gradient partner
+    private static let hcMagenta = Color(hex: "C2185B")   // Deep Magenta — gradient partner
 
     // Brand Colors
     static var glowzaPrimary: Color { neonHighContrastEnabled ? hcRose : Color(hex: "962043") }
@@ -143,14 +153,14 @@ extension Color {
     static var glowzaSubtext: Color { neonHighContrastEnabled ? .white.opacity(0.55) : Color(hex: "8A8A8A") }
     static var glowzaTextDisabled: Color { neonHighContrastEnabled ? .white.opacity(0.40) : Color(hex: "ABABAB") }
 
-    // Neon Border / Divider — Electric Rose at 60 % in HC
+    // Neon Border / Divider — Electric Rose at 60% in HC
     static var glowzaBorder: Color { neonHighContrastEnabled ? hcRose.opacity(0.60) : Color(hex: "EBEBEB") }
 
     // Brand CTA
     static var hotPink: Color { neonHighContrastEnabled ? hcRose : Color(hex: "962043") }
     static var hotPinkDisabled: Color { neonHighContrastEnabled ? hcRose.opacity(0.45) : Color(hex: "D4829E") }
 
-    // State Colors
+    // State Colors (Standard UI colors).
     static let glowzaSuccess = Color(hex: "4CAF50")
     static let glowzaWarning = Color(hex: "FF9800")
     static let glowzaError = Color(hex: "F44336")
@@ -158,14 +168,13 @@ extension Color {
 }
 
 // MARK: - High Contrast View Modifier
-/// Increases visual contrast when the user enables High Contrast Mode in Profile Settings.
-/// Applies heavier font weight and stronger border strokes to any view it wraps.
+// Increases visual contrast when the user enables High Contrast Mode in Profile Settings!
 struct HighContrastModifier: ViewModifier {
     @Environment(\.isHighContrast) private var isHighContrast
 
     func body(content: Content) -> some View {
         content
-            .bold(isHighContrast)
+            .bold(isHighContrast) // Make text bold!
             .overlay(
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .stroke(Color.white.opacity(isHighContrast ? 0.85 : 0),
@@ -175,7 +184,7 @@ struct HighContrastModifier: ViewModifier {
 }
 
 extension View {
-    /// Apply this to any card / row that should respond to High Contrast Mode.
+    /// Apply this to any card / row that should respond to High Contrast Mode!
     func highContrastAware() -> some View {
         modifier(HighContrastModifier())
     }

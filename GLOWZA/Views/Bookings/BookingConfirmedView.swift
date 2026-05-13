@@ -1,11 +1,13 @@
 import SwiftUI
 
 // MARK: - Booking Confirmed (Thank you & Booking Summary screen)
+// This view appears after a successful booking. It shows a summary and a nice animation!
 struct BookingConfirmedView: View {
 
-    let booking: Booking
-    let onBackToHome: () -> Void
+    let booking: Booking // The booking data passed from the previous screen.
+    let onBackToHome: () -> Void // Callback to navigate back to the home screen.
 
+    // State variables for managing the intro animations.
     @State private var checkScale: CGFloat = 0.3
     @State private var checkOpacity: Double = 0.0
     @State private var ring1Scale: CGFloat = 0.5
@@ -25,28 +27,34 @@ struct BookingConfirmedView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // ── Animated hero ──────────────────────────────────────
+                // ── Animated Hero Section ──────────────────────────────
+                // This creates layered rings that scale up when the view appears.
                 ZStack {
+                    // Outer pulsing ring.
                     Circle()
                         .stroke(brand.opacity(0.12), lineWidth: 1)
                         .frame(width: 130, height: 130)
                         .scaleEffect(ring2Scale)
                         .opacity(ring2Opacity)
 
+                    // Inner pulsing ring.
                     Circle()
                         .stroke(brand.opacity(0.28), lineWidth: 1.5)
                         .frame(width: 100, height: 100)
                         .scaleEffect(ring1Scale)
                         .opacity(ring1Opacity)
 
+                    // Static filled circle.
                     Circle()
                         .fill(brand.opacity(0.10))
                         .frame(width: 70, height: 70)
 
+                    // Static border circle.
                     Circle()
                         .stroke(brand, lineWidth: 2)
                         .frame(width: 70, height: 70)
 
+                    // Checkmark icon.
                     Image(systemName: "checkmark")
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(brand)
@@ -79,6 +87,7 @@ struct BookingConfirmedView: View {
                 Spacer().frame(height: 15)
 
                 // ── Details card ───────────────────────────────────────
+                // Shows the summary of what was booked.
                 VStack(spacing: 0) {
                     detailRow(icon: "sparkles", label: "Treatment", value: booking.service.name, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
@@ -98,8 +107,6 @@ struct BookingConfirmedView: View {
                 .offset(y: contentOffset)
 
                 Spacer()
-
-
 
                 // ── Back to Home button ────────────────────────────────
                 Button(action: onBackToHome) {
@@ -121,23 +128,28 @@ struct BookingConfirmedView: View {
             }
         }
         .navigationBarHidden(true)
-        .onAppear { animateIn() }
+        .onAppear { animateIn() } // Trigger animations when view appears!
     }
 
-    // MARK: - Animation
+    // MARK: - Animation Logic
+    // Smoothly animates the UI elements in sequence.
     private func animateIn() {
+        // Spring animation for the checkmark!
         withAnimation(.spring(response: 0.52, dampingFraction: 0.65).delay(0.08)) {
             checkScale = 1.0
             checkOpacity = 1.0
         }
+        // Fade and scale for the first ring.
         withAnimation(.easeOut(duration: 0.7).delay(0.28)) {
             ring1Scale = 1.0
             ring1Opacity = 1.0
         }
+        // Fade and scale for the second ring.
         withAnimation(.easeOut(duration: 0.95).delay(0.44)) {
             ring2Scale = 1.0
-            ring2Opacity = 0.0
+            ring2Opacity = 0.0 // Fades out at the end!
         }
+        // Slide up animation for the content card.
         withAnimation(.easeOut(duration: 0.48).delay(0.32)) {
             contentOpacity = 1.0
             contentOffset = 0
@@ -145,6 +157,7 @@ struct BookingConfirmedView: View {
     }
 
     // MARK: - Row helper
+    // A helper function to create a consistent layout for each detail row.
     private func detailRow(icon: String, label: String, value: String, color: Color) -> some View {
         HStack(spacing: 12) {
             ZStack {
@@ -172,6 +185,7 @@ struct BookingConfirmedView: View {
         .padding(.vertical, 12)
     }
 
+    // Helper to format the date nicely.
     private var formattedDate: String {
         let f = DateFormatter()
         f.dateFormat = "EEEE, d MMMM yyyy"

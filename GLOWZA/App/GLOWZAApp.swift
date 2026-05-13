@@ -2,42 +2,43 @@ import SwiftUI
 import FirebaseCore
 import FirebaseAuth
 
+// This is the main entry point of the app!
+// The @main attribute tells the system that this struct contains the app's configuration.
 @main
 struct GLOWZAApp: App {
 
     init() {
-        // 1. Core Data
+        // 1. Initialize Core Data
+        // This loads the persistent store!
         _ = CoreDataStack.shared
 
-        // 2. Firebase
+        // 2. Configure Firebase
+        // This must be done before using any Firebase services!
         FirebaseApp.configure()
     }
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                RootView()
-                    .environment(TreatmentComparisonStore.shared)
-                    .environment(AppSettings.shared)
-                    .environment(AuthService.shared) // global auth state
-
-                // Notification overlay
-                NotificationContainer()
-                    .zIndex(999)
-            }
-            .buttonStyle(GlowzaRoundedButtonStyle())
+            RootView()
+                // We inject these shared objects into the environment so any view can access them!
+                .environment(TreatmentComparisonStore.shared)
+                .environment(AppSettings.shared)
+                .environment(AuthService.shared) // global auth state
+                .buttonStyle(GlowzaRoundedButtonStyle()) // Custom button style for the app.
         }
     }
 }
 
 // MARK: - Screen enum
+// Defines all the major screens for root navigation.
 private enum Screen {
     case splash, landing, onboarding, login, createAccount, forgotPassword, main
 }
 
 // MARK: - Root Navigation Controller
+// This view manages which screen is currently shown to the user.
 struct RootView: View {
-    @State private var screen: Screen = .splash
+    @State private var screen: Screen = .splash // Start with the splash screen!
     @Environment(AuthService.self) private var authService
     @Environment(AppSettings.self) private var settings
     @Environment(\.colorSchemeContrast) private var systemContrast
@@ -49,6 +50,7 @@ struct RootView: View {
             // ── Splash: always goes to Landing — user must always login ─────
             case .splash:
                 SplashView(onFinished: {
+                    // Transition to landing screen after splash finishes!
                     withAnimation { screen = .landing }
                 })
                 .transition(.opacity)
@@ -108,22 +110,30 @@ struct RootView: View {
         .glowzaHighContrastStyle(enabled: settings.isHighContrast)
         .animation(.easeInOut(duration: 0.4), value: screen)
         .onChange(of: systemContrast) { _, val in
+            // Automatically enable high contrast if system setting is on!
             if val == .increased && !settings.isHighContrast {
                 settings.isHighContrast = true
             }
         }
-        // Sign out notification → go back to login
+        // Listening for sign out notification to go back to login screen!
         .onReceive(NotificationCenter.default.publisher(for: .glowzaSignOut)) { _ in
             withAnimation { screen = .login }
         }
+        // Handles deep links (e.g., glowza://quick-book?salon=Golden%20Avenue)
         .onOpenURL { url in
             guard url.scheme?.lowercased() == "glowza" else { return }
+            
             if url.host == "quick-book" {
+                // Parse the salon name from query parameters!
                 let salonName = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                     .queryItems?.first(where: { $0.name == "salon" })?
                     .value?.removingPercentEncoding ?? "Golden Avenue"
+                
                 screen = .main
+                // Tell the tab view to go home first!
                 NotificationCenter.default.post(name: .glowzaGoToHomeTab, object: nil)
+                
+                // Delay slightly to allow the view to load before showing booking!
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     NotificationCenter.default.post(name: .glowzaQuickBookRequested, object: salonName)
                 }
@@ -145,6 +155,7 @@ struct RootView: View {
 
 
 // MARK: - Placeholder Dashboard
+// This is a backup view used during development!
 struct PlaceholderDashboardView: View {
     var body: some View {
         ZStack {

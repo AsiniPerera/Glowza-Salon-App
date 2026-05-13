@@ -1,12 +1,15 @@
 import Foundation
-import NaturalLanguage
-import CoreML
+import NaturalLanguage // Apple's framework for natural language processing!
+import CoreML // Apple's framework for running machine learning models!
 
+// MARK: - Data Transfer Objects (DTOs)
+// These structs are used to decode JSON data from BeautyDataStore.
+// They act as intermediate models before we map them to the public view models.
 
 private struct ConcernConfig: Codable {
     let name: String
     let icon: String
-    let anchors: [String]
+    let anchors: [String] // Anchor words for semantic matching.
 }
 
 private struct TreatmentDTO: Codable {
@@ -18,7 +21,7 @@ private struct TreatmentDTO: Codable {
     let sessions: String
     let priceRange: String
     let concernTags: [String]
-    let semanticAnchors: [String]   // anchor words fed into the NL embedding model
+    let semanticAnchors: [String] // Words fed into the embedding model!
 }
 
 private struct ProductDTO: Codable {
@@ -30,7 +33,8 @@ private struct ProductDTO: Codable {
     let concernTags: [String]
 }
 
-// MARK: - Public View Models  (same interface — no changes needed in AIBeautyView)
+// MARK: - Public View Models
+// These are the models that the UI (AIBeautyView) uses to display data.
 
 struct DetectedConcern: Identifiable, Equatable {
     let id = UUID()
@@ -47,7 +51,7 @@ struct TreatmentRecommendation: Identifiable {
     let duration: String
     let sessions: String
     let priceRange: String
-    let matchScore: Double          // 0.0 – 1.0  (computed by ML pipeline)
+    let matchScore: Double // 0.0 – 1.0 (computed by ML pipeline)
     let concernTags: [String]
 }
 
@@ -68,10 +72,11 @@ struct AIBeautyResult {
 }
 
 // MARK: - AI Beauty Engine
-
+// This is the core logic for the AI chatbot. It uses CoreML and NLP to 
+// understand user input and recommend treatments.
 final class AIBeautyEngine {
 
-    static let shared = AIBeautyEngine()
+    static let shared = AIBeautyEngine() // Singleton instance!
 
     // Local CoreML model compiled by Xcode from SkinConcernClassifier.mlmodel
     private let skinModel: MLModel? = {
@@ -83,20 +88,21 @@ final class AIBeautyEngine {
     // Apple's built-in word embedding model — used as fallback when skinModel is nil
     private let embedding: NLEmbedding?
 
-    // Data decoded from JSON strings in BeautyDataStore — not Swift struct literals
+    // Data decoded from JSON strings in BeautyDataStore
     private let treatmentDTOs: [TreatmentDTO]
     private let productDTOs:   [ProductDTO]
 
-    // MARK: - Public concern list  (drives quick-select chips in the UI)
+    // Public concern list (drives quick-select chips in the UI)
     var concernOptions: [String] { concernConfigs.map(\.name) }
 
-    // Decoded from BeautyDataStore.concernsJSON — zero hardcoding in the engine
     private let concernConfigs: [ConcernConfig]
 
     private init() {
+        // Load the English word embedding model!
         embedding = NLEmbedding.wordEmbedding(for: .english)
         let decoder = JSONDecoder()
-        // All data decoded from BeautyDataStore JSON — nothing hardcoded in the engine
+        
+        // Decode data from the BeautyDataStore JSON strings!
         concernConfigs = (try? decoder.decode([ConcernConfig].self,
                                               from: Data(BeautyDataStore.concernsJSON.utf8))) ?? []
         treatmentDTOs  = (try? decoder.decode([TreatmentDTO].self,
@@ -105,35 +111,37 @@ final class AIBeautyEngine {
                                               from: Data(BeautyDataStore.productsJSON.utf8)))   ?? []
     }
 
-    // MARK: - Public API  (async — NLP runs on a background thread)
-
+    // MARK: - Public API
+    // This is the main function called by the UI. It runs asynchronously on a background thread!
     func analyse(input: String) async -> AIBeautyResult {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
             return AIBeautyResult(detectedConcerns: [], treatments: [], products: [])
         }
-        // Offload to a background thread so the main thread stays responsive
+        
+        // Offload to a background thread so the main thread (UI) stays responsive!
         return await Task.detached(priority: .userInitiated) { [self] in
             self.runPipeline(on: text)
         }.value
     }
 
     // MARK: - NLP + ML Pipeline
-
+    // This is where the magic happens! It processes the text in steps.
     private func runPipeline(on text: String) -> AIBeautyResult {
+        // Step 1: Tokenize the text (split into words).
         let tokens = tokenize(text)
 
-        // Step 1 – detect skin concerns using NLEmbedding cosine similarity
+        // Step 2: Detect skin concerns using CoreML or Embeddings.
         let concerns = detectConcerns(tokens: tokens)
         guard !concerns.isEmpty else {
             return AIBeautyResult(detectedConcerns: [], treatments: [], products: [])
         }
         let concernSet = Set(concerns.map(\.name))
 
-        // Step 2 – score and rank treatments (tag overlap + embedding similarity)
+        // Step 3: Score and rank treatments based on matched concerns.
         let treatments = scoreTreatments(tokens: tokens, concernSet: concernSet)
 
-        // Step 3 – match products by concern tag
+        // Step 4: Match products by concern tags.
         let products = matchProducts(concernSet: concernSet)
 
         return AIBeautyResult(detectedConcerns: concerns,
@@ -141,37 +149,33 @@ final class AIBeautyEngine {
                               products: products)
     }
 
-    // MARK: - Tokenization  (NLTokenizer — word-level, lowercased, deduplicated)
-
+    // MARK: - Tokenization
+    // Splits the input text into unique words, lowercased, and filters short words.
     private func tokenize(_ text: String) -> [String] {
         var words: [String] = []
         let tokenizer = NLTokenizer(unit: .word)
         tokenizer.string = text
         tokenizer.enumerateTokens(in: text.startIndex..<text.endIndex) { range, _ in
             let word = String(text[range]).lowercased()
-            if word.count >= 3 { words.append(word) }
+            if word.count >= 3 { words.append(word) } // Only words with 3+ letters!
             return true
         }
-        return Array(Set(words))
+        return Array(Set(words)) // Deduplicate words!
     }
 
     // MARK: - Concern Detection
-    //   Primary  → local SkinConcernClassifier CoreML model (probability thresholding)
-    //   Fallback → NLEmbedding cosine-similarity when model is not in bundle
-
+    // Tries to use CoreML first, and falls back to Word Embeddings if needed.
     private func detectConcerns(tokens: [String]) -> [DetectedConcern] {
         let coreMLHits = detectConcernsCoreML(tokens: tokens)
+        // If CoreML didn't find anything, try the embedding fallback!
         return coreMLHits.isEmpty ? detectConcernsEmbedding(tokens: tokens) : coreMLHits
     }
 
-    /// Uses the bundled SkinConcernClassifier.mlmodel.
-    /// Input: word-count dict built the same way as the Python training script.
-    /// Reads `skinConcernLabelProbs` to surface ALL concerns above a probability floor.
+    // Uses the custom CoreML model trained for skin concerns.
     private func detectConcernsCoreML(tokens: [String]) -> [DetectedConcern] {
         guard let model = skinModel else { return [] }
 
-        // Build word-count dict — mirrors `text_to_word_counts()` in train_skin_model.py
-        // MLFeatureValue(dictionary:) requires [AnyHashable: NSNumber]
+        // Build word-count dict (Bag of Words model).
         var wordCounts = [String: NSNumber]()
         for token in tokens { wordCounts[token] = NSNumber(value: (wordCounts[token]?.doubleValue ?? 0) + 1.0) }
         guard !wordCounts.isEmpty else { return [] }
@@ -181,18 +185,18 @@ final class AIBeautyEngine {
             let provider  = try MLDictionaryFeatureProvider(dictionary: ["wordCounts": dictValue])
             let result    = try model.prediction(from: provider)
 
-            // Use per-class probabilities to detect MULTIPLE concerns in one query
+            // Read the probability of each class!
             if let probFeat = result.featureValue(for: "skinConcernLabelProbs"),
                let probs    = probFeat.dictionaryValue as? [String: Double] {
                 return probs
-                    .filter { $0.value > 0.12 }          // probability floor
+                    .filter { $0.value > 0.12 } // Only take concerns with > 12% probability!
                     .compactMap { label, _ in
                         concernConfigs.first { $0.name == label }
                             .map { DetectedConcern(name: $0.name, icon: $0.icon) }
                     }
             }
 
-            // Fallback to top-1 label when probs dict is unavailable
+            // Fallback to top-1 label if full probabilities are missing.
             if let label = result.featureValue(for: "skinConcernLabel")?.stringValue {
                 let icon = concernConfigs.first { $0.name == label }?.icon ?? "sparkles"
                 return [DetectedConcern(name: label, icon: icon)]
@@ -201,35 +205,35 @@ final class AIBeautyEngine {
         return []
     }
 
-    /// NLEmbedding-based fallback — uses word2vec cosine similarity.
+    // Fallback: Uses word2vec cosine similarity to find matching words.
     private func detectConcernsEmbedding(tokens: [String]) -> [DetectedConcern] {
         concernConfigs.compactMap { config in
             let hit = tokens.contains { token in
                 config.anchors.contains { anchor in
-                    similarity(token, anchor) > 0.54
+                    similarity(token, anchor) > 0.54 // Threshold for match!
                 }
             }
             return hit ? DetectedConcern(name: config.name, icon: config.icon) : nil
         }
     }
 
-    // MARK: - Treatment Scoring  (60 % tag match + 40 % embedding anchor similarity)
-
+    // MARK: - Treatment Scoring
+    // Scores treatments based on tag matches and semantic similarity.
     private func scoreTreatments(tokens: [String],
                                   concernSet: Set<String>) -> [TreatmentRecommendation] {
         treatmentDTOs
             .compactMap { dto in
-                // Tag-overlap ratio
+                // 1. Tag-overlap score (60% weight).
                 let tagScore = Double(dto.concernTags.filter { concernSet.contains($0) }.count)
                              / max(1.0, Double(dto.concernTags.count))
 
-                // Best semantic similarity across all (token, anchor) pairs
+                // 2. Semantic anchor score (40% weight).
                 let anchorScore = tokens
                     .flatMap { tok in dto.semanticAnchors.map { similarity(tok, $0) } }
                     .max() ?? 0.0
 
                 let score = tagScore * 0.60 + anchorScore * 0.40
-                guard score > 0.14 else { return nil }
+                guard score > 0.14 else { return nil } // Filter out low scores!
 
                 return TreatmentRecommendation(
                     name:        dto.name,
@@ -243,17 +247,17 @@ final class AIBeautyEngine {
                     concernTags: dto.concernTags
                 )
             }
-            .sorted { $0.matchScore > $1.matchScore }
+            .sorted { $0.matchScore > $1.matchScore } // Sort by best match!
     }
 
-    // MARK: - Product Matching  (concern-tag filter, up to 6 products)
-
+    // MARK: - Product Matching
+    // Matches products that help with the detected concerns.
     private func matchProducts(concernSet: Set<String>) -> [ProductRecommendation] {
         var seen = Set<String>()
         return productDTOs
             .compactMap { dto -> ProductRecommendation? in
                 guard dto.concernTags.contains(where: { concernSet.contains($0) }),
-                      seen.insert(dto.name).inserted else { return nil }
+                      seen.insert(dto.name).inserted else { return nil } // Deduplicate!
                 return ProductRecommendation(
                     name:     dto.name,
                     brand:    dto.brand,
@@ -262,19 +266,19 @@ final class AIBeautyEngine {
                     icon:     dto.icon
                 )
             }
-            .prefix(6)
+            .prefix(6) // Limit to top 6 products!
             .map { $0 }
     }
 
-    // MARK: - Semantic Similarity  [0, 1]
-    // Uses NLEmbedding (CoreML) with substring/prefix fallbacks
-
+    // MARK: - Semantic Similarity
+    // Calculates how similar two words are using NLEmbedding and string fallbacks.
     private func similarity(_ a: String, _ b: String) -> Double {
-        if a == b                              { return 1.00 }
-        if a.contains(b) || b.contains(a)     { return 0.85 }
-        if a.hasPrefix(b.prefix(4)) || b.hasPrefix(a.prefix(4)) { return 0.65 }
+        if a == b                              { return 1.00 } // Exact match!
+        if a.contains(b) || b.contains(a)     { return 0.85 } // Substring match!
+        if a.hasPrefix(b.prefix(4)) || b.hasPrefix(a.prefix(4)) { return 0.65 } // Common prefix!
+        
         guard let emb = embedding else        { return 0.00 }
-        // NLEmbedding.distance returns cosine distance [0, 1]; convert to similarity
+        // NLEmbedding returns distance [0, 1]. We invert it to get similarity!
         return max(0.0, 1.0 - emb.distance(between: a, and: b, distanceType: .cosine))
     }
 }
