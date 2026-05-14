@@ -420,6 +420,37 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound, .badge])
     }
     
+    // MARK: - Nearest Booking Reminder
+    // Finds the closest upcoming booking and sends a reminder!
+    func scheduleNearestBookingReminder(from bookings: [Booking]) {
+        // 1. Get upcoming bookings only (today or future)
+        let upcoming = bookings.filter { 
+            $0.status == .upcoming && $0.date >= Calendar.current.startOfDay(for: Date()) 
+        }.sorted(by: { $0.date < $1.date })
+        
+        guard let nearest = upcoming.first else { return }
+        
+        // 2. Format the message
+        let df = DateFormatter()
+        df.dateFormat = "MMM d"
+        let dateStr = df.string(from: nearest.date)
+        
+        let title = "Appointment Reminder"
+        let subtitle = "Upcoming: \(nearest.service.name) at \(nearest.salon.name) on \(dateStr) (\(nearest.timeSlot))"
+        
+        // 3. Send system notification
+        sendLocalNotification(title: title, subtitle: subtitle, delay: 1.5)
+        
+        // 4. Also add to history for user to see in the app!
+        let notification = NotificationItem(
+            title: title,
+            subtitle: subtitle,
+            icon: "calendar.badge.clock", // Our unique icon!
+            type: .info
+        )
+        showNotification(notification)
+    }
+
     // MARK: - Helper
     // Converts enum to string for storage!
     private func typeString(_ type: NotificationItem.NotificationType) -> String {

@@ -146,21 +146,19 @@ final class AuthService {
         let result = try await auth.signIn(withEmail: email, password: password)
         let uid = result.user.uid
 
-        // 2. Fetch profile from Firestore
-        await fetchProfile(uid: uid)
-
-        // 3. Mark as signed in
+        // 2. Mark as signed in IMMEDIATELY for fast UI transition!
         self.isSignedIn = true
 
-        // 3.5 Save email to UserDefaults for Face ID fallback
+        // 3. Save email to UserDefaults for Face ID fallback
         UserDefaults.standard.set(email, forKey: "last_signed_in_email")
 
-        // 4. Background sync: pull data from Firestore to Core Data!
-        // We use Task.detached to run it in the background without blocking the UI!
-        Task.detached(priority: .utility) { [uid] in
+        // 4. Background sync: fetch profile and sync data!
+        Task.detached(priority: .userInitiated) { [uid] in
+            await self.fetchProfile(uid: uid)
             await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
             await FavouritesStore.shared.load()
             await NotificationManager.shared.fetchNotificationsFromFirestore()
+            await BookingStore.shared.triggerNearestBookingReminder()
         }
     }
 
@@ -178,17 +176,16 @@ final class AuthService {
         
         let uid = doc.documentID
         
-        // 2. Fetch profile
-        await fetchProfile(uid: uid)
-        
-        // 3. Mark as signed in
+        // 2. Mark as signed in IMMEDIATELY!
         self.isSignedIn = true
         
-        // 4. Background sync
-        Task.detached(priority: .utility) { [uid] in
+        // 3. Background sync: fetch profile and sync data!
+        Task.detached(priority: .userInitiated) { [uid] in
+            await self.fetchProfile(uid: uid)
             await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
             await FavouritesStore.shared.load()
             await NotificationManager.shared.fetchNotificationsFromFirestore()
+            await BookingStore.shared.triggerNearestBookingReminder()
         }
     }
 

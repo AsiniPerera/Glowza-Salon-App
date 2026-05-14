@@ -87,6 +87,11 @@ final class BookingStore {
         }
     }
 
+    /// Triggers a push notification reminder for the nearest upcoming booking!
+    func triggerNearestBookingReminder() {
+        NotificationManager.shared.scheduleNearestBookingReminder(from: self.bookings)
+    }
+
     func addReview(bookingID: UUID, review: BookingReview) {
         guard let idx = bookings.firstIndex(where: { $0.id == bookingID }) else { return }
         bookings[idx].review = review
