@@ -51,6 +51,10 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         notificationHistory.filter { !$0.isRead }.count
     }
     
+    func clearMemory() {
+        notificationHistory = []
+    }
+    
     private let historyKey = "glowza_notification_history" // UserDefaults key.
     
     private let db = Firestore.firestore() // Firestore reference.

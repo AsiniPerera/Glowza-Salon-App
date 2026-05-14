@@ -18,6 +18,12 @@ final class BookingStore {
     var isLoading = false
     var error: String?
     
+    func clearMemory() {
+        bookings = []
+        firestoreBookings = []
+        receiptToFirestoreId = [:]
+    }
+    
     /// Maps local receipt number to Firestore document ID for cross-referencing!
     var receiptToFirestoreId: [String: String] = [:]
 

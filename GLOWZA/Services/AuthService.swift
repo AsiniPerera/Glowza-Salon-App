@@ -234,18 +234,30 @@ final class AuthService {
 
     // MARK: - Sign Out
     func signOut() throws {
+        // 1. Tell all managers to clear their in-memory data immediately!
+        NotificationManager.shared.clearMemory()
+        BookingStore.shared.clearMemory()
+        FavouritesStore.shared.clear()
+        
+        // 2. Wipe the local Core Data cache!
+        try? DataSyncManager.shared.clearAllCoreData()
+        
+        // 3. Clear Firebase session
         try auth.signOut()
         currentUser = nil
         currentUserProfile = nil
         isSignedIn = false
         
-        // Clear profile cache from UserDefaults so next user doesn't see it!
+        // 4. Clear profile cache from UserDefaults
         UserDefaults.standard.removeObject(forKey: "profile_fullName")
         UserDefaults.standard.removeObject(forKey: "profile_email")
         UserDefaults.standard.removeObject(forKey: "profile_phone")
         UserDefaults.standard.removeObject(forKey: "profile_skinType")
         UserDefaults.standard.removeObject(forKey: "profile_loyalty")
         UserDefaults.standard.removeObject(forKey: "profile_avatarData")
+        
+        // 5. Notify the app to go back to landing
+        NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
     }
 
     // MARK: - Check & Listen to Auth State
@@ -368,6 +380,12 @@ final class AuthService {
     // MARK: - Helpers
     var currentUID: String? { currentUser?.uid ?? auth.currentUser?.uid }
     var currentUserName: String? { auth.currentUser?.displayName }
+
+    // MARK: - Password Reset
+    /// Sends a password reset email to the user's registered email address.
+    func sendPasswordResetEmail(email: String) async throws {
+        try await auth.sendPasswordReset(withEmail: email)
+    }
 
     deinit {
         // Clean up the listener when this object is destroyed!
