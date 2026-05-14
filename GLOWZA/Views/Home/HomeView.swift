@@ -201,7 +201,8 @@ struct HomeView: View {
                 refreshProfileHeader() // Updates user name and avatar.
             }
             .onAppear {
-                appSettings.speak("Home screen") // Voice accessibility!
+                generateVoiceOverSummary()
+                appSettings.speak(appSettings.currentScreenSummary)
             }
             // Listens for notifications when profile is updated.
             .onReceive(NotificationCenter.default.publisher(for: .glowzaProfileUpdated)) { _ in
@@ -218,6 +219,17 @@ struct HomeView: View {
     private func refreshProfileHeader() {
         profileAvatarData = UserDefaults.standard.data(forKey: "profile_avatarData")
         profileName = UserDefaults.standard.string(forKey: "profile_fullName") ?? "User"
+        generateVoiceOverSummary()
+    }
+
+    private func generateVoiceOverSummary() {
+        let salonCount = allSalons.count
+        let serviceCount = services.count
+        let topSalon = allSalons.first?.name ?? "Golden Avenue"
+        
+        let summary = "Welcome back, \(profileName). You are on the Home screen. We have \(serviceCount) beauty service categories for you to explore. There are currently \(salonCount) top-rated salons available nearby. Our featured salon today is \(topSalon). Use the search bar at the top to find something specific."
+        
+        appSettings.currentScreenSummary = summary
     }
 
     // This method pushes our hardcoded salons to Firebase Firestore.

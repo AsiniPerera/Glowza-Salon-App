@@ -679,8 +679,15 @@ struct BookingsView: View {
                 .animation(.easeInOut(duration: 0.22), value: selectedTab)
         }
         .background(appSettings.themePage.ignoresSafeArea())
+        .onAppear {
+            generateVoiceOverSummary()
+        }
+        .onChange(of: selectedTab) { _, _ in
+            generateVoiceOverSummary()
+        }
         .task {
             await BookingStore.shared.fetchUserBookings() // Fetches bookings when view appears.
+            generateVoiceOverSummary()
         }
         // Listens for a notification to switch to the Upcoming tab.
         .onReceive(NotificationCenter.default.publisher(for: .glowzaShowUpcomingBookings)) { _ in
@@ -708,5 +715,31 @@ struct BookingsView: View {
                     .environment(AppSettings.shared)
             }
         }
+    }
+
+    private func generateVoiceOverSummary() {
+        let store = BookingStore.shared
+        let upcomingCount = store.upcoming.count
+        let completedCount = store.completed.count
+        let cancelledCount = store.cancelled.count
+        
+        var summary = "You are on the Bookings screen. "
+        
+        switch selectedTab {
+        case 0:
+            summary += "Currently viewing your \(upcomingCount) upcoming appointments. "
+            if let next = store.upcoming.first {
+                summary += "Your next session is \(next.service.name) at \(next.salon.name) on \(next.date.formatted(date: .abbreviated, time: .omitted))."
+            } else {
+                summary += "You have no upcoming appointments scheduled at the moment."
+            }
+        case 1:
+            summary += "Currently viewing your \(completedCount) past treatments. It's a great time to rebook or leave a review for your favorite salons."
+        case 2:
+            summary += "Currently viewing your \(cancelledCount) cancelled bookings."
+        default: break
+        }
+        
+        appSettings.currentScreenSummary = summary
     }
 }

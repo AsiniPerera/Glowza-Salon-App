@@ -47,6 +47,9 @@ struct MainTabView: View {
                 .tag(4)
         }
         .tint(Color.glowzaPrimary) // Sets the accent color for active items.
+        .overlay(alignment: .bottomTrailing) {
+            VoiceOverControlView()
+        }
         .onAppear {
             // We need to style the UIKit appearances on load!
             styleTabBar()
@@ -68,6 +71,25 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .glowzaGoToBookingsTab)) { _ in
             selectedTab = 1
         }
+        // VoiceOver: Speak screen summary when the tab changes!
+        .onChange(of: selectedTab) { _, newValue in
+            speakTabSummary(for: newValue)
+        }
+    }
+
+    // Provides a spoken summary for each main screen!
+    private func speakTabSummary(for tabIndex: Int) {
+        let summary: String
+        switch tabIndex {
+        case 0: summary = "Welcome to GLOWZA Home. Discover top salons and latest offers."
+        case 1: summary = "Your Bookings. View and manage your upcoming and past appointments."
+        case 2: summary = "AI Beauty Analysis. Get personalized skincare advice from our AI."
+        case 3: summary = "Compare Salons. Easily compare prices and ratings side by side."
+        case 4: summary = "Your Profile. Manage your account, security, and app preferences."
+        default: return
+        }
+        appSettings.currentScreenSummary = summary
+        appSettings.speak(summary)
     }
 
     // Since SwiftUI TabView has limited styling options, we drop down to 

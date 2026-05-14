@@ -91,14 +91,12 @@ final class AppSettings {
 		didSet { UserDefaults.standard.set(isVoiceOverEnabled, forKey: "app_voiceOverEnabled") }
 	}
 
-    // Used to speak text aloud for accessibility!
-	private let synthesizer = AVSpeechSynthesizer()
+    // Stores a summary of the current screen to be read by the floating VoiceOver control!
+    var currentScreenSummary: String = "Welcome to GLOWZA."
 
 	func speak(_ text: String) {
 		guard isVoiceOverEnabled else { return }
-		let utterance = AVSpeechUtterance(string: text)
-		utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-		synthesizer.speak(utterance)
+        SpeechManager.shared.speak(text)
 	}
 
 	// Convenience: current scale factor for font sizing.
