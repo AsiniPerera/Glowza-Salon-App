@@ -79,6 +79,7 @@ struct BookingDraft {
     var date: Date                       = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
     var timeSlot: String                 = ""
     var signatureImage: UIImage?         = nil // Digital signature!
+    var agreedConsent: String            = ""  // The legal text agreed upon!
     var paymentMethod: PaymentMethodType = .card
 
     // Hardcoded time slots for the demo.
@@ -106,6 +107,7 @@ struct Booking: Identifiable {
     let paymentMethod: PaymentMethodType
     let amountPaid: Double
     let signatureImage: UIImage?
+    let agreedConsent: String // The terms the user signed!
     var status: BookingStatus // Can be updated (upcoming, completed, cancelled).
     var review: BookingReview? // Optional review added by the user!
 

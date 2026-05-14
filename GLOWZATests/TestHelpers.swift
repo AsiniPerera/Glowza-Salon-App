@@ -50,7 +50,8 @@ enum Fixtures {
             services: [makeSalonService()],
             about: "A lovely test salon.",
             phone: "+94 11 234 5678",
-            openHours: "9 AM – 6 PM"
+            openHours: "9 AM – 6 PM",
+            imageName: "Salon1" // Added for model compatibility!
         )
     }
 
@@ -76,6 +77,7 @@ enum Fixtures {
             paymentMethod: paymentMethod,
             amountPaid: resolvedService.price,
             signatureImage: nil,
+            agreedConsent: "I agree to the terms.", // Added for model compatibility!
             status: status
         )
     }

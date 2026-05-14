@@ -11,7 +11,6 @@ struct ProfileView: View {
 
     @State private var isFaceIDEnabled   = true
     @State private var pushNotifications = true
-    @State private var synthesizer = AVSpeechSynthesizer() // For VoiceOver support!
 
     // States to control presentation of sheets!
     @State private var showEditProfile      = false
@@ -108,9 +107,9 @@ struct ProfileView: View {
                                     set: { newValue in
                                         appSettings.isVoiceOverEnabled = newValue
                                         if newValue {
-                                            speak("VoiceOver support enabled")
+                                            appSettings.speak("VoiceOver support enabled")
                                         } else {
-                                            speak("VoiceOver support disabled")
+                                            appSettings.speak("VoiceOver support disabled")
                                         }
                                     }
                                   ))
@@ -187,7 +186,8 @@ struct ProfileView: View {
             .navigationBarHidden(true)
             .onAppear {
                 refreshProfileFromAuthService()
-                appSettings.speak("Profile screen")
+                generateVoiceOverSummary()
+                appSettings.speak(appSettings.currentScreenSummary)
             }
             .onReceive(NotificationCenter.default.publisher(for: .glowzaProfileUpdated)) { _ in
                 refreshProfileFromAuthService()
@@ -235,13 +235,6 @@ struct ProfileView: View {
     }
 
     // MARK: - Helper Methods
-
-    // Speaks text using AVSpeechSynthesizer!
-    private func speak(_ text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        synthesizer.speak(utterance)
-    }
 
     // Refreshes the profile data from AuthService (Firestore source of truth).
     private func refreshProfileFromAuthService() {
@@ -400,6 +393,11 @@ struct ProfileView: View {
                 .glowzaFont(size: 14, weight: .semibold)
                 .foregroundStyle(.white)
         }
+    }
+
+    private func generateVoiceOverSummary() {
+        let summary = "This is your Profile, \(displayName). From here, you can manage your account details, treatment history, and security settings. You can also customize your app experience by toggling Dark Mode, High Contrast, or adjusting the font size. Your loyalty points and skin analysis results are available in the Treatment History section."
+        appSettings.currentScreenSummary = summary
     }
 }
 

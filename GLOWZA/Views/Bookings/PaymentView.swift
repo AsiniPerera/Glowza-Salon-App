@@ -5,6 +5,7 @@ import SwiftUI
 // (Card or Cash) and shows a summary of the amount due.
 struct PaymentView: View {
     @Binding var draft: BookingDraft // Bound to parent to share data.
+    var isProcessing: Bool = false // NEW: To show loading state!
     let onPay: (Booking) -> Void // Callback when payment is successful.
     let onBack: () -> Void
 
@@ -190,14 +191,27 @@ struct PaymentView: View {
             VStack(spacing: 0) {
                 Divider().opacity(0.5)
                 Button(action: confirmPayment) {
-                    Text(confirmButtonText)
+                    if isProcessing {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Processing...")
+                        }
                         .glowzaFont(size: 16, weight: .semibold)
                         .foregroundColor(.white)
                         .frame(width: 330, height: 55)
-                        .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                        .background(Color.glowzaPrimary.opacity(0.7))
                         .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+                    } else {
+                        Text(confirmButtonText)
+                            .glowzaFont(size: 16, weight: .semibold)
+                            .foregroundColor(.white)
+                            .frame(width: 330, height: 55)
+                            .background(canConfirm ? Color.glowzaPrimary : Color(hex: "D4829E"))
+                            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+                    }
                 }
-                .disabled(!canConfirm)
+                .disabled(!canConfirm || isProcessing)
                 .padding(.top, 16)
                 .padding(.bottom, 32)
             }
@@ -334,6 +348,7 @@ struct PaymentView: View {
             paymentMethod: draft.paymentMethod,
             amountPaid: total,
             signatureImage: draft.signatureImage,
+            agreedConsent: draft.agreedConsent, // New: Link the consent text!
             status: .upcoming,
             review: nil
         )

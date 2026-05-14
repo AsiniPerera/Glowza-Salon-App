@@ -184,8 +184,14 @@ struct ConsentFormView: View {
                 Button(action: {
                     // Convert the drawing to an image and save it to the draft!
                     if hasSignature {
-                        draft.signatureImage = canvasView.drawing.image(from: canvasView.bounds, scale: UIScreen.main.scale)
+                        let rect = canvasView.bounds.width > 0 ? canvasView.bounds : canvasView.drawing.bounds
+                        draft.signatureImage = canvasView.drawing.image(from: rect, scale: UIScreen.main.scale)
+                        print("📸 Signature captured successfully!")
                     }
+                    
+                    // NEW: Store the consent text that was agreed upon!
+                    draft.agreedConsent = "I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily."
+                    
                     onConfirm()
                 }) {
                     Text("Next")

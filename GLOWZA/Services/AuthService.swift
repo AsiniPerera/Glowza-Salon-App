@@ -224,6 +224,9 @@ final class AuthService {
                 avatarBase64: avatarB64,
                 favoriteSalonIds: currentUserProfile?.favoriteSalonIds
             )
+            
+            // Broadcast that the profile has changed!
+            NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
         } catch {
             print("Failed to fetch profile: \(error)")
         }
@@ -450,5 +453,8 @@ final class AuthService {
         UserDefaults.standard.set(profile.phone, forKey: "profile_phone")
         UserDefaults.standard.set(profile.skinType, forKey: "profile_skinType")
         UserDefaults.standard.set(profile.loyaltyPoints, forKey: "profile_loyalty")
+        
+        // Broadcast that the profile has changed!
+        NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
     }
 }

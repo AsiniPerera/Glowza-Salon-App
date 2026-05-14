@@ -88,12 +88,19 @@ final class DataSyncManager {
             for cd in pending {
                 // Create the booking in Firestore!
                 let fid = try await BookingService.shared.createBooking(
-                    userId: cd.userId, userName: cd.userName,
-                    salonName: cd.salonName, salonLocation: cd.salonLocation,
-                    serviceName: cd.serviceName, servicePrice: cd.servicePrice,
-                    date: cd.date, timeSlot: cd.timeSlot,
-                    paymentMethod: cd.paymentMethod, amountPaid: cd.amountPaid,
-                    receiptNumber: cd.receiptNumber
+                    userId: cd.userId, 
+                    userName: cd.userName,
+                    salonName: cd.salonName, 
+                    salonLocation: cd.salonLocation,
+                    serviceName: cd.serviceName, 
+                    servicePrice: cd.servicePrice,
+                    date: cd.date, 
+                    timeSlot: cd.timeSlot,
+                    paymentMethod: cd.paymentMethod, 
+                    amountPaid: cd.amountPaid,
+                    receiptNumber: cd.receiptNumber,
+                    agreedConsent: "", 
+                    signatureBase64: ""
                 )
                 // Update the local Core Data record with the new Firestore ID!
                 try await bookingRepository.syncBookingWithFirebase(cd, firestoreID: fid)

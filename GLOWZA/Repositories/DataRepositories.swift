@@ -167,6 +167,7 @@ final class BookingRepository {
             paymentMethod: paymentMethod,
             amountPaid: cdBooking.amountPaid,
             signatureImage: nil,
+            agreedConsent: "", // Consent not stored locally for privacy.
             status: status,
             review: review
         )
