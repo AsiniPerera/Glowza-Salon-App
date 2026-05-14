@@ -799,15 +799,25 @@ private struct PromoBannerCard: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 6) {
+                    // Salon Name Tag
+                    Text(salonName.uppercased())
+                        .glowzaFont(size: 10, weight: .bold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.2))
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
+                        .padding(.bottom, 4)
+
                     Text(title)
-                        .glowzaFont(size: 18, weight: .bold, design: .rounded)
+                        .glowzaFont(size: 20, weight: .bold, design: .rounded)
                         .foregroundColor(.white)
                     Text(subtitle)
                         .glowzaFont(size: 13, weight: .medium)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(.white.opacity(0.95))
                         .lineLimit(2)
                 }
-                .padding(16)
+                .padding(20)
 
                 Spacer()
 

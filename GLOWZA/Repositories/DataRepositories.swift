@@ -232,6 +232,17 @@ final class NotificationRepository {
         }
     }
 
+    // Deletes a specific notification!
+    func deleteNotification(_ notificationId: UUID) throws {
+        let request: NSFetchRequest<CDNotification> = CDNotification.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", notificationId as CVarArg)
+
+        if let notification = try coreDataStack.context.fetch(request).first {
+            coreDataStack.context.delete(notification)
+            try coreDataStack.save()
+        }
+    }
+
     // Marks all notifications for a specific user as read!
     func markAllNotificationsAsRead(userId: String) throws {
         let request: NSFetchRequest<CDNotification> = CDNotification.fetchRequest()

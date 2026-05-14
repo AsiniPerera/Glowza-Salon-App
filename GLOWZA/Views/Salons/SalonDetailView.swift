@@ -265,15 +265,28 @@ struct SalonDetailView: View {
     // This is the bottom sheet that contains the tabs for Services, About, and Reviews.
     private var infoSheet: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(salon.about)
-                .italic()
-                .font(.system(size: 14))
-                .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.8) : Color(hex: "3A3A3A"))
-                .multilineTextAlignment(.leading)
-                .lineSpacing(6)
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 16)
+            // MARK: Premium Intro Section (Visible across all tabs)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 12) {
+                    // Category Badge
+                    Text("PREMIUM SALON")
+                        .glowzaFont(size: 10, weight: .bold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(brand.opacity(0.12))
+                        .foregroundColor(brand)
+                        .clipShape(Capsule())
+                }
+                
+                Text("Your destination for premium beauty & professional relaxation. Experience world-class service tailored just for you.")
+                    .glowzaFont(size: 14)
+                    .foregroundColor(appSettings.themeTextSecondary)
+                    .lineSpacing(4)
+                    .padding(.top, 4)
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
 
             // Segmented picker for tabs!
             Picker("Salon Section", selection: $selectedTab) {
@@ -357,9 +370,9 @@ struct SalonDetailView: View {
             // Mini Map with Route (Full width!)
             Map {
                 // Salon Annotation with image!
-                Annotation(salonName, coordinate: coordinateForSalon(salonName)) {
+                Annotation(salon.name, coordinate: salon.coordinate) {
                     VStack(spacing: 4) {
-                        Image(mappedSalonImageName(salonName)) // Use the salon's header image!
+                        Image(mappedSalonImageName(salon.name)) // Use the salon's header image!
                             .resizable()
                             .scaledToFill()
                             .frame(width: 32, height: 32)
@@ -394,14 +407,14 @@ struct SalonDetailView: View {
                     }
                 }
                 
-                // Detailed route (Hardcoded for reliability) highlighted in Dark Pink!
+                // Detailed route (Dynamic to Salon Location!)
                 MapPolyline(coordinates: [
-                    CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612),
+                    CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612), // User
                     CLLocationCoordinate2D(latitude: 6.9000, longitude: 79.8550),
                     CLLocationCoordinate2D(latitude: 6.8700, longitude: 79.8650),
                     CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8600),
                     CLLocationCoordinate2D(latitude: 6.8200, longitude: 79.8700),
-                    coordinateForSalon(salonName)
+                    salon.coordinate // Destination!
                 ])
                 .stroke(Color(hex: "C2185B"), lineWidth: 4) // Deep Magenta / Dark Pink!
             }
@@ -410,12 +423,6 @@ struct SalonDetailView: View {
             .hcBorder(radius: 12)
             .padding(.horizontal, 24)
             .padding(.top, 4)
-
-            Text(salon.about)
-                .font(.system(size: 13))
-                .foregroundColor(Color(hex: "4A4A4A"))
-                .lineSpacing(5)
-                .padding(.horizontal, 24)
 
             // Gallery
             VStack(alignment: .leading, spacing: 10) {
@@ -973,7 +980,7 @@ struct SalonReviewSheet: View {
     private func fetchRoute() async {
         let request = MKDirections.Request()
         request.source = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinateForSalon(salonName)))
+        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: salon.coordinate))
         request.transportType = .automobile
         
         let directions = MKDirections(request: request)
@@ -989,29 +996,15 @@ struct SalonReviewSheet: View {
         }
     }
 
-    // Opens Apple Maps with driving directions.
     private func openDirections() {
-        let coordinate = coordinateForSalon(salonName)
+        let coordinate = salon.coordinate
         let destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
-        destination.name = salonName
+        destination.name = salon.name
         destination.openInMaps(launchOptions: [
             MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
         ])
     }
 
-    // Helper to get coordinates for hardcoded salons.
-    private func coordinateForSalon(_ name: String) -> CLLocationCoordinate2D {
-        switch name {
-        case "Golden Avenue":
-            return CLLocationCoordinate2D(latitude: 6.7730, longitude: 79.8820)
-        case "Glow Studio":
-            return CLLocationCoordinate2D(latitude: 6.8971, longitude: 79.8554)
-        case "Luxe Aesthetics":
-            return CLLocationCoordinate2D(latitude: 6.9101, longitude: 79.8570)
-        default:
-            return CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)
-        }
-    }
 }
 
 // Sheet to display a simple user profile when tapping on a review!

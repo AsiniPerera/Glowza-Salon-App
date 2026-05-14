@@ -139,7 +139,12 @@ struct NotificationsView: View {
             }
         }
         .onAppear {
-            notificationManager.markAllAsRead()
+            // We no longer mark all as read automatically on appear!
+            // This allows users to actually see their unread notifications.
+            // They can use the "Mark All as Read" menu option instead.
+            Task {
+                await notificationManager.fetchNotificationsFromFirestore()
+            }
         }
     } // End of body
     

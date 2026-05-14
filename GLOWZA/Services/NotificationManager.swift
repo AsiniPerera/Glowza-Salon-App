@@ -188,9 +188,15 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             }
             
             await MainActor.run {
-                // Merge with existing history using unique IDs to avoid duplicates!
+                // Merge with local history!
                 for item in firestoreNotifs {
-                    if let index = self.notificationHistory.firstIndex(where: { $0.id == item.id }) {
+                    // Stricter deduplication: ID check OR (Title + Subtitle + Timestamp within 1s)
+                    if let index = self.notificationHistory.firstIndex(where: { 
+                        $0.id == item.id || 
+                        ($0.title == item.title && 
+                         $0.subtitle == item.subtitle && 
+                         abs($0.timestamp.timeIntervalSince(item.timestamp)) < 1.0)
+                    }) {
                         // Update read status if it changed in Firestore!
                         if self.notificationHistory[index].isRead != item.isRead {
                             self.notificationHistory[index].isRead = item.isRead
@@ -203,6 +209,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 // Sort by timestamp (newest first).
                 self.notificationHistory.sort(by: { $0.timestamp > $1.timestamp })
                 self.saveNotificationHistory()
+                self.updateAppIconBadge() // Ensure UI and Icon are in sync!
             }
         } catch {
             print("Failed to fetch notifications from Firestore: \(error)")
@@ -246,6 +253,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         
         notificationHistory[index].isRead = true
         saveNotificationHistory()
+        updateAppIconBadge() // Update the count immediately!
         
         let id = item.id
         Task {
@@ -286,6 +294,17 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                     self.notificationHistory.remove(at: index)
                 }
                 self.saveNotificationHistory()
+                self.updateAppIconBadge()
+                
+                let id = item.id
+                Task {
+                    // 1. Delete from Core Data
+                    // Note: Need to add delete method to repo!
+                    try? NotificationRepository.shared.deleteNotification(id)
+                    
+                    // 2. Delete from Firestore
+                    try? await self.db.collection("notifications").document(id.uuidString).delete()
+                }
             }
         }
     }
@@ -297,7 +316,20 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 self.notificationHistory.removeAll()
             }
             self.saveNotificationHistory()
-            try? self.notificationRepo.clearAllNotifications()
+            self.updateAppIconBadge()
+            
+            Task {
+                guard let uid = AuthService.shared.currentUID else { return }
+                
+                // 1. Clear Core Data
+                try? self.notificationRepo.clearAllNotifications()
+                
+                // 2. Clear Firestore (Delete all documents for this user)
+                let snapshot = try? await self.db.collection("notifications").whereField("userId", isEqualTo: uid).getDocuments()
+                for doc in snapshot?.documents ?? [] {
+                    try? await doc.reference.delete()
+                }
+            }
         }
     }
     
