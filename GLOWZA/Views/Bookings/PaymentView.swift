@@ -68,7 +68,7 @@ struct PaymentView: View {
                     // Header
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Payment")
-                            .glowzaFont(size: 28, weight: .bold)
+                            .glowzaFont(size: 24, weight: .semibold)
                             .foregroundColor(appSettings.themeText)
                         Text("Select payment method")
                             .glowzaFont(size: 15)
@@ -394,7 +394,7 @@ struct CardEntryView: View {
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Select Card")
-                                .glowzaFont(size: 28, weight: .bold)
+                                .glowzaFont(size: 24, weight: .semibold)
                                 .foregroundColor(appSettings.themeText)
                             Text("Choose how to pay LKR \(Int(total))")
                                 .glowzaFont(size: 15)
@@ -646,7 +646,7 @@ struct AddCardFormView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Add Card")
-                            .glowzaFont(size: 28, weight: .bold)
+                            .glowzaFont(size: 24, weight: .semibold)
                             .foregroundColor(appSettings.themeText)
                         Text("Enter your card details")
                             .glowzaFont(size: 15)

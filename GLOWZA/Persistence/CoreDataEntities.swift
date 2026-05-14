@@ -92,6 +92,7 @@ public class CDUserProfile: NSManagedObject {
     @NSManaged public var skinType: String?
     @NSManaged public var dateOfBirth: String?
     @NSManaged public var avatarBase64: String?
+    @NSManaged public var favoriteSalonIds: String? // JSON string
     @NSManaged public var createdAt: Date
     @NSManaged public var updatedAt: Date
 }

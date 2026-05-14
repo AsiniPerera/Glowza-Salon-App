@@ -58,7 +58,7 @@ struct ConsentFormView: View {
                     header
                     
                     Text("Final Consent Form")
-                        .glowzaFont(.h2, weight: .bold)
+                        .glowzaFont(size: 24, weight: .semibold)
                         .foregroundColor(dark)
                         .padding(.horizontal, 20)
                     

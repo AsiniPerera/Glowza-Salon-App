@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - Favourite Salons View
 // This view displays a list of salons that the user has marked as favorites.
-// Users can tap on a salon to view its details or tap the heart to remove it.
+// Users can tap on a salon to view its details or swipe to remove it.
 struct FavouriteSalonsView: View {
 
     @Environment(AppSettings.self) private var appSettings
@@ -48,16 +48,32 @@ struct FavouriteSalonsView: View {
                 if favourites.favouriteNames.isEmpty {
                     emptyState
                 } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 12) {
-                            ForEach(favourites.favouriteNames, id: \.self) { name in
+                    List {
+                        ForEach(favourites.favouriteNames, id: \.self) { name in
+                            ZStack {
                                 FavouriteSalonRow(salonName: name)
+                                
+                                // Invisible NavigationLink to handle navigation without the native chevron!
+                                NavigationLink(destination: SalonDetailView(salonName: name)) {
+                                    EmptyView()
+                                }
+                                .opacity(0)
+                            }
+                            .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    Task { await favourites.toggle(name) }
+                                } label: {
+                                    Label("Remove", systemImage: "heart.slash.fill")
+                                }
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 36)
                     }
+                    .listStyle(.plain)
+                    .scrollIndicators(.hidden)
+                    .padding(.top, 10)
                 }
             }
             .background(appSettings.themePage.ignoresSafeArea())
@@ -92,72 +108,70 @@ struct FavouriteSalonsView: View {
 private struct FavouriteSalonRow: View {
     let salonName: String
     @Environment(AppSettings.self) private var appSettings
-    @State private var navigateToDetail = false
 
     private var salon: Salon { SalonCatalog.shared.salon(named: salonName) }
-    private var favourites: FavouritesStore { FavouritesStore.shared }
 
     var body: some View {
-        // NavigationLink to go to the salon detail view!
-        NavigationLink(destination: SalonDetailView(salonName: salonName)) {
-            HStack(spacing: 14) {
-                // Salon Image
-                Image(mappedSalonImageName(salonName))
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 72, height: 72)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        HStack(spacing: 14) {
+            // Salon Image
+            Image(mappedSalonImageName(salonName))
+                .resizable()
+                .scaledToFill()
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                // Salon Info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(salon.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(appSettings.themeText)
+            // Salon Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(salon.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(appSettings.themeText)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(appSettings.themeBrand.opacity(0.6))
+                    Text(salon.location)
+                        .font(.system(size: 13))
+                        .foregroundColor(appSettings.themeTextSecondary)
                         .lineLimit(1)
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(appSettings.themeBrand.opacity(0.6))
-                        Text(salon.location)
-                            .font(.system(size: 13))
-                            .foregroundColor(appSettings.themeTextSecondary)
-                            .lineLimit(1)
-                    }
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(Color(hex: "E4B234"))
-                        Text(String(format: "%.1f", salon.rating))
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(appSettings.themeText)
-                        Text("(\(salon.reviewCount))")
-                            .font(.system(size: 12))
-                            .foregroundColor(appSettings.themeTextSecondary)
-                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Remove / unfavourite button
-                Button(action: { Task { await favourites.toggle(salonName) } }) {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.red)
+                HStack(spacing: 4) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(Color(hex: "E4B234"))
+                    Text(String(format: "%.1f", salon.rating))
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(appSettings.themeText)
+                    Text("(\(salon.reviewCount))")
+                        .font(.system(size: 12))
+                        .foregroundColor(appSettings.themeTextSecondary)
                 }
-                .buttonStyle(.plain)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(appSettings.themeTextSecondary)
             }
-            .padding(14)
-            .background(appSettings.themeSurface)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .hcBorder(radius: 16)
-            .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Manual chevron inside the card!
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(appSettings.themeTextSecondary)
         }
-        .buttonStyle(.plain)
+        .padding(14)
+        .background(appSettings.themeSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .hcBorder(radius: 16)
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .contextMenu {
+            Button(role: .destructive) {
+                Task { await FavouritesStore.shared.toggle(salonName) }
+            } label: {
+                Label("Remove from Favourites", systemImage: "heart.slash")
+            }
+            
+            ShareLink(item: "Check out \(salon.name) on GLOWZA!") {
+                Label("Share Salon", systemImage: "square.and.arrow.up")
+            }
+        }
     }
 }
 
@@ -168,28 +182,5 @@ private struct FavouriteSalonRow: View {
 
 // MARK: - Salon image helper (mirrors HomeView mapping)
 private func mappedSalonImageName(_ salonName: String) -> String {
-    switch salonName {
-    case "Golden Avenue":       return "Salon1"
-    case "Glow Studio":        return "salon2"
-    case "Luxe Aesthetics":    return "salon3"
-    case "Velvet Touch":       return "salon4"
-    case "Aura Beauty Bar":    return "salon5"
-    case "Silk & Shine":       return "salon6"
-    case "Prime Beauty":       return "salon7"
-    case "Elegance Salon":     return "salon8"
-    case "Crystal Beauty":     return "salon9"
-    case "Radiant Aesthetic":  return "salon10"
-    case "Cinnamon Glow":      return "Salon1"
-    case "Rose Mirror":        return "salon2"
-    case "Urban Bloom":        return "salon3"
-    case "Coco Beauty Lounge": return "salon4"
-    case "The Beauty Deck":    return "salon5"
-    case "Lotus Salon":        return "salon6"
-    case "Pearl Skin Studio":  return "salon7"
-    case "Mirror Muse":        return "salon8"
-    case "Golden Petals":      return "salon9"
-    case "Blush Avenue":       return "salon10"
-    case "Opal Aesthetics":    return "Salon1"
-    default:                   return "Salon1"
-    }
+    return SalonCatalog.shared.salon(named: salonName).imageName
 }

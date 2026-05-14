@@ -21,8 +21,9 @@ struct ProfileView: View {
     @State private var showAppUpdates       = false
     @State private var showTerms            = false
     @State private var showFontSizeSettings = false
-    @State private var showSignOutAlert     = false
-    @State private var showFavourites       = false
+    @State private var showSignOutAlert       = false
+    @State private var showDeleteAccountAlert = false
+    @State private var showFavourites         = false
 
     private var favourites: FavouritesStore { FavouritesStore.shared }
 
@@ -136,8 +137,31 @@ struct ProfileView: View {
                     // MARK: Sign Out Button
                     Button(action: { showSignOutAlert = true }) {
                         HStack(spacing: 12) {
-                            iconBadge(icon: "rectangle.portrait.and.arrow.right", color: .red)
+                            iconBadge(icon: "rectangle.portrait.and.arrow.right", color: brand)
                             Text("Sign Out")
+                                .glowzaFont(size: 15, weight: .medium)
+                                .foregroundStyle(brand)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .glowzaFont(size: 12, weight: .semibold)
+                                .foregroundStyle(Color(.tertiaryLabel))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(appSettings.themeSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .hcBorder(radius: 16)
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                    }
+                    .buttonStyle(.plain)
+
+                    // MARK: Delete Account Button
+                    Button(action: { showDeleteAccountAlert = true }) {
+                        HStack(spacing: 12) {
+                            iconBadge(icon: "person.badge.minus", color: .red)
+                            Text("Delete Account")
                                 .glowzaFont(size: 15, weight: .medium)
                                 .foregroundStyle(.red)
                             Spacer()
@@ -152,7 +176,7 @@ struct ProfileView: View {
                         .hcBorder(radius: 16)
                         .shadow(color: Color.black.opacity(0.06), radius: 8, y: 2)
                         .padding(.horizontal, 20)
-                        .padding(.top, 8)
+                        .padding(.top, 12)
                     }
                     .buttonStyle(.plain)
 
@@ -197,6 +221,16 @@ struct ProfileView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Are you sure you want to sign out?")
+        }
+        .alert("Delete Account", isPresented: $showDeleteAccountAlert) {
+            Button("Delete Permanently", role: .destructive) {
+                Task {
+                    try? await AuthService.shared.deleteAccount()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This action cannot be undone. All your bookings, history, and profile data will be permanently removed.")
         }
     }
 

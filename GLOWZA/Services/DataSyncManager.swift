@@ -116,13 +116,17 @@ final class DataSyncManager {
         if let fbBookings = try? await BookingService.shared.fetchUserBookings(userId: userId) {
             let existing = Set((try? bookingRepository.fetchBookingsFromCore(userId: userId))?.map { $0.receiptNumber } ?? [])
             for fb in fbBookings where !existing.contains(fb.bookingSummary.receiptNumber) {
+                // Extract timeSlot from the combined schedule string (e.g. "Oct 24, 2026 - 10:30 AM")
+                let scheduleParts = fb.bookingSummary.schedule.components(separatedBy: " - ")
+                let extractedTimeSlot = scheduleParts.count > 1 ? scheduleParts.last! : ""
+
                 try? bookingRepository.saveBookingToCore(
                     userId: userId, userName: userName,
                     salonName: fb.bookingSummary.salon,
                     salonLocation: fb.bookingSummary.salonLocation,
                     serviceName: fb.bookingSummary.service,
                     servicePrice: fb.bookingSummary.servicePrice,
-                    date: fb.createdAt, timeSlot: "",
+                    date: fb.createdAt, timeSlot: extractedTimeSlot,
                     receiptNumber: fb.bookingSummary.receiptNumber,
                     paymentMethod: fb.paymentMethod,
                     amountPaid: fb.bookingSummary.amount,
@@ -141,24 +145,36 @@ final class DataSyncManager {
                 .limit(to: 50)
                 .getDocuments()
             
+            let existingNotifs = try? notificationRepo.fetchNotificationsFromCore(userId: userId)
+            let existingKeys = Set(existingNotifs?.map { $0.title + $0.subtitle } ?? [])
+
             for doc in snapshot.documents {
                 let data = doc.data()
                 guard let title = data["title"] as? String,
                       let subtitle = data["subtitle"] as? String else { continue }
-                let icon = data["icon"] as? String ?? "bell.fill"
-                let type = data["type"] as? String ?? "info"
                 
-                try? notificationRepo.saveNotificationToCore(
-                    title: title,
-                    subtitle: subtitle,
-                    icon: icon,
-                    type: type,
-                    userId: userId
-                )
+                // Deduplicate before saving to Core Data!
+                if !existingKeys.contains(title + subtitle) {
+                    let icon = data["icon"] as? String ?? "bell.fill"
+                    let type = data["type"] as? String ?? "info"
+                    
+                    try? notificationRepo.saveNotificationToCore(
+                        title: title,
+                        subtitle: subtitle,
+                        icon: icon,
+                        type: type,
+                        userId: userId
+                    )
+                }
             }
         } catch {
             print("Notification sync failed: \(error)")
         }
+        
+        // 4. Force refresh of in-memory stores to show new data!
+        await BookingStore.shared.fetchUserBookings()
+        await NotificationManager.shared.fetchNotificationsFromFirestore()
+        await FavouritesStore.shared.load()
 
         // 4. Cache static catalog salons to Core Data for offline access
         try? salonRepository.upsertSalons(SalonCatalog.shared.salons)

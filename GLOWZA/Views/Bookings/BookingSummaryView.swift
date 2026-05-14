@@ -37,7 +37,7 @@ struct BookingSummaryView: View {
                     // Title section
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Booking Summary")
-                            .glowzaFont(size: 28, weight: .bold)
+                            .glowzaFont(size: 24, weight: .semibold)
                             .foregroundColor(appSettings.themeText)
                         Text("Review your appointment details before payment")
                             .glowzaFont(size: 17)
@@ -55,15 +55,15 @@ struct BookingSummaryView: View {
                             .tracking(0.5)
 
                         VStack(spacing: 0) {
-                            summaryRow(icon: "building.2.fill", label: "Salon", value: draft.salon.name)
+                            summaryRow(icon: "mappin.and.ellipse", label: "Salon", value: draft.salon.name)
                             Divider().padding(.leading, 52)
-                            summaryRow(icon: "sparkles", label: "Treatment", value: service.name)
+                            summaryRow(icon: "bubbles.and.sparkles.fill", label: "Treatment", value: service.name)
                             Divider().padding(.leading, 52)
-                            summaryRow(icon: "clock.fill", label: "Duration", value: service.duration)
+                            summaryRow(icon: "timer", label: "Duration", value: service.duration)
                             Divider().padding(.leading, 52)
-                            summaryRow(icon: "calendar", label: "Date", value: formattedDate)
+                            summaryRow(icon: "calendar.badge.clock", label: "Date", value: formattedDate)
                             Divider().padding(.leading, 52)
-                            summaryRow(icon: "clock", label: "Time", value: draft.timeSlot)
+                            summaryRow(icon: "clock.badge.checkmark", label: "Time", value: draft.timeSlot)
                         }
                         .background(appSettings.themeSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))

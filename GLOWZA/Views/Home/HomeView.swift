@@ -50,6 +50,7 @@ struct HomeView: View {
     @State private var showNotificationsView = false
     @State private var showFavourites = false
     @State private var currentPromotionPage: Int = 0
+    @State private var notificationManager = NotificationManager.shared
     
     // Loading profile data from UserDefaults (local storage).
     @State private var profileAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData")
@@ -85,43 +86,41 @@ struct HomeView: View {
       .init(name: "Glow Studio", location: "Kotte, Colombo", distance: "3.5 km", rating: 4.6, reviews: 198, score: 0.88,
           coordinate: CLLocationCoordinate2D(latitude: 6.8900, longitude: 79.9100), imageName: "salon2", categories: ["Hair Cut", "Hair Color", "Hair Styling"]),
       .init(name: "Luxe Aesthetics", location: "Dehiwala, Colombo", distance: "5.0 km", rating: 4.5, reviews: 245, score: 0.82,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8700), imageName: "Salon1", categories: ["Manicure", "Pedicure", "Nail Art"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8700), imageName: "salon3", categories: ["Manicure", "Pedicure", "Nail Art"]),
       .init(name: "Velvet Touch", location: "Nugegoda, Colombo", distance: "6.2 km", rating: 4.4, reviews: 131, score: 0.78,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8655, longitude: 79.8991), imageName: "salon2", categories: ["Facial Care", "Hair Cut", "Manicure"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8655, longitude: 79.8991), imageName: "salon4", categories: ["Facial Care", "Hair Cut", "Manicure"]),
       .init(name: "Aura Beauty Bar", location: "Mount Lavinia, Colombo", distance: "8.1 km", rating: 4.8, reviews: 420, score: 0.97,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8300, longitude: 79.8600), imageName: "Salon1", categories: ["Skin Therapy", "Hair Styling", "Nail Art"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8300, longitude: 79.8600), imageName: "salon5", categories: ["Skin Therapy", "Hair Styling", "Nail Art"]),
       .init(name: "Silk & Shine", location: "Battaramulla, Colombo", distance: "4.3 km", rating: 4.9, reviews: 287, score: 0.93,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8901, longitude: 79.8812), imageName: "salon2", categories: ["Chemical Peel", "Laser Hair", "Gel Manicure"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8901, longitude: 79.8812), imageName: "salon6", categories: ["Chemical Peel", "Laser Hair", "Gel Manicure"]),
       .init(name: "Prime Beauty", location: "Wattala, Colombo", distance: "7.8 km", rating: 4.3, reviews: 165, score: 0.75,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9907, longitude: 79.8910), imageName: "Salon1", categories: ["Microneedling", "PRP for Hair", "Manicure"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9907, longitude: 79.8910), imageName: "salon7", categories: ["Microneedling", "PRP for Hair", "Manicure"]),
       .init(name: "Elegance Salon", location: "Malabe, Colombo", distance: "9.2 km", rating: 4.6, reviews: 276, score: 0.86,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9062, longitude: 79.9582), imageName: "salon2", categories: ["Facial Care", "Skin Therapy"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.9062, longitude: 79.9582), imageName: "salon8", categories: ["Facial Care", "Skin Therapy"]),
       .init(name: "Crystal Beauty", location: "Maharagama, Colombo", distance: "6.5 km", rating: 4.7, reviews: 354, score: 0.92,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.9200), imageName: "Salon1", categories: ["Hair Cut", "Hair Color"]),
+          coordinate: CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.9200), imageName: "salon9", categories: ["Hair Cut", "Hair Color"]),
       .init(name: "Radiant Aesthetic", location: "Rajagiriya, Colombo", distance: "3.2 km", rating: 4.8, reviews: 398, score: 0.96,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8800, longitude: 79.8900), imageName: "salon2", categories: ["Manicure", "Pedicure"]),
-      .init(name: "Cinnamon Glow", location: "Boralesgamuwa, Colombo", distance: "4.1 km", rating: 4.5, reviews: 214, score: 0.84,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8400, longitude: 79.9000), imageName: "Salon1", categories: ["HydraFacial", "Laser Hair"]),
-      .init(name: "Rose Mirror", location: "Rajagiriya, Colombo", distance: "5.4 km", rating: 4.4, reviews: 176, score: 0.80,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9070, longitude: 79.8959), imageName: "salon2", categories: ["Microneedling", "Hair Treatment"]),
-      .init(name: "Urban Bloom", location: "Wellawatte, Colombo", distance: "5.9 km", rating: 4.6, reviews: 239, score: 0.89,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8747, longitude: 79.8602), imageName: "Salon1", categories: ["Chemical Peel", "Gel Manicure"]),
-      .init(name: "Coco Beauty Lounge", location: "Kirulapone, Colombo", distance: "6.1 km", rating: 4.3, reviews: 141, score: 0.77,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8792, longitude: 79.8768), imageName: "salon2", categories: ["Facial Care", "Hair Styling", "Nail Art"]),
-      .init(name: "The Beauty Deck", location: "Colombo 06", distance: "6.8 km", rating: 4.7, reviews: 268, score: 0.91,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8760, longitude: 79.8583), imageName: "Salon1", categories: ["Skin Therapy", "Hair Cut"]),
-      .init(name: "Lotus Salon", location: "Colombo 07", distance: "7.0 km", rating: 4.8, reviews: 305, score: 0.94,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9123, longitude: 79.8673), imageName: "salon2", categories: ["HydraFacial", "Hair Color"]),
-      .init(name: "Pearl Skin Studio", location: "Colombo 08", distance: "7.3 km", rating: 4.6, reviews: 223, score: 0.87,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9142, longitude: 79.8774), imageName: "Salon1", categories: ["Microneedling", "Gel Manicure"]),
-      .init(name: "Mirror Muse", location: "Colombo 02", distance: "7.7 km", rating: 4.4, reviews: 187, score: 0.81,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9272, longitude: 79.8503), imageName: "salon2", categories: ["Chemical Peel", "Hair Treatment"]),
-      .init(name: "Golden Petals", location: "Colombo 01", distance: "8.0 km", rating: 4.2, reviews: 129, score: 0.73,
-          coordinate: CLLocationCoordinate2D(latitude: 6.9350, longitude: 79.8447), imageName: "Salon1", categories: ["Skin Therapy", "Nail Art"]),
-      .init(name: "Blush Avenue", location: "Thimbirigasyaya, Colombo", distance: "8.4 km", rating: 4.7, reviews: 261, score: 0.90,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8959, longitude: 79.8743), imageName: "salon2", categories: ["Facial Care", "Gel Manicure"]),
-      .init(name: "Opal Aesthetics", location: "Havelock Town, Colombo", distance: "8.8 km", rating: 4.8, reviews: 334, score: 0.96,
-          coordinate: CLLocationCoordinate2D(latitude: 6.8830, longitude: 79.8699), imageName: "Salon1", categories: ["HydraFacial", "PRP for Hair", "Gel Manicure"])
+          coordinate: CLLocationCoordinate2D(latitude: 6.8800, longitude: 79.8900), imageName: "salon10", categories: ["Manicure", "Pedicure"]),
+      .init(name: "Glow Palace", location: "Colombo 03", distance: "4.5 km", rating: 4.5, reviews: 140, score: 0.87,
+          coordinate: CLLocationCoordinate2D(latitude: 6.8400, longitude: 79.9000), imageName: "salon11", categories: ["HydraFacial", "Laser Hair"]),
+      .init(name: "Pure Skin Lab", location: "Colombo 07", distance: "5.5 km", rating: 4.6, reviews: 160, score: 0.89,
+          coordinate: CLLocationCoordinate2D(latitude: 6.9070, longitude: 79.8959), imageName: "salon12", categories: ["Microneedling", "Hair Treatment"]),
+      .init(name: "The Hair Lounge", location: "Colombo 04", distance: "2.0 km", rating: 4.4, reviews: 110, score: 0.84,
+          coordinate: CLLocationCoordinate2D(latitude: 6.8747, longitude: 79.8602), imageName: "salon13", categories: ["Chemical Peel", "Gel Manicure"]),
+      .init(name: "Serene Spa", location: "Colombo 05", distance: "8.0 km", rating: 4.3, reviews: 70, score: 0.78,
+          coordinate: CLLocationCoordinate2D(latitude: 6.8792, longitude: 79.8768), imageName: "salon14", categories: ["Facial Care", "Hair Styling", "Nail Art"]),
+      .init(name: "Urban Nails", location: "Colombo 06", distance: "3.5 km", rating: 4.7, reviews: 220, score: 0.91,
+          coordinate: CLLocationCoordinate2D(latitude: 6.8760, longitude: 79.8583), imageName: "salon15", categories: ["Skin Therapy", "Hair Cut"]),
+      .init(name: "Divine Beauty", location: "Colombo 08", distance: "4.2 km", rating: 4.5, reviews: 130, score: 0.86,
+          coordinate: CLLocationCoordinate2D(latitude: 6.9123, longitude: 79.8673), imageName: "salon16", categories: ["HydraFacial", "Hair Color"]),
+      .init(name: "Bloom Studio", location: "Colombo 01", distance: "2.8 km", rating: 4.6, reviews: 170, score: 0.89,
+          coordinate: CLLocationCoordinate2D(latitude: 6.9142, longitude: 79.8774), imageName: "salon17", categories: ["Microneedling", "Gel Manicure"]),
+      .init(name: "Infinity Glow", location: "Colombo 10", distance: "6.5 km", rating: 4.3, reviews: 95, score: 0.81,
+          coordinate: CLLocationCoordinate2D(latitude: 6.9272, longitude: 79.8503), imageName: "salon18", categories: ["Chemical Peel", "Hair Treatment"]),
+      .init(name: "Skin Deep", location: "Colombo 02", distance: "1.8 km", rating: 4.8, reviews: 240, score: 0.93,
+          coordinate: CLLocationCoordinate2D(latitude: 6.9350, longitude: 79.8447), imageName: "salon19", categories: ["Skin Therapy", "Nail Art"]),
+      .init(name: "The Beauty Room", location: "Colombo 09", distance: "3.2 km", rating: 4.4, reviews: 115, score: 0.83,
+          coordinate: CLLocationCoordinate2D(latitude: 6.8959, longitude: 79.8743), imageName: "salon20", categories: ["Facial Care", "Gel Manicure"])
     ]
 
     // Computed property to filter salons based on search text and selected service.
@@ -191,7 +190,7 @@ struct HomeView: View {
             .sheet(isPresented: $showMapSheet) {
                 SalonMapView(salons: allSalons)
             }
-            .sheet(isPresented: $showFavourites) {
+            .fullScreenCover(isPresented: $showFavourites) {
                 FavouriteSalonsView().environment(appSettings)
             }
             // .task runs when the view appears. Good for async work!
@@ -335,31 +334,61 @@ struct HomeView: View {
 
             // Only show action buttons if the user is logged in (not "User").
             if profileName != "User" {
-                HStack(spacing: 10) {
-                    Button(action: {
-                        showFavourites = true
-                    }) {
-                        Image(systemName: "heart.fill")
-                            .glowzaFont(size: 16, weight: .medium)
-                            .foregroundColor(brand)
-                            .frame(width: 42, height: 42)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                    // Favourites Button
+                    ZStack(alignment: .topTrailing) {
+                        Button(action: { showFavourites = true }) {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+                                .overlay {
+                                    Image(systemName: "heart.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(brand)
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Transparent spacer to match the Notifications button size if needed
+                        Color.clear.frame(width: 44, height: 44)
                     }
                     
-                    Button(action: {
-                        showNotificationsView = true
-                    }) {
-                        Image(systemName: "bell.fill")
-                            .glowzaFont(size: 16, weight: .medium)
-                            .foregroundColor(brand)
-                            .frame(width: 42, height: 42)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
-                            .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                    // Notifications Button
+                    ZStack(alignment: .topTrailing) {
+                        Button(action: { showNotificationsView = true }) {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+                                .overlay {
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(brand)
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        
+                        let count = notificationManager.unreadCount
+                        if count > 0 {
+                            Text("\(count)")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(4)
+                                .frame(minWidth: 16, minHeight: 16)
+                                .background(brand)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                                .offset(x: 2, y: -2) // Overlap the bell icon perfectly!
+                        }
                     }
-                }
             }
         }
     }
@@ -461,10 +490,12 @@ struct HomeView: View {
                     PromoBannerCard(
                         imageName: "salon5",
                         title: "Luxury Skin Care",
-                        subtitle: "Get 30% off on all facial treatments",
+                        subtitle: "Get 30% off on all premium facial treatments",
                         discount: "30",
                         salonName: "Aura Beauty Bar",
-                        onBooking: { selectedSalonName = "Aura Beauty Bar" }
+                        onBooking: { 
+                            withAnimation { selectedSalonName = "Aura Beauty Bar" }
+                        }
                     )
                     .tag(0)
 
@@ -472,12 +503,27 @@ struct HomeView: View {
                     PromoBannerCard(
                         imageName: "salon6",
                         title: "Hair Transformation",
-                        subtitle: "Professional styling & coloring service",
+                        subtitle: "Master styling & professional coloring service",
                         discount: "25",
                         salonName: "Silk & Shine",
-                        onBooking: { selectedSalonName = "Silk & Shine" }
+                        onBooking: { 
+                            withAnimation { selectedSalonName = "Silk & Shine" }
+                        }
                     )
                     .tag(1)
+                    
+                    // Promotion 3 - Salon1 (Golden Avenue)
+                    PromoBannerCard(
+                        imageName: "Salon1",
+                        title: "Golden Glow Special",
+                        subtitle: "Exclusive aesthetic treatments for a radiant look",
+                        discount: "40",
+                        salonName: "Golden Avenue",
+                        onBooking: { 
+                            withAnimation { selectedSalonName = "Golden Avenue" }
+                        }
+                    )
+                    .tag(2)
                 }
                 .frame(height: 180)
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -485,7 +531,7 @@ struct HomeView: View {
                 // Custom Dot indicators for the promotion carousel.
                 HStack(spacing: 8) {
                     Spacer()
-                    ForEach(0..<2, id: \.self) { index in
+                    ForEach(0..<3, id: \.self) { index in
                         Circle()
                             .fill(currentPromotionPage == index ? Color(hex: "962043") : Color(hex: "962043").opacity(0.25))
                             .frame(width: currentPromotionPage == index ? 10 : 8, height: 8)
@@ -733,89 +779,120 @@ private struct PromoBannerCard: View {
     let onBooking: (() -> Void)?
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .bottomLeading) {
             // Background Image.
             Image(imageName)
                 .resizable()
                 .scaledToFill()
-                .ignoresSafeArea()
-
-            // Dark gradient overlay to make white text readable!
+                .frame(width: 350, height: 180)
+                .clipped()
+            
+            // Sophisticated Cinematic Gradient
             LinearGradient(
                 colors: [
-                    Color.black.opacity(0.5),
-                    Color.black.opacity(0.3),
-                    Color.black.opacity(0.05)
+                    Color.black.opacity(0.85),
+                    Color.black.opacity(0.4),
+                    Color.clear,
+                    Color.clear
                 ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.6),
+                    Color.clear
+                ],
+                startPoint: .bottom,
+                endPoint: .top
             )
 
+            // Content Layout
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .glowzaFont(size: 18, weight: .bold, design: .rounded)
+                // Top Tag + Discount row
+                HStack(alignment: .top) {
+                    // Salon Name Tag
+                    Text(salonName.uppercased())
+                        .glowzaFont(size: 9, weight: .bold)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(.ultraThinMaterial)
                         .foregroundColor(.white)
-                    Text(subtitle)
-                        .glowzaFont(size: 13, weight: .medium)
-                        .foregroundColor(.white.opacity(0.9))
-                        .lineLimit(2)
+                        .clipShape(Capsule())
+                        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 0.5))
+                    
+                    Spacer()
+                    
+                    // Premium Discount Badge
+                    VStack(spacing: -2) {
+                        Text(discount)
+                            .glowzaFont(size: 22, weight: .bold, design: .rounded)
+                        Text("% OFF")
+                            .glowzaFont(size: 8, weight: .heavy)
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 54, height: 54)
+                    .background(
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "962043"), Color(hex: "D4829E")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 3)
+                    )
+                    .offset(y: -10)
                 }
-                .padding(16)
+                .padding(.top, 14)
+                .padding(.horizontal, 14)
 
                 Spacer()
 
-                // Book Now button inside the banner.
-                Button(action: {
-                    onBooking?()
-                }) {
-                    Text("Book Now")
-                        .glowzaFont(size: 13, weight: .semibold)
-                        .foregroundColor(Color(hex: "962043"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.97))
-                        .clipShape(Capsule())
-                }
-                .padding(16)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Attractive circular discount badge in the top right corner.
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "962043"), Color(hex: "C83860")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                VStack(alignment: .center, spacing: -4) {
-                    Text(discount)
-                        .glowzaFont(size: 24, weight: .bold)
+                // Main Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .glowzaFont(size: 22, weight: .bold, design: .rounded)
                         .foregroundColor(.white)
-                    HStack(spacing: 0) {
-                        Text("%")
-                            .glowzaFont(size: 12, weight: .semibold)
-                            .foregroundColor(.white)
-                        Text("OFF")
-                            .glowzaFont(size: 10, weight: .bold)
-                            .foregroundColor(.white.opacity(0.95))
-                    }
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                    
+                    Text(subtitle)
+                        .glowzaFont(size: 13, weight: .medium)
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
+                // Refined Call to Action
+                HStack {
+                    HStack(spacing: 8) {
+                        Text("Book Now")
+                            .glowzaFont(size: 14, weight: .bold)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(Color(hex: "962043"))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
-            .frame(width: 76, height: 76)
-            .shadow(color: Color.black.opacity(0.4), radius: 12, x: 2, y: 6)
-            .offset(x: -12, y: -12)
         }
-        .frame(height: 180)
-        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color(hex: "962043").opacity(0.2), lineWidth: 1.5)
-        )
+        .frame(width: 350, height: 180)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .hcBorder(radius: 24)
+        .shadow(color: Color.black.opacity(0.12), radius: 15, x: 0, y: 10)
         .padding(.horizontal, 20)
+        .onTapGesture {
+            onBooking?()
+        }
     }
 }
 

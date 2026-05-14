@@ -48,13 +48,30 @@ final class FavouritesStore {
 
     // Load the user's favourites from Firestore on sign-in or app launch!
     func load() async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = AuthService.shared.currentUID else { return }
+        
+        // 1. Load from Core Data first (offline-first!)
+        if let cached = try? UserProfileRepository.shared.fetchProfile(userId: uid),
+           let jsonString = cached.favoriteSalonIds,
+           let data = jsonString.data(using: .utf8),
+           let ids = try? JSONDecoder().decode([String].self, from: data) {
+            withAnimation { favouriteNames = ids }
+        }
+
+        // 2. Refresh from Firestore
         let doc = try? await db.collection("userProfiles").document(uid).getDocument()
         let ids = doc?.get("favoriteSalonIds") as? [String] ?? []
-        withAnimation { favouriteNames = ids }
         
-        // Inject demo data for lecturer demonstration if needed!
-        // seedDemoData()
+        if !ids.isEmpty {
+            withAnimation { favouriteNames = ids }
+            // Sync back to Core Data
+            try? UserProfileRepository.shared.saveOrUpdateProfile(
+                userId: uid,
+                email: AuthService.shared.currentUser?.email ?? "",
+                name: AuthService.shared.currentUser?.fullName ?? "",
+                favoriteSalonIds: ids
+            )
+        }
     }
 
     // Injects default favourites for lecturer demonstration.
@@ -71,8 +88,18 @@ final class FavouritesStore {
 
     // Saves the current favourites array to Firestore!
     private func persist() async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = AuthService.shared.currentUID else { return }
         let ids = favouriteNames
+        
+        // 1. Save to Core Data (local cache)
+        try? UserProfileRepository.shared.saveOrUpdateProfile(
+            userId: uid,
+            email: AuthService.shared.currentUser?.email ?? "",
+            name: AuthService.shared.currentUser?.fullName ?? "",
+            favoriteSalonIds: ids
+        )
+
+        // 2. Save to Firestore (remote sync)
         // Use merge: true so we don't overwrite the whole profile document!
         try? await db.collection("userProfiles").document(uid)
             .setData(["favoriteSalonIds": ids], merge: true)

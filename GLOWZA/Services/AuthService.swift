@@ -146,16 +146,19 @@ final class AuthService {
         let result = try await auth.signIn(withEmail: email, password: password)
         let uid = result.user.uid
 
-        // 2. Fetch profile from Firestore
-        await fetchProfile(uid: uid)
-
-        // 3. Mark as signed in
+        // 2. Mark as signed in IMMEDIATELY for fast UI transition!
         self.isSignedIn = true
 
-        // 4. Background sync: pull data from Firestore to Core Data!
-        // We use Task.detached to run it in the background without blocking the UI!
-        Task.detached(priority: .utility) { [uid] in
+        // 3. Save email to UserDefaults for Face ID fallback
+        UserDefaults.standard.set(email, forKey: "last_signed_in_email")
+
+        // 4. Background sync: fetch profile and sync data!
+        Task.detached(priority: .userInitiated) { [uid] in
+            await self.fetchProfile(uid: uid)
             await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
+            await FavouritesStore.shared.load()
+            await NotificationManager.shared.fetchNotificationsFromFirestore()
+            await BookingStore.shared.triggerNearestBookingReminder()
         }
     }
 
@@ -173,15 +176,16 @@ final class AuthService {
         
         let uid = doc.documentID
         
-        // 2. Fetch profile
-        await fetchProfile(uid: uid)
-        
-        // 3. Mark as signed in
+        // 2. Mark as signed in IMMEDIATELY!
         self.isSignedIn = true
         
-        // 4. Background sync
-        Task.detached(priority: .utility) { [uid] in
+        // 3. Background sync: fetch profile and sync data!
+        Task.detached(priority: .userInitiated) { [uid] in
+            await self.fetchProfile(uid: uid)
             await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
+            await FavouritesStore.shared.load()
+            await NotificationManager.shared.fetchNotificationsFromFirestore()
+            await BookingStore.shared.triggerNearestBookingReminder()
         }
     }
 
@@ -217,7 +221,8 @@ final class AuthService {
                 phone: currentUser?.phone,
                 skinType: currentUserProfile?.skinType,
                 dateOfBirth: dob,
-                avatarBase64: avatarB64
+                avatarBase64: avatarB64,
+                favoriteSalonIds: currentUserProfile?.favoriteSalonIds
             )
         } catch {
             print("Failed to fetch profile: \(error)")
@@ -226,18 +231,30 @@ final class AuthService {
 
     // MARK: - Sign Out
     func signOut() throws {
+        // 1. Tell all managers to clear their in-memory data immediately!
+        NotificationManager.shared.clearMemory()
+        BookingStore.shared.clearMemory()
+        FavouritesStore.shared.clear()
+        
+        // 2. Wipe the local Core Data cache!
+        try? DataSyncManager.shared.clearAllCoreData()
+        
+        // 3. Clear Firebase session
         try auth.signOut()
         currentUser = nil
         currentUserProfile = nil
         isSignedIn = false
         
-        // Clear profile cache from UserDefaults so next user doesn't see it!
+        // 4. Clear profile cache from UserDefaults
         UserDefaults.standard.removeObject(forKey: "profile_fullName")
         UserDefaults.standard.removeObject(forKey: "profile_email")
         UserDefaults.standard.removeObject(forKey: "profile_phone")
         UserDefaults.standard.removeObject(forKey: "profile_skinType")
         UserDefaults.standard.removeObject(forKey: "profile_loyalty")
         UserDefaults.standard.removeObject(forKey: "profile_avatarData")
+        
+        // 5. Notify the app to go back to landing
+        NotificationCenter.default.post(name: .glowzaSignOut, object: nil)
     }
 
     // MARK: - Check & Listen to Auth State
@@ -273,7 +290,7 @@ final class AuthService {
         dateOfBirth: String? = nil,
         avatarUrl: String? = nil
     ) async throws {
-        guard let uid = auth.currentUser?.uid else { throw AuthError.notSignedIn }
+        guard let uid = self.currentUID else { throw AuthError.notSignedIn }
 
         var profileData: [String: Any] = [
             "fullName": fullName,
@@ -324,13 +341,13 @@ final class AuthService {
 
     // MARK: - Fetch Profiles
     func fetchCurrentUserProfile() async throws -> GlowzaUser? {
-        guard let uid = auth.currentUser?.uid else { return nil }
+        guard let uid = self.currentUID else { return nil }
         let doc = try await db.collection(GlowzaUser.collection).document(uid).getDocument()
         return try? doc.data(as: GlowzaUser.self)
     }
 
     func fetchUserProfileExtended() async throws -> GlowzaUserProfile? {
-        guard let uid = auth.currentUser?.uid else { return nil }
+        guard let uid = self.currentUID else { return nil }
         let doc = try await db.collection(GlowzaUserProfile.collection).document(uid).getDocument()
         return try? doc.data(as: GlowzaUserProfile.self)
     }
@@ -338,7 +355,7 @@ final class AuthService {
     // MARK: - Update Profile Avatar
     // Encodes the image to Base64 and stores it in Firestore!
     func updateProfileAvatarData(_ imageData: Data) async throws {
-        guard let uid = auth.currentUser?.uid else { throw AuthError.notSignedIn }
+        guard let uid = self.currentUID else { throw AuthError.notSignedIn }
         let base64 = imageData.base64EncodedString()
 
         try await db.collection(GlowzaUserProfile.collection).document(uid).setData([
@@ -358,8 +375,29 @@ final class AuthService {
     }
 
     // MARK: - Helpers
-    var currentUID: String? { auth.currentUser?.uid }
+    var currentUID: String? { currentUser?.uid ?? auth.currentUser?.uid }
     var currentUserName: String? { auth.currentUser?.displayName }
+
+    func sendPasswordResetEmail(email: String) async throws {
+        try await auth.sendPasswordReset(withEmail: email)
+    }
+
+    // MARK: - Delete Account
+    /// Permanently removes the user's data from Firestore and deletes their Auth record.
+    func deleteAccount() async throws {
+        guard let user = auth.currentUser else { throw AuthError.notSignedIn }
+        let uid = user.uid
+        
+        // 1. Delete Firestore documents
+        try await db.collection(GlowzaUser.collection).document(uid).delete()
+        try await db.collection(GlowzaUserProfile.collection).document(uid).delete()
+        
+        // 2. Delete the Firebase Auth user
+        try await user.delete()
+        
+        // 3. Clear local session
+        try signOut()
+    }
 
     deinit {
         // Clean up the listener when this object is destroyed!
@@ -396,7 +434,8 @@ final class AuthService {
                     email: user.email,
                     name: user.fullName,
                     phone: user.phone,
-                    skinType: currentUserProfile?.skinType
+                    skinType: currentUserProfile?.skinType,
+                    favoriteSalonIds: currentUserProfile?.favoriteSalonIds
                 )
             }
         } catch {

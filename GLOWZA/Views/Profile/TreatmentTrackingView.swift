@@ -19,19 +19,29 @@ struct TreatmentTrackingView: View {
     private var chartData: [(category: String, count: Int)] {
         let grouped = Dictionary(grouping: completedBookings, by: { $0.service.name })
         return grouped.map { (category: $0.key, count: $0.value.count) }
-            .filter { $0.category != "Aesthetic" } // Keep filter just in case a service is named "Aesthetic"
-            .sorted(by: { $0.count > $1.count }) // Sort by count descending!
+            .filter { $0.category != "Aesthetic" }
+            .sorted(by: { $0.count > $1.count })
     }
+
+    // A list of premium pink and rose shades for the chart!
+    private let pinkShades: [Color] = [
+        Color(hex: "962043"), // Brand Primary
+        Color(hex: "B83255"), // Rose Pink
+        Color(hex: "D14F71"), // Soft Rose
+        Color(hex: "E07B96"), // Pale Pink
+        Color(hex: "811A39"), // Deep Crimson
+        Color(hex: "6A142F")  // Dark Burgundy
+    ]
 
     // The chart view using the Charts framework.
     private var treatmentChart: some View {
         Chart {
-            ForEach(chartData, id: \.category) { item in
+            ForEach(Array(chartData.enumerated()), id: \.element.category) { index, item in
                 BarMark(
                     x: .value("Count", item.count),
                     y: .value("Category", item.category)
                 )
-                .foregroundStyle(brand.gradient)
+                .foregroundStyle(pinkShades[index % pinkShades.count].gradient)
                 .cornerRadius(6)
                 .annotation(position: .trailing) {
                     Text("\(item.count)")
@@ -57,7 +67,7 @@ struct TreatmentTrackingView: View {
                     emptyState
                 } else {
                     List {
-                        Section("Main Treatments") {
+                        Section("Treatment Insights") {
                             treatmentChart
                                 .padding(.vertical, 8)
                         }

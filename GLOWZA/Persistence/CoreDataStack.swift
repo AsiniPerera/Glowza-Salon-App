@@ -120,6 +120,7 @@ final class CoreDataStack {
             makeAttr("dateOfBirth",      .stringAttributeType, opt: true),
             makeAttr("profileImageData", .binaryDataAttributeType, opt: true),
             makeAttr("avatarBase64",     .stringAttributeType, opt: true),
+            makeAttr("favoriteSalonIds", .stringAttributeType, opt: true), // Stored as JSON string
             makeAttr("createdAt",        .dateAttributeType),
             makeAttr("updatedAt",        .dateAttributeType),
         ])

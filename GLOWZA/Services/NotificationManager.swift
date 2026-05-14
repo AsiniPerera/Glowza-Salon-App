@@ -14,6 +14,7 @@ struct NotificationItem: Identifiable, Codable {
     let icon: String // SFSymbol name.
     let type: NotificationType
     let timestamp: Date
+    var isRead: Bool
     
     enum NotificationType: String, Codable {
         case success
@@ -22,14 +23,26 @@ struct NotificationItem: Identifiable, Codable {
         case warning
     }
     
-    // Custom initializer to automatically generate a UUID and default timestamp!
-    init(title: String, subtitle: String, icon: String, type: NotificationType, timestamp: Date = Date()) {
+    // Default initializer for new notifications!
+    init(title: String, subtitle: String, icon: String, type: NotificationType, timestamp: Date = Date(), isRead: Bool = false) {
         self.id = UUID()
         self.title = title
         self.subtitle = subtitle
         self.icon = icon
         self.type = type
         self.timestamp = timestamp
+        self.isRead = isRead
+    }
+    
+    // Initializer for existing notifications (from DB/Cloud)!
+    init(id: UUID, title: String, subtitle: String, icon: String, type: NotificationType, timestamp: Date, isRead: Bool) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.icon = icon
+        self.type = type
+        self.timestamp = timestamp
+        self.isRead = isRead
     }
 }
 
@@ -45,10 +58,39 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     
     var notificationHistory: [NotificationItem] = [] // All past notifications.
     
+    var unreadCount: Int {
+        notificationHistory.filter { !$0.isRead }.count
+    }
+    
+    func clearMemory() {
+        notificationHistory = []
+    }
+    
     private let historyKey = "glowza_notification_history" // UserDefaults key.
     
     private let db = Firestore.firestore() // Firestore reference.
     private let notificationRepo = NotificationRepository.shared // Core Data repo.
+    
+    // Updates the red number on the app icon and syncs to database for tracking!
+    private func updateAppIconBadge() {
+        let count = unreadCount
+        
+        // 1. Update iOS App Icon Badge
+        UNUserNotificationCenter.current().setBadgeCount(count) { error in
+            if let error = error {
+                print("Error setting badge count: \(error)")
+            }
+        }
+        
+        // 2. Track unread count in Firestore database!
+        Task {
+            guard let uid = AuthService.shared.currentUID else { return }
+            try? await db.collection("users").document(uid).updateData([
+                "unreadNotificationsCount": count,
+                "lastBadgeUpdate": Timestamp(date: Date())
+            ])
+        }
+    }
     
     override private init() {
         super.init()
@@ -70,7 +112,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
         
         // Also load from Core Data (ensures data is persisted offline!).
-        let userId = Auth.auth().currentUser?.uid
+        let userId = AuthService.shared.currentUID
         if let cdNotifs = try? notificationRepo.fetchNotificationsFromCore(userId: userId) {
             let existingIds = Set(notificationHistory.map { $0.id })
             for cd in cdNotifs {
@@ -84,11 +126,13 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                         }
                     }()
                     let item = NotificationItem(
+                        id: cd.id, // Preserve the original ID!
                         title: cd.title,
                         subtitle: cd.subtitle,
                         icon: cd.icon,
                         type: type,
-                        timestamp: cd.createdAt
+                        timestamp: cd.createdAt,
+                        isRead: cd.isRead // Restore the read status!
                     )
                     notificationHistory.append(item)
                 }
@@ -101,12 +145,13 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         if let encoded = try? JSONEncoder().encode(notificationHistory) {
             UserDefaults.standard.set(encoded, forKey: historyKey)
         }
+        updateAppIconBadge() // Keep the icon badge in sync!
     }
     
     // MARK: - Fetch from Firestore
     // Pulls notifications from the cloud!
     func fetchNotificationsFromFirestore() async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = AuthService.shared.currentUID else { return }
         do {
             let snapshot = try await db.collection("notifications")
                 .whereField("userId", isEqualTo: uid)
@@ -114,7 +159,9 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             
             let firestoreNotifs = snapshot.documents.compactMap { doc -> NotificationItem? in
                 let d = doc.data()
-                guard let title = d["title"] as? String,
+                guard let idString = d["id"] as? String,
+                      let id = UUID(uuidString: idString),
+                      let title = d["title"] as? String,
                       let subtitle = d["subtitle"] as? String,
                       let icon = d["icon"] as? String,
                       let typeStr = d["type"] as? String,
@@ -130,25 +177,39 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 }()
                 
                 return NotificationItem(
+                    id: id, // Use the ID from Firestore!
                     title: title,
                     subtitle: subtitle,
                     icon: icon,
                     type: type,
-                    timestamp: timestamp
+                    timestamp: timestamp,
+                    isRead: d["isRead"] as? Bool ?? false
                 )
             }
             
             await MainActor.run {
-                // Merge with existing history (avoid duplicates!).
-                let existingTitles = Set(self.notificationHistory.map { $0.title + $0.subtitle })
+                // Merge with local history!
                 for item in firestoreNotifs {
-                    if !existingTitles.contains(item.title + item.subtitle) {
+                    // Stricter deduplication: ID check OR (Title + Subtitle + Timestamp within 1s)
+                    if let index = self.notificationHistory.firstIndex(where: { 
+                        $0.id == item.id || 
+                        ($0.title == item.title && 
+                         $0.subtitle == item.subtitle && 
+                         abs($0.timestamp.timeIntervalSince(item.timestamp)) < 1.0)
+                    }) {
+                        // Update read status if it changed in Firestore!
+                        if self.notificationHistory[index].isRead != item.isRead {
+                            self.notificationHistory[index].isRead = item.isRead
+                        }
+                    } else {
                         self.notificationHistory.append(item)
                     }
                 }
+                
                 // Sort by timestamp (newest first).
                 self.notificationHistory.sort(by: { $0.timestamp > $1.timestamp })
                 self.saveNotificationHistory()
+                self.updateAppIconBadge() // Ensure UI and Icon are in sync!
             }
         } catch {
             print("Failed to fetch notifications from Firestore: \(error)")
@@ -158,11 +219,12 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     // MARK: - Persist to Core Data & Firestore
     // Saves a new notification to both local and remote DBs!
     private func persistNotification(_ item: NotificationItem) {
-        let userId = Auth.auth().currentUser?.uid
+        let userId = AuthService.shared.currentUID
         let typeStr = typeString(item.type)
         
         // Save to Core Data.
         try? notificationRepo.saveNotificationToCore(
+            id: item.id,
             title: item.title,
             subtitle: item.subtitle,
             icon: item.icon,
@@ -179,10 +241,49 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             "icon": item.icon,
             "type": typeStr,
             "userId": uid,
-            "isRead": false,
+            "isRead": item.isRead,
             "createdAt": Timestamp(date: item.timestamp)
         ]
         db.collection("notifications").document(item.id.uuidString).setData(data, merge: true)
+    }
+    
+    // MARK: - Mark as Read
+    func markAsRead(_ item: NotificationItem) {
+        guard let index = notificationHistory.firstIndex(where: { $0.id == item.id }) else { return }
+        
+        notificationHistory[index].isRead = true
+        saveNotificationHistory()
+        updateAppIconBadge() // Update the count immediately!
+        
+        let id = item.id
+        Task {
+            // Update Core Data
+            try? notificationRepo.markNotificationAsRead(id)
+            
+            // Update Firestore
+            try? await db.collection("notifications").document(id.uuidString).updateData(["isRead": true])
+        }
+    }
+    
+    func markAllAsRead() {
+        for i in 0..<notificationHistory.count {
+            notificationHistory[i].isRead = true
+        }
+        saveNotificationHistory()
+        updateAppIconBadge() // Clear the icon badge!
+        
+        Task {
+            guard let uid = AuthService.shared.currentUID else { return }
+            
+            // 1. Update Core Data (Essential for local persistence!)
+            try? notificationRepo.markAllNotificationsAsRead(userId: uid)
+            
+            // 2. Update Firestore for all user's notifications
+            let snapshot = try? await db.collection("notifications").whereField("userId", isEqualTo: uid).whereField("isRead", isEqualTo: false).getDocuments()
+            for doc in snapshot?.documents ?? [] {
+                try? await doc.reference.updateData(["isRead": true])
+            }
+        }
     }
     
     // MARK: - Dismiss Notification from History
@@ -193,6 +294,17 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                     self.notificationHistory.remove(at: index)
                 }
                 self.saveNotificationHistory()
+                self.updateAppIconBadge()
+                
+                let id = item.id
+                Task {
+                    // 1. Delete from Core Data
+                    // Note: Need to add delete method to repo!
+                    try? NotificationRepository.shared.deleteNotification(id)
+                    
+                    // 2. Delete from Firestore
+                    try? await self.db.collection("notifications").document(id.uuidString).delete()
+                }
             }
         }
     }
@@ -204,7 +316,20 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 self.notificationHistory.removeAll()
             }
             self.saveNotificationHistory()
-            try? self.notificationRepo.clearAllNotifications()
+            self.updateAppIconBadge()
+            
+            Task {
+                guard let uid = AuthService.shared.currentUID else { return }
+                
+                // 1. Clear Core Data
+                try? self.notificationRepo.clearAllNotifications()
+                
+                // 2. Clear Firestore (Delete all documents for this user)
+                let snapshot = try? await self.db.collection("notifications").whereField("userId", isEqualTo: uid).getDocuments()
+                for doc in snapshot?.documents ?? [] {
+                    try? await doc.reference.delete()
+                }
+            }
         }
     }
     
@@ -213,7 +338,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     func sendLocalNotification(title: String, subtitle: String, delay: TimeInterval = 1.0) {
         let content = UNMutableNotificationContent()
         content.title = title
-        content.subtitle = subtitle
+        content.body = subtitle // Use 'body' instead of 'subtitle' for standard regular font look!
         content.sound = .default
         // Increment the app badge number!
         content.badge = NSNumber(value: UIApplication.shared.applicationIconBadgeNumber + 1)
@@ -228,6 +353,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             }
         }
     }
+    
     
     // MARK: - Save Notification to History
     // Saves a notification to history and persists it.
@@ -253,7 +379,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let notification = NotificationItem(
             title: title,
             subtitle: subtitle,
-            icon: "checkmark.circle.fill",
+            icon: "checkmark.seal.fill",
             type: .success
         )
         showNotification(notification, duration: bookingSuccessBannerDuration)
@@ -264,7 +390,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let notification = NotificationItem(
             title: "Booking Failed",
             subtitle: message,
-            icon: "exclamationmark.triangle.fill",
+            icon: "exclamationmark.shield.fill",
             type: .error
         )
         showNotification(notification, duration: 2.5)
@@ -294,6 +420,38 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         completionHandler([.banner, .sound, .badge])
     }
     
+    // MARK: - Nearest Booking Reminder
+    // Finds the closest upcoming booking and sends a reminder!
+    func scheduleNearestBookingReminder(from bookings: [Booking]) {
+        // 1. Get upcoming bookings only (today or future)
+        let upcoming = bookings.filter { 
+            $0.status == .upcoming && $0.date >= Calendar.current.startOfDay(for: Date()) 
+        }.sorted(by: { $0.date < $1.date })
+        
+        guard let nearest = upcoming.first else { return }
+        
+        // 2. Format the message
+        let df = DateFormatter()
+        df.dateFormat = "MMM d"
+        let dateStr = df.string(from: nearest.date)
+        
+        let timePart = nearest.timeSlot.isEmpty ? "" : " at \(nearest.timeSlot)"
+        let title = "Appointment Reminder"
+        let subtitle = "\(nearest.service.name) • \(nearest.salon.name) on \(dateStr)\(timePart)"
+        
+        // 3. Send system notification
+        sendLocalNotification(title: title, subtitle: subtitle, delay: 1.5)
+        
+        // 4. Also add to history for user to see in the app!
+        let notification = NotificationItem(
+            title: title,
+            subtitle: subtitle,
+            icon: "calendar.badge.clock", // Our unique icon!
+            type: .info
+        )
+        showNotification(notification)
+    }
+
     // MARK: - Helper
     // Converts enum to string for storage!
     private func typeString(_ type: NotificationItem.NotificationType) -> String {

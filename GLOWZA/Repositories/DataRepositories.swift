@@ -183,6 +183,7 @@ final class NotificationRepository {
 
     // Saves a new notification to Core Data!
     func saveNotificationToCore(
+        id: UUID? = nil,
         title: String,
         subtitle: String,
         icon: String,
@@ -190,7 +191,7 @@ final class NotificationRepository {
         userId: String? = nil
     ) throws {
         let notification = CDNotification(context: coreDataStack.context)
-        notification.id = UUID()
+        notification.id = id ?? UUID()
         notification.title = title
         notification.subtitle = subtitle
         notification.icon = icon
@@ -230,6 +231,29 @@ final class NotificationRepository {
             try coreDataStack.save()
         }
     }
+
+    // Deletes a specific notification!
+    func deleteNotification(_ notificationId: UUID) throws {
+        let request: NSFetchRequest<CDNotification> = CDNotification.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %@", notificationId as CVarArg)
+
+        if let notification = try coreDataStack.context.fetch(request).first {
+            coreDataStack.context.delete(notification)
+            try coreDataStack.save()
+        }
+    }
+
+    // Marks all notifications for a specific user as read!
+    func markAllNotificationsAsRead(userId: String) throws {
+        let request: NSFetchRequest<CDNotification> = CDNotification.fetchRequest()
+        request.predicate = NSPredicate(format: "userId == %@ AND isRead == NO", userId)
+
+        let notifications = try coreDataStack.context.fetch(request)
+        for notification in notifications {
+            notification.isRead = true
+        }
+        try coreDataStack.save()
+    }
 }
 
 // MARK: - User Profile Repository
@@ -249,7 +273,8 @@ final class UserProfileRepository {
         skinType: String? = nil,
         dateOfBirth: String? = nil,
         avatarBase64: String? = nil,
-        profileImage: UIImage? = nil
+        profileImage: UIImage? = nil,
+        favoriteSalonIds: [String]? = nil
     ) throws {
         let request: NSFetchRequest<CDUserProfile> = CDUserProfile.fetchRequest()
         request.predicate = NSPredicate(format: "userId == %@", userId)
@@ -271,6 +296,14 @@ final class UserProfileRepository {
         if let dateOfBirth { profile.dateOfBirth = dateOfBirth }
         if let avatarBase64 { profile.avatarBase64 = avatarBase64 }
         if let profileImage { profile.profileImageData = profileImage.jpegData(compressionQuality: 0.8) }
+        
+        if let favoriteSalonIds {
+            if let data = try? JSONEncoder().encode(favoriteSalonIds),
+               let jsonString = String(data: data, encoding: .utf8) {
+                profile.favoriteSalonIds = jsonString
+            }
+        }
+        
         profile.updatedAt = Date()
 
         try coreDataStack.save()
@@ -320,6 +353,7 @@ final class SalonRepository {
         cdSalon.about = salon.about
         cdSalon.phone = salon.phone
         cdSalon.openHours = salon.openHours
+        // imageName is NOT in the .xcdatamodeld yet, so we don't save it here to avoid crashes!
 
         // Add services!
         for service in salon.services {
@@ -387,7 +421,9 @@ final class SalonRepository {
                 services: services,
                 about: cd.about,
                 phone: cd.phone,
-                openHours: cd.openHours
+                openHours: cd.openHours,
+                // Since imageName isn't in Core Data, we look it up from the catalog or default to Salon1
+                imageName: SalonCatalog.shared.salons.first(where: { $0.name == cd.name })?.imageName ?? "Salon1"
             )
         }
     }

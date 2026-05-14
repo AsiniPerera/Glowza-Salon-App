@@ -467,24 +467,22 @@ struct ForgotPasswordView: View {
         errorMessage = nil
         isLoading = true
 
-        // Simulate a network delay (like calling an API).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            switch step {
-            case .email:
-                // Move to step 2!
-                step = .verification
-            case .verification:
-                // Check if code is valid (Simulated with "123456").
-                if verificationCode == "123456" {
-                    step = .resetPassword
-                } else {
-                    errorMessage = "Invalid verification code. Try 123456."
+        Task {
+            do {
+                // 1. Call the REAL Firebase reset function!
+                try await AuthService.shared.sendPasswordResetEmail(email: email)
+                
+                // 2. Show success and dismiss
+                await MainActor.run {
+                    isLoading = false
+                    showSuccess = true
                 }
-            case .resetPassword:
-                // Finish flow and show success alert!
-                showSuccess = true
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                }
             }
-            isLoading = false
         }
     }
 

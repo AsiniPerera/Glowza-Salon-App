@@ -39,10 +39,10 @@ struct NotificationBannerView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // Body (Removed redundant "GLOWZA" text!)
+                // Body (Standard regular font case!)
                 Text(notification.subtitle)
                     .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.secondary) // Use secondary color to make it look lighter!
+                    .foregroundColor(.secondary)
                     .lineLimit(isExpanded ? nil : 2)
             }
         }
