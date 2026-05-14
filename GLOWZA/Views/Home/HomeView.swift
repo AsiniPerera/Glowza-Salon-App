@@ -779,101 +779,120 @@ private struct PromoBannerCard: View {
     let onBooking: (() -> Void)?
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .bottomLeading) {
             // Background Image.
             Image(imageName)
                 .resizable()
                 .scaledToFill()
-                .ignoresSafeArea()
-
-            // Dark gradient overlay to make white text readable!
+                .frame(width: 350, height: 180)
+                .clipped()
+            
+            // Sophisticated Cinematic Gradient
             LinearGradient(
                 colors: [
-                    Color.black.opacity(0.5),
-                    Color.black.opacity(0.3),
-                    Color.black.opacity(0.05)
+                    Color.black.opacity(0.85),
+                    Color.black.opacity(0.4),
+                    Color.clear,
+                    Color.clear
                 ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.6),
+                    Color.clear
+                ],
+                startPoint: .bottom,
+                endPoint: .top
             )
 
+            // Content Layout
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 6) {
+                // Top Tag + Discount row
+                HStack(alignment: .top) {
                     // Salon Name Tag
                     Text(salonName.uppercased())
-                        .glowzaFont(size: 10, weight: .bold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.white.opacity(0.2))
+                        .glowzaFont(size: 9, weight: .bold)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(.ultraThinMaterial)
                         .foregroundColor(.white)
                         .clipShape(Capsule())
-                        .padding(.bottom, 4)
-
-                    Text(title)
-                        .glowzaFont(size: 20, weight: .bold, design: .rounded)
-                        .foregroundColor(.white)
-                    Text(subtitle)
-                        .glowzaFont(size: 13, weight: .medium)
-                        .foregroundColor(.white.opacity(0.95))
-                        .lineLimit(2)
+                        .overlay(Capsule().stroke(Color.white.opacity(0.2), lineWidth: 0.5))
+                    
+                    Spacer()
+                    
+                    // Premium Discount Badge
+                    VStack(spacing: -2) {
+                        Text(discount)
+                            .glowzaFont(size: 22, weight: .bold, design: .rounded)
+                        Text("% OFF")
+                            .glowzaFont(size: 8, weight: .heavy)
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 54, height: 54)
+                    .background(
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color(hex: "962043"), Color(hex: "D4829E")],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 3)
+                    )
+                    .offset(y: -10)
                 }
-                .padding(20)
+                .padding(.top, 14)
+                .padding(.horizontal, 14)
 
                 Spacer()
 
-                // Book Now button inside the banner.
-                HStack {
-                    Text("Book Now")
-                        .glowzaFont(size: 13, weight: .semibold)
-                        .foregroundColor(Color(hex: "962043"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.97))
-                        .clipShape(Capsule())
-                }
-                .padding(16)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle()) // Makes the whole area tappable!
-            .onTapGesture {
-                onBooking?()
-            }
-
-            // Attractive circular discount badge in the top right corner.
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color(hex: "962043"), Color(hex: "C83860")],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                VStack(alignment: .center, spacing: -4) {
-                    Text(discount)
-                        .glowzaFont(size: 24, weight: .bold)
+                // Main Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .glowzaFont(size: 22, weight: .bold, design: .rounded)
                         .foregroundColor(.white)
-                    HStack(spacing: 0) {
-                        Text("%")
-                            .glowzaFont(size: 12, weight: .semibold)
-                            .foregroundColor(.white)
-                        Text("OFF")
-                            .glowzaFont(size: 10, weight: .bold)
-                            .foregroundColor(.white.opacity(0.95))
-                    }
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                    
+                    Text(subtitle)
+                        .glowzaFont(size: 13, weight: .medium)
+                        .foregroundColor(.white.opacity(0.9))
+                        .lineLimit(1)
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
+                // Refined Call to Action
+                HStack {
+                    HStack(spacing: 8) {
+                        Text("Book Now")
+                            .glowzaFont(size: 14, weight: .bold)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(Color(hex: "962043"))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
             }
-            .frame(width: 76, height: 76)
-            .shadow(color: Color.black.opacity(0.4), radius: 12, x: 2, y: 6)
-            .offset(x: -12, y: -12)
         }
-        .frame(height: 180)
-        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(Color(hex: "962043").opacity(0.2), lineWidth: 1.5)
-        )
+        .frame(width: 350, height: 180)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .hcBorder(radius: 24)
+        .shadow(color: Color.black.opacity(0.12), radius: 15, x: 0, y: 10)
         .padding(.horizontal, 20)
+        .onTapGesture {
+            onBooking?()
+        }
     }
 }
 

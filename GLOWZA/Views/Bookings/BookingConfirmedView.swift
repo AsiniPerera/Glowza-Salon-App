@@ -89,13 +89,13 @@ struct BookingConfirmedView: View {
                 // ── Details card ───────────────────────────────────────
                 // Shows the summary of what was booked.
                 VStack(spacing: 0) {
-                    detailRow(icon: "sparkles", label: "Treatment", value: booking.service.name, color: brand)
+                    detailRow(icon: "bubbles.and.sparkles.fill", label: "Treatment", value: booking.service.name, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "building.2.fill", label: "Salon", value: booking.salon.name, color: brand)
+                    detailRow(icon: "mappin.and.ellipse", label: "Salon", value: booking.salon.name, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "calendar", label: "Date", value: formattedDate, color: brand)
+                    detailRow(icon: "calendar.badge.clock", label: "Date", value: formattedDate, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
-                    detailRow(icon: "clock.fill", label: "Time", value: booking.timeSlot, color: brand)
+                    detailRow(icon: "clock.badge.checkmark", label: "Time", value: booking.timeSlot, color: brand)
                     Divider().padding(.leading, 52).opacity(0.4)
                     detailRow(icon: "creditcard.fill", label: "Amount Paid", value: "LKR \(Int(booking.amountPaid))", color: brand)
                 }

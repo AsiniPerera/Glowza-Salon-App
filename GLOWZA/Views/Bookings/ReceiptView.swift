@@ -110,10 +110,10 @@ struct ReceiptView: View {
             .padding(.bottom, 12)
 
             VStack(spacing: 12) {
-                detailRow(icon: "building.2.fill", label: "Salon", value: booking.salon.name)
-                detailRow(icon: "sparkles", label: "Service", value: booking.service.name)
-                detailRow(icon: "calendar", label: "Date", value: booking.date.formatted(.dateTime.day().month().year()))
-                detailRow(icon: "clock.fill", label: "Time", value: booking.timeSlot)
+                detailRow(icon: "mappin.and.ellipse", label: "Salon", value: booking.salon.name)
+                detailRow(icon: "bubbles.and.sparkles.fill", label: "Service", value: booking.service.name)
+                detailRow(icon: "calendar.badge.clock", label: "Date", value: booking.date.formatted(.dateTime.day().month().year()))
+                detailRow(icon: "clock.badge.checkmark", label: "Time", value: booking.timeSlot)
                 detailRow(icon: "creditcard.fill", label: "Paid", value: "LKR \(Int(booking.amountPaid))")
             }
         }

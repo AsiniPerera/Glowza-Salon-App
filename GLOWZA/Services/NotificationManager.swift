@@ -379,7 +379,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let notification = NotificationItem(
             title: title,
             subtitle: subtitle,
-            icon: "checkmark.circle.fill",
+            icon: "checkmark.seal.fill",
             type: .success
         )
         showNotification(notification, duration: bookingSuccessBannerDuration)
@@ -390,7 +390,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let notification = NotificationItem(
             title: "Booking Failed",
             subtitle: message,
-            icon: "exclamationmark.triangle.fill",
+            icon: "exclamationmark.shield.fill",
             type: .error
         )
         showNotification(notification, duration: 2.5)

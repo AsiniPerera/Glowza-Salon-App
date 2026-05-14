@@ -267,7 +267,7 @@ struct BookAppointmentView: View {
 
     private var serviceSelectionHeader: some View {
         Text("Select Date & Time")
-            .glowzaFont(size: 28, weight: .bold)
+            .glowzaFont(size: 24, weight: .semibold)
             .foregroundColor(appSettings.themeText)
             .padding(.top, 6)
     }
