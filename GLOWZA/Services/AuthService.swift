@@ -152,10 +152,15 @@ final class AuthService {
         // 3. Mark as signed in
         self.isSignedIn = true
 
+        // 3.5 Save email to UserDefaults for Face ID fallback
+        UserDefaults.standard.set(email, forKey: "last_signed_in_email")
+
         // 4. Background sync: pull data from Firestore to Core Data!
         // We use Task.detached to run it in the background without blocking the UI!
         Task.detached(priority: .utility) { [uid] in
             await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
+            await FavouritesStore.shared.load()
+            await NotificationManager.shared.fetchNotificationsFromFirestore()
         }
     }
 
@@ -182,6 +187,8 @@ final class AuthService {
         // 4. Background sync
         Task.detached(priority: .utility) { [uid] in
             await DataSyncManager.shared.syncFirestoreToCoreData(userId: uid)
+            await FavouritesStore.shared.load()
+            await NotificationManager.shared.fetchNotificationsFromFirestore()
         }
     }
 
@@ -217,7 +224,8 @@ final class AuthService {
                 phone: currentUser?.phone,
                 skinType: currentUserProfile?.skinType,
                 dateOfBirth: dob,
-                avatarBase64: avatarB64
+                avatarBase64: avatarB64,
+                favoriteSalonIds: currentUserProfile?.favoriteSalonIds
             )
         } catch {
             print("Failed to fetch profile: \(error)")
@@ -273,7 +281,7 @@ final class AuthService {
         dateOfBirth: String? = nil,
         avatarUrl: String? = nil
     ) async throws {
-        guard let uid = auth.currentUser?.uid else { throw AuthError.notSignedIn }
+        guard let uid = self.currentUID else { throw AuthError.notSignedIn }
 
         var profileData: [String: Any] = [
             "fullName": fullName,
@@ -324,13 +332,13 @@ final class AuthService {
 
     // MARK: - Fetch Profiles
     func fetchCurrentUserProfile() async throws -> GlowzaUser? {
-        guard let uid = auth.currentUser?.uid else { return nil }
+        guard let uid = self.currentUID else { return nil }
         let doc = try await db.collection(GlowzaUser.collection).document(uid).getDocument()
         return try? doc.data(as: GlowzaUser.self)
     }
 
     func fetchUserProfileExtended() async throws -> GlowzaUserProfile? {
-        guard let uid = auth.currentUser?.uid else { return nil }
+        guard let uid = self.currentUID else { return nil }
         let doc = try await db.collection(GlowzaUserProfile.collection).document(uid).getDocument()
         return try? doc.data(as: GlowzaUserProfile.self)
     }
@@ -338,7 +346,7 @@ final class AuthService {
     // MARK: - Update Profile Avatar
     // Encodes the image to Base64 and stores it in Firestore!
     func updateProfileAvatarData(_ imageData: Data) async throws {
-        guard let uid = auth.currentUser?.uid else { throw AuthError.notSignedIn }
+        guard let uid = self.currentUID else { throw AuthError.notSignedIn }
         let base64 = imageData.base64EncodedString()
 
         try await db.collection(GlowzaUserProfile.collection).document(uid).setData([
@@ -358,7 +366,7 @@ final class AuthService {
     }
 
     // MARK: - Helpers
-    var currentUID: String? { auth.currentUser?.uid }
+    var currentUID: String? { currentUser?.uid ?? auth.currentUser?.uid }
     var currentUserName: String? { auth.currentUser?.displayName }
 
     deinit {
@@ -396,7 +404,8 @@ final class AuthService {
                     email: user.email,
                     name: user.fullName,
                     phone: user.phone,
-                    skinType: currentUserProfile?.skinType
+                    skinType: currentUserProfile?.skinType,
+                    favoriteSalonIds: currentUserProfile?.favoriteSalonIds
                 )
             }
         } catch {

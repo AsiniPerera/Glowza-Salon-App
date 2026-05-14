@@ -33,6 +33,15 @@ struct CompareView: View {
     @Environment(AppSettings.self) private var appSettings
     private var brand: Color { appSettings.themeBrand }
 
+    private let pinkShades: [Color] = [
+        Color(hex: "962043"), // Brand Primary
+        Color(hex: "B83255"), // Rose Pink
+        Color(hex: "D14F71"), // Soft Rose
+        Color(hex: "E07B96"), // Pale Pink
+        Color(hex: "811A39"), // Deep Crimson
+        Color(hex: "6A142F")  // Dark Burgundy
+    ]
+
     // MARK: Hardcoded Data
     // Mock data for treatments that can be compared.
     // In a real app, this would come from a database or API.
@@ -289,8 +298,7 @@ struct CompareView: View {
                         x: .value("Treatment", shortTreatmentName(item.service.name)),
                         y: .value("Price (LKR)", item.service.price)
                     )
-                    // Highlighting the cheapest one in teal!
-                    .foregroundStyle(lowestPriceIndices.contains(idx) ? teal : brand.opacity(0.8))
+                    .foregroundStyle(pinkShades[idx % pinkShades.count].gradient)
                     .cornerRadius(4)
                 }
             }
@@ -316,16 +324,10 @@ struct CompareView: View {
 
             // Legend at the bottom of the chart.
             HStack(spacing: 16) {
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 3).fill(teal).frame(width: 12, height: 8)
-                    Text("Best Price").glowzaFont(size: 10)
-                }
-                HStack(spacing: 5) {
-                    RoundedRectangle(cornerRadius: 3).fill(brand.opacity(0.8)).frame(width: 12, height: 8)
-                    Text("Standard").glowzaFont(size: 10)
-                }
+                Text("Each bar color represents a unique treatment")
+                    .glowzaFont(size: 10)
+                    .foregroundColor(Color(hex: "8A8A8A"))
             }
-            .foregroundColor(Color(hex: "8A8A8A"))
         }
         .padding(14)
         .background(appSettings.themeSurface)

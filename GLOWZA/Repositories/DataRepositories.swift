@@ -249,7 +249,8 @@ final class UserProfileRepository {
         skinType: String? = nil,
         dateOfBirth: String? = nil,
         avatarBase64: String? = nil,
-        profileImage: UIImage? = nil
+        profileImage: UIImage? = nil,
+        favoriteSalonIds: [String]? = nil
     ) throws {
         let request: NSFetchRequest<CDUserProfile> = CDUserProfile.fetchRequest()
         request.predicate = NSPredicate(format: "userId == %@", userId)
@@ -271,6 +272,14 @@ final class UserProfileRepository {
         if let dateOfBirth { profile.dateOfBirth = dateOfBirth }
         if let avatarBase64 { profile.avatarBase64 = avatarBase64 }
         if let profileImage { profile.profileImageData = profileImage.jpegData(compressionQuality: 0.8) }
+        
+        if let favoriteSalonIds {
+            if let data = try? JSONEncoder().encode(favoriteSalonIds),
+               let jsonString = String(data: data, encoding: .utf8) {
+                profile.favoriteSalonIds = jsonString
+            }
+        }
+        
         profile.updatedAt = Date()
 
         try coreDataStack.save()

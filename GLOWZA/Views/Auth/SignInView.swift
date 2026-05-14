@@ -14,15 +14,11 @@ struct SignInView: View {
     // We use a separate ViewModel to handle the complex Face ID logic.
     @StateObject private var viewModel = AuthViewModel()
 
-    // @State variables hold the text as the user types.
-    @State private var email = ""
-    @State private var password = ""
+    // @State variables for UI state only!
     @State private var showPassword = false // Controls whether to show dots or real letters.
     @State private var isLoading = false // Shows a spinner while logging in.
     @State private var emailAuthError: String? = nil // Holds error messages from Firebase.
-    @State private var showFaceIDAuth = false // Triggers the Face ID sheet.
-
-
+    @State private var isScanning = false // Controls the glowing border animation.
     @Environment(AppSettings.self) private var appSettings // For dark mode support.
     private var brand: Color { Color.glowzaPrimary } // Quick access to app's main color.
 
@@ -59,11 +55,11 @@ struct SignInView: View {
 
                 // 3. Input Fields (Email & Password)
                 VStack(spacing: 14) {
-                    authInput(placeholder: "Email address", text: $email, isSecure: false)
+                    authInput(placeholder: "Email address", text: $viewModel.email, isSecure: false)
                     
                     // Password field has an "eye" icon to toggle visibility.
                     ZStack(alignment: .trailing) {
-                        authInput(placeholder: "Password", text: $password, isSecure: !showPassword)
+                        authInput(placeholder: "Password", text: $viewModel.password, isSecure: !showPassword)
                         Button(action: { showPassword.toggle() }) {
                             Image(systemName: showPassword ? "eye.slash" : "eye")
                                 .glowzaFont(size: 15)
@@ -128,28 +124,41 @@ struct SignInView: View {
                 Spacer().frame(height: 16)
 
                 // 7. Face ID / Biometric Login Button
-                Button(action: { showFaceIDAuth = true }) {
+                Button(action: { viewModel.authenticate() }) {
                     HStack(spacing: 10) {
                         if viewModel.isAuthenticating {
                             ProgressView().tint(brand)
                         } else {
                             Image(systemName: viewModel.biometricIconName)
                                 .glowzaFont(size: 22, weight: .medium)
-                            Text(email.isEmpty ? "Enter Email to use Face ID" : viewModel.biometricButtonTitle)
+                            Text(viewModel.email.isEmpty ? "Enter Email to use Face ID" : viewModel.biometricButtonTitle)
                                 .glowzaFont(size: 16, weight: .semibold)
                         }
                     }
-                    .foregroundColor(email.isEmpty ? Color(hex: "8E8E93") : brand)
+                    .foregroundColor(viewModel.email.isEmpty ? Color(hex: "8E8E93") : brand)
                     .frame(maxWidth: .infinity)
                     .frame(height: 55)
-                    .background(email.isEmpty ? Color(hex: "F2F2F7") : Color.white)
+                    .background(viewModel.email.isEmpty ? Color(hex: "F2F2F7") : Color.white)
                     .clipShape(Capsule())
                     .overlay(
-                        Capsule()
-                            .stroke(email.isEmpty ? Color(hex: "E5E5EA") : brand, lineWidth: 1)
+                        ZStack {
+                            Capsule()
+                                .stroke(viewModel.email.isEmpty ? Color(hex: "E5E5EA") : brand, lineWidth: 1)
+                            
+                            // Animated "Face ID Detection" glowing border
+                            if viewModel.isAuthenticating {
+                                Capsule()
+                                    .stroke(brand, lineWidth: 2)
+                                    .shadow(color: brand, radius: 4)
+                                    .opacity(isScanning ? 1.0 : 0.2)
+                                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isScanning)
+                                    .onAppear { isScanning = true }
+                                    .onDisappear { isScanning = false }
+                            }
+                        }
                     )
                 }
-                .disabled(viewModel.isAuthenticating || email.isEmpty)
+                .disabled(viewModel.isAuthenticating || viewModel.email.isEmpty)
                 .padding(.horizontal, 24)
 
                 // Biometric error message if Face ID fails.
@@ -194,16 +203,11 @@ struct SignInView: View {
         .background(appSettings.themePage.ignoresSafeArea())
         // Listeners for success states.
         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
-            if authenticated { onSignIn?() }
-        }
-        // Shows the Face ID scan view as a full screen cover.
-        .fullScreenCover(isPresented: $showFaceIDAuth) {
-            FaceIDAuthView(onAuthSuccess: {
-                showFaceIDAuth = false
+            if authenticated {
                 // Call simulated Face ID sign in matching the entered email!
                 Task {
                     do {
-                        try await AuthService.shared.signInWithFaceID(email: email)
+                        try await AuthService.shared.signInWithFaceID(email: viewModel.email)
                         await MainActor.run {
                             onSignIn?()
                         }
@@ -213,9 +217,7 @@ struct SignInView: View {
                         }
                     }
                 }
-            }, onCancel: {
-                showFaceIDAuth = false
-            })
+            }
         }
     }
 
@@ -224,7 +226,7 @@ struct SignInView: View {
     // These functions clean up the main body code by extracting repeated UI elements.
 
     // Checks if the user has typed anything before allowing them to click Sign In.
-    private var canSignIn: Bool { !email.isEmpty && !password.isEmpty }
+    private var canSignIn: Bool { !viewModel.email.isEmpty && !viewModel.password.isEmpty }
 
     // Creates a custom styled text field or secure field.
     private func authInput(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {
@@ -302,7 +304,7 @@ struct SignInView: View {
         emailAuthError = nil
         Task {
             do {
-                try await AuthService.shared.signIn(email: email, password: password)
+                try await AuthService.shared.signIn(email: viewModel.email, password: viewModel.password)
                 await MainActor.run {
                     isLoading = false
                     onSignIn?()
