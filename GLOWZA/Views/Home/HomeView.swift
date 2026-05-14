@@ -199,6 +199,20 @@ struct HomeView: View {
                 await loadSalonsFromFirestore() // Loads data from Firebase.
                 await SalonFirestoreService.shared.seedMockReviews() // Seeds mock reviews.
                 refreshProfileHeader() // Updates user name and avatar.
+                
+                // NEW: Load bookings and show the latest appointment reminder!
+                await BookingStore.shared.fetchUserBookings()
+                
+                // Only show the reminder after login, with a 10s delay as requested!
+                if AppSettings.shared.shouldShowLoginReminder {
+                    AppSettings.shared.shouldShowLoginReminder = false // Reset so it only happens once!
+                    Task {
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        await MainActor.run {
+                            BookingStore.shared.triggerNearestBookingReminder()
+                        }
+                    }
+                }
             }
             .onAppear {
                 generateVoiceOverSummary()

@@ -73,6 +73,9 @@ extension EnvironmentValues {
 final class AppSettings {
 
 	static let shared = AppSettings() // Singleton instance!
+    
+    // NEW: Tracks if we just logged in and need to show a reminder!
+    var shouldShowLoginReminder = false
 
     // Each property uses didSet to save changes to UserDefaults immediately!
 	var isDarkMode: Bool {

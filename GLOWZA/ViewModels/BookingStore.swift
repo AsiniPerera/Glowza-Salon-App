@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import Combine
+import UIKit
 
 // MARK: - Booking Store
 // This class manages the booking state for the app!
@@ -137,16 +138,26 @@ final class BookingStore {
         timeSlot: String,
         paymentMethod: String,
         amountPaid: Double,
-        receiptNumber: String
+        receiptNumber: String,
+        agreedConsent: String,
+        signatureImage: UIImage?
     ) async {
         let userId = authService.currentUID ?? "GUEST"
-        
         let userName = authService.currentUserName
             ?? UserDefaults.standard.string(forKey: "profile_fullName")
             ?? "Guest"
         
         isLoading = true
         error = nil
+        
+        // Convert signature image to Base64 for Firestore storage!
+        var signatureBase64 = ""
+        if let image = signatureImage, let imageData = image.jpegData(compressionQuality: 0.1) {
+            signatureBase64 = imageData.base64EncodedString()
+            print("📦 Signature converted to Base64 (length: \(signatureBase64.count))")
+        } else {
+            print("⚠️ No signature image found to save.")
+        }
         
         do {
             var firestoreId: String? = nil
@@ -164,13 +175,17 @@ final class BookingStore {
                     timeSlot: timeSlot,
                     paymentMethod: paymentMethod,
                     amountPaid: amountPaid,
-                    receiptNumber: receiptNumber
+                    receiptNumber: receiptNumber,
+                    agreedConsent: agreedConsent,
+                    signatureBase64: signatureBase64
                 )
                 
+                print("✅ Booking successfully saved to Firestore: \(firestoreId ?? "unknown")")
                 receiptToFirestoreId[receiptNumber] = firestoreId!
             }
             
             // Always save to Core Data (local cache)!
+            // NOTE: We DO NOT save the signatureImage to Core Data anymore for privacy!
             try? bookingRepository.saveBookingToCore(
                 userId: userId,
                 userName: userName,
@@ -183,7 +198,8 @@ final class BookingStore {
                 receiptNumber: receiptNumber,
                 paymentMethod: paymentMethod,
                 amountPaid: amountPaid,
-                firestoreID: firestoreId
+                firestoreID: firestoreId,
+                signatureImage: nil // Explicitly nil as per user request!
             )
             
             isLoading = false
@@ -197,6 +213,9 @@ final class BookingStore {
 
     func fetchUserBookings() async {
         let userId = authService.currentUID ?? "GUEST"
+        
+        // CRITICAL: Clear memory before fetching for a specific user to prevent data leaking!
+        clearMemory()
         
         isLoading = true
         error = nil
@@ -262,6 +281,7 @@ final class BookingStore {
                 paymentMethod: .card,
                 amountPaid: service.price,
                 signatureImage: nil,
+                agreedConsent: "", // Demo data uses empty consent string.
                 status: demo.status,
                 review: demo.status == .completed ? BookingReview(rating: 5, comment: "Amazing service! Highly recommended.", date: demoDate, reviewerName: "Demo User") : nil
             )
@@ -386,6 +406,7 @@ final class BookingStore {
                 paymentMethod: pm,
                 amountPaid: fb.bookingSummary.amount,
                 signatureImage: nil,
+                agreedConsent: fb.bookingSummary.agreedConsent ?? "", // Restore from Firestore!
                 status: status,
                 review: review
             )

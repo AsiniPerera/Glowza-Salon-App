@@ -383,7 +383,7 @@ struct SalonDetailView: View {
                 }
                 
                 // User Annotation with profile image!
-                Annotation("My Location", coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)) {
+                Annotation("My Location", coordinate: CLLocationCoordinate2D(latitude: 6.7500, longitude: 79.9500)) {
                     VStack(spacing: 4) {
                         if let data = userAvatarData, let uiImage = UIImage(data: data) {
                             Image(uiImage: uiImage)
@@ -409,11 +409,10 @@ struct SalonDetailView: View {
                 
                 // Detailed route (Dynamic to Salon Location!)
                 MapPolyline(coordinates: [
-                    CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612), // User
-                    CLLocationCoordinate2D(latitude: 6.9000, longitude: 79.8550),
-                    CLLocationCoordinate2D(latitude: 6.8700, longitude: 79.8650),
-                    CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8600),
-                    CLLocationCoordinate2D(latitude: 6.8200, longitude: 79.8700),
+                    CLLocationCoordinate2D(latitude: 6.7500, longitude: 79.9500), // User (Distant)
+                    CLLocationCoordinate2D(latitude: 6.8000, longitude: 79.9200),
+                    CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8900),
+                    CLLocationCoordinate2D(latitude: 6.8800, longitude: 79.8700),
                     salon.coordinate // Destination!
                 ])
                 .stroke(Color(hex: "C2185B"), lineWidth: 4) // Deep Magenta / Dark Pink!
@@ -900,16 +899,6 @@ struct SalonReviewSheet: View {
         let salonId = SalonFirestoreService.shared.salonId(for: salonName)
         let userId = AuthService.shared.currentUID ?? "GUEST"
         let userName = AuthService.shared.currentUserName ?? "Anonymous"
-        
-        // Check if user already reviewed (only for new reviews)
-        if reviewToEdit == nil {
-            let hasReviewed = existingReviews.contains { $0.userId == userId && $0.userId != "GUEST" }
-            if hasReviewed {
-                errorMessage = "You have already reviewed this salon. You can edit your existing review instead."
-                showErrorAlert = true
-                return
-            }
-        }
         
         isSubmitting = true
         

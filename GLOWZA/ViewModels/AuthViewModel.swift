@@ -65,6 +65,12 @@ final class AuthViewModel: ObservableObject {
             isAuthenticated = true
             isAuthenticating = false
             clearFields()
+            
+            // NEW: Ensure all services reload data for the NEW user!
+            NotificationManager.shared.loadNotificationHistory()
+            Task { await BookingStore.shared.fetchUserBookings() }
+            
+            AppSettings.shared.shouldShowLoginReminder = true
         } catch {
             // Convert technical Firebase errors to friendly student/user messages!
             authenticationError = friendlyMessage(for: error)
@@ -87,6 +93,12 @@ final class AuthViewModel: ObservableObject {
             isAuthenticated = true
             isAuthenticating = false
             clearFields()
+            
+            // NEW: Ensure all services reload data for the NEW user!
+            NotificationManager.shared.loadNotificationHistory()
+            Task { await BookingStore.shared.fetchUserBookings() }
+            
+            AppSettings.shared.shouldShowLoginReminder = true
         } catch {
             authenticationError = friendlyMessage(for: error)
             isAuthenticating = false
@@ -99,6 +111,10 @@ final class AuthViewModel: ObservableObject {
             try authService.signOut()
             isAuthenticated = false
             clearFields()
+            
+            // CRITICAL: Clear all user-specific data from memory on logout!
+            BookingStore.shared.clearMemory()
+            NotificationManager.shared.clearMemory()
         } catch {
             authenticationError = error.localizedDescription
         }

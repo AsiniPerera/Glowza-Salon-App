@@ -334,6 +334,7 @@ struct PaymentView: View {
             paymentMethod: draft.paymentMethod,
             amountPaid: total,
             signatureImage: draft.signatureImage,
+            agreedConsent: draft.agreedConsent, // New: Link the consent text!
             status: .upcoming,
             review: nil
         )

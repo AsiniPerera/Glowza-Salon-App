@@ -14,6 +14,7 @@ struct ReceiptView: View {
     private var appSettings: AppSettings { AppSettings.shared }
     private var brand: Color { appSettings.themeBrand }
     @State private var showShareSheet = false
+    @State private var showMapInApp = false // NEW: To show map in a sheet!
     @State private var receiptFileURL: URL? = nil
 
 
@@ -39,7 +40,7 @@ struct ReceiptView: View {
                         squareActionButton(
                             title: "Get Directions",
                             icon: "map.fill",
-                            action: openDirections // Opens Apple Maps!
+                            action: { showMapInApp = true } // Now opens the in-app map!
                         )
                     }
                     .padding(.horizontal, 2)
@@ -62,6 +63,12 @@ struct ReceiptView: View {
             if let receiptFileURL {
                 ShareSheet(activityItems: [receiptFileURL])
             }
+        }
+        // NEW: Shows the map in a premium sheet!
+        .sheet(isPresented: $showMapInApp) {
+            MapDetailView(booking: booking)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -115,6 +122,29 @@ struct ReceiptView: View {
                 detailRow(icon: "calendar.badge.clock", label: "Date", value: booking.date.formatted(.dateTime.day().month().year()))
                 detailRow(icon: "clock.badge.checkmark", label: "Time", value: booking.timeSlot)
                 detailRow(icon: "creditcard.fill", label: "Paid", value: "LKR \(Int(booking.amountPaid))")
+                
+                // NEW: Display the signature on the receipt!
+                if let signature = booking.signatureImage {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "pencil.and.outline")
+                                .glowzaFont(size: 14).foregroundColor(appSettings.themeTextSecondary.opacity(0.7))
+                                .frame(width: 28)
+                            Text("Signature").glowzaFont(size: 13).foregroundColor(appSettings.themeTextSecondary)
+                            Spacer()
+                        }
+                        
+                        Image(uiImage: signature)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 50)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(8)
+                            .padding(.leading, 40)
+                    }
+                    .padding(.top, 4)
+                }
             }
         }
         .padding(16)
@@ -367,4 +397,96 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Map Detail View
+// This shows the elegant map in a modal sheet.
+struct MapDetailView: View {
+    let booking: Booking
+    @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
+    private var brand: Color { Color.glowzaPrimary }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // 1. Large Interactive Map
+                Map(initialPosition: .region(MKCoordinateRegion(
+                    center: booking.salon.coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.005, longitudeDelta: 0.005)
+                ))) {
+                    Marker(booking.salon.name, coordinate: booking.salon.coordinate)
+                        .tint(brand)
+                }
+                .mapStyle(.standard(elevation: .realistic))
+                .ignoresSafeArea(edges: .bottom)
+                .frame(maxHeight: .infinity)
+                
+                // 2. Info Footer
+                VStack(spacing: 20) {
+                    HStack(alignment: .top, spacing: 16) {
+                        iconBadge(icon: "mappin.and.ellipse", color: brand)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(booking.salon.name)
+                                .glowzaFont(size: 18, weight: .bold)
+                                .foregroundColor(appSettings.themeText)
+                            Text(booking.salon.location)
+                                .glowzaFont(size: 14)
+                                .foregroundColor(appSettings.themeTextSecondary)
+                        }
+                        Spacer()
+                    }
+                    
+                    // Button to open external Maps for full navigation
+                    Button(action: openExternalMaps) {
+                        HStack {
+                            Image(systemName: "arrow.triangle.turn.up.right.diamond.fill")
+                            Text("Open in Apple Maps")
+                        }
+                        .glowzaFont(size: 16, weight: .bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(brand)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: brand.opacity(0.3), radius: 8, y: 4)
+                    }
+                }
+                .padding(24)
+                .background(appSettings.themeSurface)
+            }
+            .navigationTitle("Location")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Close") { dismiss() }
+                        .glowzaFont(size: 16, weight: .medium)
+                        .foregroundColor(brand)
+                }
+            }
+        }
+    }
+    
+    private func iconBadge(icon: String, color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(color.opacity(0.12))
+                .frame(width: 44, height: 44)
+            Image(systemName: icon)
+                .glowzaFont(size: 18, weight: .semibold)
+                .foregroundStyle(color)
+        }
+    }
+    
+    private func openExternalMaps() {
+        // Use the coordinate from the salon object!
+        let lat = booking.salon.coordinate.latitude
+        let lon = booking.salon.coordinate.longitude
+        let url = URL(string: "maps://?q=\(booking.salon.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&ll=\(lat),\(lon)")!
+        
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+        }
+    }
 }

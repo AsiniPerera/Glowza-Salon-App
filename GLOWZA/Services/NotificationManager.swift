@@ -104,15 +104,17 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     
     // MARK: - Load & Save History
     // Loads history from UserDefaults and Core Data!
-    private func loadNotificationHistory() {
+    func loadNotificationHistory() {
+        let userId = AuthService.shared.currentUID ?? "GUEST"
+        let userSpecificKey = "\(historyKey)_\(userId)"
+        
         // Load from UserDefaults first (fastest access!).
-        if let data = UserDefaults.standard.data(forKey: historyKey),
+        if let data = UserDefaults.standard.data(forKey: userSpecificKey),
            let decoded = try? JSONDecoder().decode([NotificationItem].self, from: data) {
             self.notificationHistory = decoded
         }
         
         // Also load from Core Data (ensures data is persisted offline!).
-        let userId = AuthService.shared.currentUID
         if let cdNotifs = try? notificationRepo.fetchNotificationsFromCore(userId: userId) {
             let existingIds = Set(notificationHistory.map { $0.id })
             for cd in cdNotifs {
@@ -142,8 +144,11 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     
     // Saves history to UserDefaults!
     private func saveNotificationHistory() {
+        let userId = AuthService.shared.currentUID ?? "GUEST"
+        let userSpecificKey = "\(historyKey)_\(userId)"
+        
         if let encoded = try? JSONEncoder().encode(notificationHistory) {
-            UserDefaults.standard.set(encoded, forKey: historyKey)
+            UserDefaults.standard.set(encoded, forKey: userSpecificKey)
         }
         updateAppIconBadge() // Keep the icon badge in sync!
     }

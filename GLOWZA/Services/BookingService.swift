@@ -12,6 +12,8 @@ struct BookingSummary: Codable {
     let schedule: String  // Date + Time formatted (e.g., "Oct 24, 2026 - 10:30 AM")
     let amount: Double
     let receiptNumber: String
+    let agreedConsent: String?  // New: Store what they agreed to!
+    let signatureBase64: String? // New: Store signature as Base64 string!
 }
 
 // MARK: - Firestore Booking Model
@@ -69,7 +71,9 @@ final class BookingService {
         timeSlot: String,
         paymentMethod: String,
         amountPaid: Double,
-        receiptNumber: String
+        receiptNumber: String,
+        agreedConsent: String,
+        signatureBase64: String
     ) async throws -> String {
 
         let bookingId = UUID().uuidString // Generate a unique ID for the document!
@@ -88,7 +92,9 @@ final class BookingService {
             servicePrice: servicePrice,
             schedule: schedule,
             amount: amountPaid,
-            receiptNumber: receiptNumber
+            receiptNumber: receiptNumber,
+            agreedConsent: agreedConsent,
+            signatureBase64: signatureBase64
         )
 
         let firestoreBooking = FirestoreBooking(

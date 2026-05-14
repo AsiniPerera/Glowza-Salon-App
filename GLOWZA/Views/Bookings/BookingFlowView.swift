@@ -130,7 +130,9 @@ struct BookingFlowView: View {
                         timeSlot: booking.timeSlot,
                         paymentMethod: booking.paymentMethod.rawValue,
                         amountPaid: booking.amountPaid,
-                        receiptNumber: booking.receiptNumber
+                        receiptNumber: booking.receiptNumber,
+                        agreedConsent: draft.agreedConsent, // New field!
+                        signatureImage: booking.signatureImage // New field!
                     )
 
                     await MainActor.run {
