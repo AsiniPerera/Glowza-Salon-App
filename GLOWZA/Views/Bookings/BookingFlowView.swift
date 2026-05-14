@@ -39,110 +39,68 @@ struct BookingFlowView: View {
                 step = .summary
             }
         case .payment:
-            PaymentView(draft: $draft) { booking in
+            PaymentView(draft: $draft, isProcessing: isSubmittingPayment) { booking in
                 guard !isSubmittingPayment else { return }
                 isSubmittingPayment = true
 
-                // Move to booking confirmation after payment.
-                completedBooking = booking
-
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "MMM d, yyyy"
-                let dateString = dateFormatter.string(from: booking.date)
-
-                // Trigger in-app notification!
-                NotificationManager.shared.notifyBookingSuccess(
-                    serviceName: booking.service.name,
-                    salonName: booking.salon.name,
-                    time: booking.timeSlot,
-                    date: dateString
-                )
-
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    step = .confirmation
-                }
-
-                // Add to local store immediately so BookingsView shows it right away.
-                BookingStore.shared.add(booking)
-
-                // ── Step 5: Sync to widget via App Group ──────────────────────
-                // This updates the iOS home screen widget!
-                WidgetBookingSyncService.shared.saveUpcomingBooking(booking)
-
-                // Save appointment to iOS Calendar (simulator/device) in background.
+                // Move to booking confirmation only after successful Firestore save!
                 Task {
-                    let result = await EventKitService.shared.saveBookingToCalendar(booking)
+                    do {
+                        try await BookingStore.shared.createBooking(
+                            salonName: booking.salon.name,
+                            salonLocation: booking.salon.location,
+                            serviceName: booking.service.name,
+                            servicePrice: booking.service.price,
+                            date: booking.date,
+                            timeSlot: booking.timeSlot,
+                            paymentMethod: booking.paymentMethod.rawValue,
+                            amountPaid: booking.amountPaid,
+                            receiptNumber: booking.receiptNumber,
+                            agreedConsent: draft.agreedConsent,
+                            signatureImage: booking.signatureImage
+                        )
 
-                    await MainActor.run {
-                        switch result {
-                        case .saved:
-                            NotificationManager.shared.showNotification(
-                                NotificationItem(
-                                    title: "Added to Calendar",
-                                    subtitle: "Your appointment was saved in Calendar.",
-                                    icon: "calendar.badge.checkmark",
-                                    type: .info
-                                ),
-                                duration: 2.5
+                        await MainActor.run {
+                            isSubmittingPayment = false
+                            completedBooking = booking
+                            
+                            // Success logic!
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "MMM d, yyyy"
+                            let dateString = dateFormatter.string(from: booking.date)
+                            
+                            NotificationManager.shared.notifyBookingSuccess(
+                                serviceName: booking.service.name,
+                                salonName: booking.salon.name,
+                                time: booking.timeSlot,
+                                date: dateString
                             )
-                        case .permissionDenied:
+                            
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                step = .confirmation
+                            }
+                            
+                            // Update local store and widget
+                            BookingStore.shared.add(booking)
+                            WidgetBookingSyncService.shared.saveUpcomingBooking(booking)
+                            
+                            // Calendar save can still happen in background
+                            Task {
+                                let _ = await EventKitService.shared.saveBookingToCalendar(booking)
+                            }
+                        }
+                    } catch {
+                        await MainActor.run {
+                            isSubmittingPayment = false
+                            // Show error notification!
                             NotificationManager.shared.showNotification(
                                 NotificationItem(
-                                    title: "Calendar Permission Needed",
-                                    subtitle: "Enable Calendar access in Settings to auto-save bookings.",
-                                    icon: "calendar.badge.exclamationmark",
-                                    type: .warning
-                                ),
-                                duration: 3.0
-                            )
-                        case .noWritableCalendar:
-                            NotificationManager.shared.showNotification(
-                                NotificationItem(
-                                    title: "No Writable Calendar",
-                                    subtitle: "Create or enable a calendar account to save appointments.",
-                                    icon: "calendar",
-                                    type: .warning
-                                ),
-                                duration: 3.0
-                            )
-                        case .saveFailed:
-                            NotificationManager.shared.showNotification(
-                                NotificationItem(
-                                    title: "Calendar Save Failed",
-                                    subtitle: "Could not save this booking to Calendar.",
-                                    icon: "calendar.badge.exclamationmark",
+                                    title: "Booking Failed",
+                                    subtitle: error.localizedDescription,
+                                    icon: "exclamationmark.triangle.fill",
                                     type: .error
                                 ),
-                                duration: 3.0
-                            )
-                        }
-                    }
-                }
-
-                // Save to Firestore in background.
-                Task {
-                    await BookingStore.shared.createBooking(
-                        salonName: booking.salon.name,
-                        salonLocation: booking.salon.location,
-                        serviceName: booking.service.name,
-                        servicePrice: booking.service.price,
-                        date: booking.date,
-                        timeSlot: booking.timeSlot,
-                        paymentMethod: booking.paymentMethod.rawValue,
-                        amountPaid: booking.amountPaid,
-                        receiptNumber: booking.receiptNumber,
-                        agreedConsent: draft.agreedConsent, // New field!
-                        signatureImage: booking.signatureImage // New field!
-                    )
-
-                    await MainActor.run {
-                        isSubmittingPayment = false
-                    }
-
-                    if BookingStore.shared.error != nil {
-                        await MainActor.run {
-                            NotificationManager.shared.notifyBookingFailure(
-                                message: BookingStore.shared.error ?? "Could not complete your booking. Please try again."
+                                duration: 5.0
                             )
                         }
                     }
@@ -179,6 +137,8 @@ struct BookAppointmentView: View {
 
     @State private var selectedTime: String = ""
     @State private var displayMonth: Date = Date() // Tracks which month the calendar is showing.
+    @State private var bookedSlots: [String] = [] // NEW: To be fetched from DB!
+    @State private var isFetchingSlots = false // NEW: To show loading state!
 
     private var appSettings: AppSettings { AppSettings.shared }
 
@@ -260,6 +220,11 @@ struct BookAppointmentView: View {
             }
             displayMonth = draft.date
             selectedTime = draft.timeSlot
+            
+            Task { await fetchBookedSlots() }
+        }
+        .onChange(of: draft.date) { _, _ in
+            Task { await fetchBookedSlots() }
         }
     }
 
@@ -427,25 +392,35 @@ struct BookAppointmentView: View {
     // The grid of time slots.
     private var timeSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Available Times")
-                .glowzaFont(size: 15, weight: .regular)
-                .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
-                .tracking(0.5)
-                .padding(.top, 10)
+            HStack {
+                Text("Available Times")
+                    .glowzaFont(size: 15, weight: .regular)
+                    .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "56585F"))
+                    .tracking(0.5)
+                
+                if isFetchingSlots {
+                    ProgressView()
+                        .scaleEffect(0.7)
+                        .padding(.leading, 8)
+                }
+            }
+            .padding(.top, 10)
 
             // LazyVGrid creates a grid with a fixed number of columns (3 in this case).
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
                 ForEach(BookingDraft.timeSlots, id: \.time) { slot in
+                    let isAvailable = isSlotActuallyAvailable(slot: slot.time)
                     let isSelected = selectedTime == slot.time
                     Button(action: {
-                        guard slot.available else { return }
+                        guard isAvailable else { return }
                         selectedTime = slot.time
                         draft.timeSlot = slot.time
                     }) {
                         Text(slot.time)
                             .glowzaFont(size: 15, weight: .semibold)
+                            .strikethrough(!isAvailable, color: Color(hex: "BDBFC5"))
                             .foregroundColor(
-                                !slot.available ? Color(hex: "BDBFC5") : (isSelected ? .white : dark)
+                                !isAvailable ? Color(hex: "BDBFC5") : (isSelected ? .white : dark)
                             )
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -455,12 +430,12 @@ struct BookAppointmentView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             .hcBorder(radius: 10)
                             .overlay(
-                                !slot.available ? nil :
+                                !isAvailable ? nil :
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .stroke(isSelected ? Color.clear : Color(hex: "EBEBF0"), lineWidth: isSelected ? 0 : 1.5)
                             )
                     }
-                    .disabled(!slot.available) // Disables the button if slot is taken!
+                    .disabled(!isAvailable) // Disables the button if slot is taken!
                 }
             }
             .padding(.bottom, 6)
@@ -485,6 +460,61 @@ struct BookAppointmentView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(appSettings.themeSurface)
+        }
+    }
+
+    // MARK: - Helper Logic
+    
+    /// Checks if a slot is actually available (not in the past AND not booked).
+    private func isSlotActuallyAvailable(slot: String) -> Bool {
+        // 1. Check if the slot was already taken in the database!
+        if bookedSlots.contains(slot) { return false }
+        
+        // 2. Check if the slot is in the past (if booking for today).
+        let calendar = Calendar.current
+        if calendar.isDateInToday(draft.date) {
+            let now = Date()
+            
+            // Parse the slot time (e.g., "10:30 AM")
+            let formatter = DateFormatter()
+            formatter.dateFormat = "h:mm a"
+            
+            if let slotTime = formatter.date(from: slot) {
+                let slotComponents = calendar.dateComponents([.hour, .minute], from: slotTime)
+                let nowComponents = calendar.dateComponents([.hour, .minute], from: now)
+                
+                let slotTotalMinutes = (slotComponents.hour ?? 0) * 60 + (slotComponents.minute ?? 0)
+                let nowTotalMinutes = (nowComponents.hour ?? 0) * 60 + (nowComponents.minute ?? 0)
+                
+                return slotTotalMinutes > nowTotalMinutes + 15 // Allow booking if it's 15 mins away!
+            }
+        }
+        
+        return true // Default: available for future dates!
+    }
+
+    /// Fetches all booked time slots for this salon on this specific date!
+    private func fetchBookedSlots() async {
+        let salonName = draft.salon.name
+        isFetchingSlots = true
+        
+        // Format the date prefix using POSIX to match the DB exactly!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let datePrefix = formatter.string(from: draft.date)
+        
+        do {
+            let booked = try await BookingService.shared.fetchBookedSlots(salon: salonName, datePrefix: datePrefix)
+            await MainActor.run {
+                self.bookedSlots = booked
+                self.isFetchingSlots = false
+            }
+        } catch {
+            print("Error fetching booked slots: \(error)")
+            await MainActor.run {
+                self.isFetchingSlots = false
+            }
         }
     }
 }

@@ -243,5 +243,5 @@ coreml_model.output_description["skinConcernLabel"] = "Predicted skin concern ca
 # Save the model to the Xcode project directory!
 OUTPUT = "/Users/COBSCCOMP242P-024/AsiniDev/GLOWZA/GLOWZA/Views/AIBeauty/SkinConcernClassifier.mlmodel"
 coreml_model.save(OUTPUT)
-print(f"\n{'✅' if all_pass else '⚠️ '}  Model saved → {OUTPUT}")
+print(f"\n{'' if all_pass else ' '}  Model saved → {OUTPUT}")
 print(f"   Classes: {list(pipeline.classes_)}")

@@ -75,14 +75,26 @@ final class BookingService {
         agreedConsent: String,
         signatureBase64: String
     ) async throws -> String {
+        
+        // Use a standardized POSIX formatter for both the check and the final save!
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let schedule = formatter.string(from: date) + " - " + timeSlot
+        
+        // --- EXTRA SECURITY: Check if this slot was JUST taken! ---
+        let existing = try await db.collection(collectionName)
+            .whereField("bookingSummary.salon", isEqualTo: salonName)
+            .whereField("bookingSummary.schedule", isEqualTo: schedule)
+            .whereField("status", isEqualTo: "upcoming")
+            .getDocuments()
+        
+        if !existing.documents.isEmpty {
+            // Already taken!
+            throw NSError(domain: "GlowzaBooking", code: 409, userInfo: [NSLocalizedDescriptionKey: "Sorry, this time slot was just booked by someone else. Please pick another time."])
+        }
 
         let bookingId = UUID().uuidString // Generate a unique ID for the document!
-
-        // Format date only (time comes from timeSlot)
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        let schedule = formatter.string(from: date) + " - " + timeSlot
 
         // Build booking summary using the caller-supplied receipt number
         let bookingSummary = BookingSummary(
@@ -215,5 +227,34 @@ final class BookingService {
         ]
         try await db.collection("salonReviews").document(reviewId).setData(data)
         print("Salon review saved for salonId: \(salonId)")
+    }
+
+    /// Queries Firestore to find all booked time slots for a specific salon and date prefix.
+    func fetchBookedSlots(salon: String, datePrefix: String) async throws -> [String] {
+        // FAILSAFE APPROACH: Fetch all active bookings for this salon and filter locally.
+        // This avoids complex Firestore index requirements that might be failing.
+        let snap = try await db.collection(collectionName)
+            .whereField("bookingSummary.salon", isEqualTo: salon)
+            .getDocuments()
+        
+        return snap.documents.compactMap { doc -> String? in
+            let data = doc.data()
+            
+            // 1. Only consider upcoming or completed bookings!
+            guard let status = data["status"] as? String,
+                  status == "upcoming" || status == "completed" else { return nil }
+            
+            guard let summary = data["bookingSummary"] as? [String: Any],
+                  let schedule = summary["schedule"] as? String else { return nil }
+            
+            // 2. Check if the schedule starts with our date prefix (e.g., "May 14, 2026")
+            if schedule.contains(datePrefix) {
+                // Extract everything after the " - " separator
+                let parts = schedule.components(separatedBy: " - ")
+                return parts.last
+            }
+            
+            return nil
+        }
     }
 }

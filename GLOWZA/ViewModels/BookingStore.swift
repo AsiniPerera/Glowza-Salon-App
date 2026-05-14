@@ -141,7 +141,7 @@ final class BookingStore {
         receiptNumber: String,
         agreedConsent: String,
         signatureImage: UIImage?
-    ) async {
+    ) async throws {
         let userId = authService.currentUID ?? "GUEST"
         let userName = authService.currentUserName
             ?? UserDefaults.standard.string(forKey: "profile_fullName")
@@ -208,6 +208,7 @@ final class BookingStore {
             self.error = error.localizedDescription
             isLoading = false
             print("Booking creation failed: \(error)")
+            throw error // Rethrow so caller knows it failed!
         }
     }
 
