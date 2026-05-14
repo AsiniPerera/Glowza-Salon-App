@@ -215,7 +215,7 @@ struct SalonDetailView: View {
         .overlay(alignment: .topLeading) {
             GlowzaCircleBackButton(action: { dismiss() })
             .padding(.leading, 20)
-            .padding(.top, 56)
+            .padding(.top, 44) // Better alignment with status bar!
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
@@ -247,7 +247,7 @@ struct SalonDetailView: View {
                 }
             }
             .padding(.trailing, 20)
-            .padding(.top, 56)
+            .padding(.top, 44)
         }
         .overlay(alignment: .bottomTrailing) {
             // Contact buttons (Phone, Facebook, WhatsApp)
@@ -458,19 +458,7 @@ struct SalonDetailView: View {
 
     // Maps salon names to image assets.
     private func mappedSalonImageName(_ salonName: String) -> String {
-        switch salonName {
-        case "Golden Avenue": return "Salon1"
-        case "Glow Studio": return "salon2"
-        case "Luxe Aesthetics": return "salon3"
-        case "Velvet Touch": return "salon4"
-        case "Aura Beauty Bar": return "salon5"
-        case "Silk & Shine": return "salon6"
-        case "Prime Beauty": return "salon7"
-        case "Elegance Salon": return "salon8"
-        case "Crystal Beauty": return "salon9"
-        case "Radiant Aesthetic": return "salon10"
-        default: return "Salon1"
-        }
+        return SalonCatalog.shared.salon(named: salonName).imageName
     }
 
     // Maps service names to image assets. This is a big helper!

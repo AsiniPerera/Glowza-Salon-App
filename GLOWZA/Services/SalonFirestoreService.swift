@@ -29,6 +29,7 @@ struct FirestoreSalon: Codable {
     var about: String
     var phone: String
     var openHours: String
+    var imageName: String
     var updatedAt: Date?
 }
 
@@ -72,6 +73,7 @@ final class SalonFirestoreService {
                 "about":       salon.about,
                 "phone":       salon.phone,
                 "openHours":   salon.openHours,
+                "imageName":   salon.imageName,
                 "updatedAt":   Timestamp()
             ]
             do {
@@ -108,6 +110,7 @@ final class SalonFirestoreService {
                 about:       d["about"]       as? String ?? "",
                 phone:       d["phone"]       as? String ?? "",
                 openHours:   d["openHours"]   as? String ?? "",
+                imageName:   d["imageName"]   as? String ?? "Salon1",
                 updatedAt:   (d["updatedAt"] as? Timestamp)?.dateValue()
             )
         }

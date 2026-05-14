@@ -36,15 +36,17 @@ struct Salon: Identifiable {
     let about: String
     let phone: String
     let openHours: String
+    let imageName: String // Image asset name!
 
     init(id: UUID = UUID(), name: String, location: String, distance: String,
          rating: Double, reviewCount: Int, score: Double,
-         services: [SalonService], about: String, phone: String, openHours: String) {
+         services: [SalonService], about: String, phone: String, openHours: String, imageName: String) {
         self.id = id; self.name = name; self.location = location
         self.distance = distance; self.rating = rating
         self.reviewCount = reviewCount; self.score = score
         self.services = services; self.about = about
         self.phone = phone; self.openHours = openHours
+        self.imageName = imageName
     }
 }
 
@@ -129,85 +131,48 @@ struct SalonCatalog {
 
     // Hardcoded list of salons with their services!
     let salons: [Salon] = [
-        Salon(
-            name: "Golden Avenue",
-            location: "Moratuwa, Colombo",
-            distance: "2 km",
-            rating: 4.7, reviewCount: 312, score: 0.95,
-            services: [
-                SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3500,  category: "Skin",      benefits: ["Hydration", "Glow", "Anti-aging"]),
-                SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5500,  category: "Skin",      benefits: ["Exfoliation", "Brightening", "Acne care"]),
-                SalonService(name: "Laser Hair Removal",  icon: "sun.max",          duration: "30 min", price: 8000,  category: "Hair",      benefits: ["Smooth skin", "Permanent", "Fast"]),
-                SalonService(name: "Hair Treatment",      icon: "leaf",             duration: "90 min", price: 4500,  category: "Hair",      benefits: ["Repair", "Shine", "Nourishment"]),
-                SalonService(name: "Manicure & Pedicure", icon: "hand.raised",      duration: "60 min", price: 2500,  category: "Nails",     benefits: ["Clean nails", "Relaxing", "Polish"]),
-                SalonService(name: "Microneedling",       icon: "syringe",          duration: "75 min", price: 12000, category: "Skin",      benefits: ["Collagen boost", "Scar reduction"]),
-                SalonService(name: "HydraFacial",         icon: "drop",             duration: "60 min", price: 15000, category: "Skin",      benefits: ["Deep hydration", "Pore cleaning"]),
-                SalonService(name: "Body Scrub",          icon: "bubbles.and.sparkles", duration: "60 min", price: 6500, category: "Body",      benefits: ["Smooth skin", "Detox"]),
-                SalonService(name: "Deep Tissue Massage", icon: "figure.walk",      duration: "90 min", price: 7500,  category: "Body",      benefits: ["Muscle relief", "Stress reduction"]),
-                SalonService(name: "Eyelash Extensions",  icon: "eye",              duration: "120 min", price: 8500, category: "Eyes",      benefits: ["Long lashes", "Full volume"]),
-                SalonService(name: "Eyebrow Threading",   icon: "scissors",         duration: "15 min", price: 800,   category: "Face",      benefits: ["Defined brows", "Quick"]),
-                SalonService(name: "Teeth Whitening",     icon: "mouth",            duration: "45 min", price: 18000, category: "Aesthetic", benefits: ["Brighter smile", "Fast results"]),
-                SalonService(name: "Aromatherapy",        icon: "wind",             duration: "60 min", price: 5000,  category: "Body",      benefits: ["Relaxation", "Healing"]),
-                SalonService(name: "Nail Art",            icon: "paintpalette",     duration: "45 min", price: 3500,  category: "Nails",     benefits: ["Creative design", "Unique"]),
-                SalonService(name: "Bridal Makeup",       icon: "star",             duration: "180 min", price: 45000, category: "Makeup",    benefits: ["Perfect look", "Long-lasting"])
-            ],
-            about: "Premier aesthetic salon offering sophisticated beauty treatments.",
-            phone: "+94 11 234 5678",
-            openHours: "Mon–Sat: 9:00 AM – 7:00 PM"
-        ),
-        Salon(
-            name: "Glow Studio",
-            location: "Moratuwa, Colombo",
-            distance: "3.5 km",
-            rating: 4.7, reviewCount: 312, score: 0.88,
-            services: [
-                SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3000,  category: "Skin",      benefits: ["Deep cleanse", "Moisture", "Radiance"]),
-                SalonService(name: "Botox / Anti-Aging",  icon: "cross.case",       duration: "45 min", price: 25000, category: "Aesthetic", benefits: ["Wrinkle-free", "Lift", "Youthful"]),
-                SalonService(name: "Dermal Fillers",      icon: "syringe",          duration: "60 min", price: 35000, category: "Aesthetic", benefits: ["Volume", "Contouring", "Plumpness"]),
-                SalonService(name: "Manicure & Pedicure", icon: "hand.raised",      duration: "60 min", price: 2200,  category: "Nails",     benefits: ["Soft skin", "Colour", "Relaxation"]),
-                SalonService(name: "Microblading",        icon: "pencil",           duration: "150 min", price: 28000, category: "Eyes",      benefits: ["Perfect brows", "Semi-permanent"]),
-                SalonService(name: "Lip Filler",          icon: "mouth",            duration: "45 min", price: 22000, category: "Aesthetic", benefits: ["Fuller lips", "Definition"]),
-                SalonService(name: "Carbon Peel",         icon: "cloud",            duration: "60 min", price: 12000, category: "Skin",      benefits: ["Clear skin", "Oil control"]),
-                SalonService(name: "Oxygen Facial",       icon: "wind",             duration: "60 min", price: 9500,  category: "Skin",      benefits: ["Plumping", "Brightening"]),
-                SalonService(name: "Vampire Facial",      icon: "drop.triangle",    duration: "90 min", price: 32000, category: "Aesthetic", benefits: ["Skin rejuvenation", "Youth"]),
-                SalonService(name: "PRP for Hair",        icon: "heart.text.square", duration: "60 min", price: 25000, category: "Hair",      benefits: ["Hair regrowth", "Strength"]),
-                SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5000,  category: "Skin",      benefits: ["Refining", "Glowing"]),
-                SalonService(name: "Swedish Massage",     icon: "figure.mind.and.body", duration: "60 min", price: 6000,  category: "Body",      benefits: ["Stress relief", "Relaxation"]),
-                SalonService(name: "Gel Manicure",        icon: "hand.point.up",    duration: "45 min", price: 3200,  category: "Nails",     benefits: ["Shiny", "Long-lasting"]),
-                SalonService(name: "Skin Tightening",     icon: "bolt",             duration: "60 min", price: 18000, category: "Aesthetic", benefits: ["Firm skin", "Lifting"]),
-                SalonService(name: "Eyelash Lift",        icon: "eye",              duration: "60 min", price: 4500,  category: "Eyes",      benefits: ["Curled lashes", "Natural look"])
-            ],
-            about: "Specializes in non-invasive aesthetic treatments and advanced skincare.",
-            phone: "+94 11 345 6789",
-            openHours: "Mon–Sun: 8:00 AM – 8:00 PM"
-        ),
-        Salon(
-            name: "Luxe Aesthetics",
-            location: "Dehiwala, Colombo",
-            distance: "5 km",
-            rating: 4.5, reviewCount: 198, score: 0.82,
-            services: [
-                SalonService(name: "Chemical Peel",         icon: "sparkles",       duration: "45 min", price: 6000,  category: "Skin",      benefits: ["Resurfacing", "Even tone", "Clarity"]),
-                SalonService(name: "Laser Hair Removal",    icon: "sun.max",        duration: "30 min", price: 9000,  category: "Hair",      benefits: ["Precision", "Long-lasting", "Safe"]),
-                SalonService(name: "Fairness Injections",   icon: "syringe",        duration: "30 min", price: 12000, category: "Aesthetic", benefits: ["Skin glow", "Even skin", "Brightening"]),
-                SalonService(name: "Dark Circle Treatment", icon: "eye",            duration: "45 min", price: 8500,  category: "Aesthetic", benefits: ["Refreshed eyes", "Lightening", "Hydration"]),
-                SalonService(name: "IV Drip Therapy",       icon: "ivfluid.bag",    duration: "60 min", price: 15000, category: "Wellness",  benefits: ["Energy boost", "Skin glow", "Immunity"]),
-                SalonService(name: "HIFU Lifting",          icon: "waveform.path",  duration: "90 min", price: 45000, category: "Aesthetic", benefits: ["V-shape face", "Lifting"]),
-                SalonService(name: "Micro-Needling",        icon: "square.grid.3x3", duration: "60 min", price: 13500, category: "Skin",      benefits: ["Pore refining", "Texture"]),
-                SalonService(name: "Luxury Facial",         icon: "crown",          duration: "90 min", price: 12000, category: "Skin",      benefits: ["Ultimate glow", "Deep relaxation"]),
-                SalonService(name: "Dandruff Treatment",    icon: "snow",           duration: "45 min", price: 3500,  category: "Hair",      benefits: ["Scalp health", "Clean hair"]),
-                SalonService(name: "Foot Reflexology",      icon: "shoeprints",     duration: "45 min", price: 4500,  category: "Wellness",  benefits: ["Better sleep", "Detox"]),
-                SalonService(name: "Detox Body Wrap",       icon: "bandage",        duration: "75 min", price: 8000,  category: "Body",      benefits: ["Weight loss", "Skin toning"]),
-                SalonService(name: "Chin Contouring",       icon: "faceid",         duration: "45 min", price: 28000, category: "Aesthetic", benefits: ["Sharp jawline", "Fat reduction"]),
-                SalonService(name: "Acne Scar Removal",     icon: "dot.circle.and.hand.point.up", duration: "60 min", price: 11000, category: "Skin",      benefits: ["Smooth skin", "Confidence"]),
-                SalonService(name: "Hair Coloring",         icon: "paintbrush.pointed", duration: "120 min", price: 12500, category: "Hair",      benefits: ["Vibrant color", "Shiny"]),
-                SalonService(name: "Paraffin Wax",          icon: "drop",           duration: "30 min", price: 3800,  category: "Nails",     benefits: ["Soft hands", "Moisture"])
-            ],
-            about: "Boutique clinic focusing on premium aesthetic medicine and transformations.",
-            phone: "+94 11 456 7890",
-            openHours: "Tue–Sun: 10:00 AM – 6:00 PM"
-        )
+        Salon(name: "Golden Avenue", location: "Moratuwa, Colombo", distance: "2 km", rating: 4.7, reviewCount: 312, score: 0.95, services: SalonCatalog.mockServices(), about: "Premier aesthetic salon offering sophisticated beauty treatments.", phone: "+94 11 234 5678", openHours: "Mon–Sat: 9:00 AM – 7:00 PM", imageName: "Salon1"),
+        Salon(name: "Glow Studio", location: "Moratuwa, Colombo", distance: "3.5 km", rating: 4.7, reviewCount: 312, score: 0.88, services: SalonCatalog.mockServices(), about: "Specializes in non-invasive aesthetic treatments and advanced skincare.", phone: "+94 11 345 6789", openHours: "Mon–Sun: 8:00 AM – 8:00 PM", imageName: "salon2"),
+        Salon(name: "Luxe Aesthetics", location: "Dehiwala, Colombo", distance: "5 km", rating: 4.5, reviewCount: 198, score: 0.82, services: SalonCatalog.mockServices(), about: "Boutique clinic focusing on premium aesthetic medicine and transformations.", phone: "+94 11 456 7890", openHours: "Tue–Sun: 10:00 AM – 6:00 PM", imageName: "salon3"),
+        Salon(name: "Velvet Touch", location: "Nugegoda, Colombo", distance: "1.5 km", rating: 4.6, reviewCount: 180, score: 0.90, services: SalonCatalog.mockServices(), about: "Exquisite touch for your skin and hair needs.", phone: "+94 11 567 8901", openHours: "Mon–Sat: 9:00 AM – 8:00 PM", imageName: "salon4"),
+        Salon(name: "Aura Beauty Bar", location: "Mount Lavinia, Colombo", distance: "4 km", rating: 4.4, reviewCount: 90, score: 0.85, services: SalonCatalog.mockServices(), about: "Relaxing atmosphere with top-tier beauty services.", phone: "+94 11 678 9012", openHours: "Daily: 10:00 AM – 7:00 PM", imageName: "salon5"),
+        Salon(name: "Silk & Shine", location: "Battaramulla, Colombo", distance: "2.5 km", rating: 4.3, reviewCount: 120, score: 0.80, services: SalonCatalog.mockServices(), about: "Leading salon for hair transformations and shine.", phone: "+94 11 789 0123", openHours: "Mon–Sat: 9:30 AM – 7:30 PM", imageName: "salon6"),
+        Salon(name: "Prime Beauty", location: "Wattala, Colombo", distance: "3 km", rating: 4.9, reviewCount: 400, score: 0.98, services: SalonCatalog.mockServices(), about: "The gold standard of beauty in the city.", phone: "+94 11 890 1234", openHours: "Daily: 9:00 AM – 9:00 PM", imageName: "salon7"),
+        Salon(name: "Elegance Salon", location: "Malabe, Colombo", distance: "6 km", rating: 4.2, reviewCount: 80, score: 0.75, services: SalonCatalog.mockServices(), about: "Elegance and class in every treatment.", phone: "+94 11 901 2345", openHours: "Tue–Sun: 10:00 AM – 7:00 PM", imageName: "salon8"),
+        Salon(name: "Crystal Beauty", location: "Maharagama, Colombo", distance: "7 km", rating: 4.1, reviewCount: 60, score: 0.70, services: SalonCatalog.mockServices(), about: "Crystal clear results for your skin and nails.", phone: "+94 11 012 3456", openHours: "Mon–Sat: 9:00 AM – 6:00 PM", imageName: "salon9"),
+        Salon(name: "Radiant Aesthetic", location: "Bambalapitiya, Colombo", distance: "1 km", rating: 5.0, reviewCount: 500, score: 1.00, services: SalonCatalog.mockServices(), about: "Radiate confidence with our expert aesthetic care.", phone: "+94 11 123 4567", openHours: "Mon–Sun: 8:00 AM – 9:00 PM", imageName: "salon10"),
+        Salon(name: "Glow Palace", location: "Colombo 03", distance: "4.5 km", rating: 4.5, reviewCount: 140, score: 0.87, services: SalonCatalog.mockServices(), about: "Feel like royalty at the Glow Palace.", phone: "+94 11 234 5670", openHours: "Daily: 9:00 AM – 8:00 PM", imageName: "salon11"),
+        Salon(name: "Pure Skin Lab", location: "Colombo 07", distance: "5.5 km", rating: 4.6, reviewCount: 160, score: 0.89, services: SalonCatalog.mockServices(), about: "Scientific approach to pure, healthy skin.", phone: "+94 11 345 6781", openHours: "Mon–Fri: 10:00 AM – 7:00 PM", imageName: "salon12"),
+        Salon(name: "The Hair Lounge", location: "Colombo 04", distance: "2 km", rating: 4.4, reviewCount: 110, score: 0.84, services: SalonCatalog.mockServices(), about: "The ultimate destination for hair styling and care.", phone: "+94 11 456 7892", openHours: "Mon–Sat: 9:00 AM – 7:00 PM", imageName: "salon13"),
+        Salon(name: "Serene Spa", location: "Colombo 05", distance: "8 km", rating: 4.3, reviewCount: 70, score: 0.78, services: SalonCatalog.mockServices(), about: "Peaceful retreat with luxury spa treatments.", phone: "+94 11 567 8903", openHours: "Daily: 10:00 AM – 10:00 PM", imageName: "salon14"),
+        Salon(name: "Urban Nails", location: "Colombo 06", distance: "3.5 km", rating: 4.7, reviewCount: 220, score: 0.91, services: SalonCatalog.mockServices(), about: "Modern nail art and premium care in the city.", phone: "+94 11 678 9014", openHours: "Mon–Sat: 10:00 AM – 8:00 PM", imageName: "salon15"),
+        Salon(name: "Divine Beauty", location: "Colombo 08", distance: "4.2 km", rating: 4.5, reviewCount: 130, score: 0.86, services: SalonCatalog.mockServices(), about: "Divine care for your skin, hair, and soul.", phone: "+94 11 789 0125", openHours: "Mon–Sat: 9:00 AM – 7:00 PM", imageName: "salon16"),
+        Salon(name: "Bloom Studio", location: "Colombo 01", distance: "2.8 km", rating: 4.6, reviewCount: 170, score: 0.89, services: SalonCatalog.mockServices(), about: "Let your beauty bloom with our expert stylists.", phone: "+94 11 890 1236", openHours: "Daily: 9:00 AM – 7:00 PM", imageName: "salon17"),
+        Salon(name: "Infinity Glow", location: "Colombo 10", distance: "6.5 km", rating: 4.3, reviewCount: 95, score: 0.81, services: SalonCatalog.mockServices(), about: "Infinite possibilities for a glowing you.", phone: "+94 11 901 2347", openHours: "Tue–Sun: 10:00 AM – 8:00 PM", imageName: "salon18"),
+        Salon(name: "Skin Deep", location: "Colombo 02", distance: "1.8 km", rating: 4.8, reviewCount: 240, score: 0.93, services: SalonCatalog.mockServices(), about: "Understanding your skin's needs at a deeper level.", phone: "+94 11 012 3458", openHours: "Daily: 9:00 AM – 9:00 PM", imageName: "salon19"),
+        Salon(name: "The Beauty Room", location: "Colombo 09", distance: "3.2 km", rating: 4.4, reviewCount: 115, score: 0.83, services: SalonCatalog.mockServices(), about: "Intimate and professional beauty services for all.", phone: "+94 11 123 4569", openHours: "Mon–Sat: 9:30 AM – 6:30 PM", imageName: "salon20")
     ]
+
+    // Helper function to provide a mock list of services for all salons to keep code clean.
+    private static func mockServices() -> [SalonService] {
+        return [
+            SalonService(name: "Facial Treatment",    icon: "face.smiling",     duration: "60 min", price: 3500,  category: "Skin",      benefits: ["Hydration", "Glow", "Anti-aging"]),
+            SalonService(name: "Chemical Peel",       icon: "sparkles",         duration: "45 min", price: 5500,  category: "Skin",      benefits: ["Exfoliation", "Brightening", "Acne care"]),
+            SalonService(name: "Laser Hair Removal",  icon: "sun.max",          duration: "30 min", price: 8000,  category: "Hair",      benefits: ["Smooth skin", "Permanent", "Fast"]),
+            SalonService(name: "Hair Treatment",      icon: "leaf",             duration: "90 min", price: 4500,  category: "Hair",      benefits: ["Repair", "Shine", "Nourishment"]),
+            SalonService(name: "Manicure & Pedicure", icon: "hand.raised",      duration: "60 min", price: 2500,  category: "Nails",     benefits: ["Clean nails", "Relaxing", "Polish"]),
+            SalonService(name: "Microneedling",       icon: "syringe",          duration: "75 min", price: 12000, category: "Skin",      benefits: ["Collagen boost", "Scar reduction"]),
+            SalonService(name: "HydraFacial",         icon: "drop",             duration: "60 min", price: 15000, category: "Skin",      benefits: ["Deep hydration", "Pore cleaning"]),
+            SalonService(name: "Body Scrub",          icon: "bubbles.and.sparkles", duration: "60 min", price: 6500, category: "Body",      benefits: ["Smooth skin", "Detox"]),
+            SalonService(name: "Deep Tissue Massage", icon: "figure.walk",      duration: "90 min", price: 7500,  category: "Body",      benefits: ["Muscle relief", "Stress reduction"]),
+            SalonService(name: "Eyelash Extensions",  icon: "eye",              duration: "120 min", price: 8500, category: "Eyes",      benefits: ["Long lashes", "Full volume"]),
+            SalonService(name: "Eyebrow Threading",   icon: "scissors",         duration: "15 min", price: 800,   category: "Face",      benefits: ["Defined brows", "Quick"]),
+            SalonService(name: "Teeth Whitening",     icon: "mouth",            duration: "45 min", price: 18000, category: "Aesthetic", benefits: ["Brighter smile", "Fast results"]),
+            SalonService(name: "Aromatherapy",        icon: "wind",             duration: "60 min", price: 5000,  category: "Body",      benefits: ["Relaxation", "Healing"]),
+            SalonService(name: "Nail Art",            icon: "paintpalette",     duration: "45 min", price: 3500,  category: "Nails",     benefits: ["Creative design", "Unique"]),
+            SalonService(name: "Bridal Makeup",       icon: "star",             duration: "180 min", price: 45000, category: "Makeup",    benefits: ["Perfect look", "Long-lasting"])
+        ]
+    }
 
     // Helper function to find a salon by name!
     func salon(named name: String) -> Salon {
@@ -227,7 +192,8 @@ struct SalonCatalog {
             services: template.services,
             about: "Premium beauty and aesthetic services tailored to your needs.",
             phone: "+94 11 000 0000",
-            openHours: "Mon–Sun: 9:00 AM – 7:00 PM"
+            openHours: "Mon–Sun: 9:00 AM – 7:00 PM",
+            imageName: "Salon1"
         )
     }
 }

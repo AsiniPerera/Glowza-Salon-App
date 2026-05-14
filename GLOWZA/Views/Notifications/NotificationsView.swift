@@ -138,6 +138,9 @@ struct NotificationsView: View {
                 }
             }
         }
+        .onAppear {
+            notificationManager.markAllAsRead()
+        }
     } // End of body
     
     // MARK: - Filtered Notifications

@@ -23,9 +23,20 @@ struct NotificationItem: Identifiable, Codable {
         case warning
     }
     
-    // Custom initializer to automatically generate a UUID and default timestamp!
+    // Default initializer for new notifications!
     init(title: String, subtitle: String, icon: String, type: NotificationType, timestamp: Date = Date(), isRead: Bool = false) {
         self.id = UUID()
+        self.title = title
+        self.subtitle = subtitle
+        self.icon = icon
+        self.type = type
+        self.timestamp = timestamp
+        self.isRead = isRead
+    }
+    
+    // Initializer for existing notifications (from DB/Cloud)!
+    init(id: UUID, title: String, subtitle: String, icon: String, type: NotificationType, timestamp: Date, isRead: Bool) {
+        self.id = id
         self.title = title
         self.subtitle = subtitle
         self.icon = icon
@@ -60,10 +71,24 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     private let db = Firestore.firestore() // Firestore reference.
     private let notificationRepo = NotificationRepository.shared // Core Data repo.
     
-    // Updates the red number on the app icon!
+    // Updates the red number on the app icon and syncs to database for tracking!
     private func updateAppIconBadge() {
-        DispatchQueue.main.async {
-            UIApplication.shared.applicationIconBadgeNumber = self.unreadCount
+        let count = unreadCount
+        
+        // 1. Update iOS App Icon Badge
+        UNUserNotificationCenter.current().setBadgeCount(count) { error in
+            if let error = error {
+                print("Error setting badge count: \(error)")
+            }
+        }
+        
+        // 2. Track unread count in Firestore database!
+        Task {
+            guard let uid = AuthService.shared.currentUID else { return }
+            try? await db.collection("users").document(uid).updateData([
+                "unreadNotificationsCount": count,
+                "lastBadgeUpdate": Timestamp(date: Date())
+            ])
         }
     }
     
@@ -101,11 +126,13 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                         }
                     }()
                     let item = NotificationItem(
+                        id: cd.id, // Preserve the original ID!
                         title: cd.title,
                         subtitle: cd.subtitle,
                         icon: cd.icon,
                         type: type,
-                        timestamp: cd.createdAt
+                        timestamp: cd.createdAt,
+                        isRead: cd.isRead // Restore the read status!
                     )
                     notificationHistory.append(item)
                 }
@@ -150,6 +177,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 }()
                 
                 return NotificationItem(
+                    id: id, // Use the ID from Firestore!
                     title: title,
                     subtitle: subtitle,
                     icon: icon,
@@ -161,12 +189,17 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             
             await MainActor.run {
                 // Merge with existing history using unique IDs to avoid duplicates!
-                let existingIds = Set(self.notificationHistory.map { $0.id })
                 for item in firestoreNotifs {
-                    if !existingIds.contains(item.id) {
+                    if let index = self.notificationHistory.firstIndex(where: { $0.id == item.id }) {
+                        // Update read status if it changed in Firestore!
+                        if self.notificationHistory[index].isRead != item.isRead {
+                            self.notificationHistory[index].isRead = item.isRead
+                        }
+                    } else {
                         self.notificationHistory.append(item)
                     }
                 }
+                
                 // Sort by timestamp (newest first).
                 self.notificationHistory.sort(by: { $0.timestamp > $1.timestamp })
                 self.saveNotificationHistory()
@@ -184,6 +217,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         
         // Save to Core Data.
         try? notificationRepo.saveNotificationToCore(
+            id: item.id,
             title: item.title,
             subtitle: item.subtitle,
             icon: item.icon,
@@ -233,15 +267,14 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         Task {
             guard let uid = AuthService.shared.currentUID else { return }
             
-            // Update Firestore for all user's notifications
-            let snapshot = try? await db.collection("notifications").whereField("userId", isEqualTo: uid).getDocuments()
+            // 1. Update Core Data (Essential for local persistence!)
+            try? notificationRepo.markAllNotificationsAsRead(userId: uid)
+            
+            // 2. Update Firestore for all user's notifications
+            let snapshot = try? await db.collection("notifications").whereField("userId", isEqualTo: uid).whereField("isRead", isEqualTo: false).getDocuments()
             for doc in snapshot?.documents ?? [] {
                 try? await doc.reference.updateData(["isRead": true])
             }
-            
-            // Core Data doesn't easily support batch mark-as-read without a custom query, 
-            // so we'll just rely on the next fetch or individual updates if needed.
-            // But we can clear the whole unread count if we had one.
         }
     }
     
@@ -288,6 +321,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             }
         }
     }
+    
     
     // MARK: - Save Notification to History
     // Saves a notification to history and persists it.
