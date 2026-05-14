@@ -435,8 +435,9 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         df.dateFormat = "MMM d"
         let dateStr = df.string(from: nearest.date)
         
+        let timePart = nearest.timeSlot.isEmpty ? "" : " at \(nearest.timeSlot)"
         let title = "Appointment Reminder"
-        let subtitle = "Upcoming: \(nearest.service.name) at \(nearest.salon.name) on \(dateStr) (\(nearest.timeSlot))"
+        let subtitle = "\(nearest.service.name) • \(nearest.salon.name) on \(dateStr)\(timePart)"
         
         // 3. Send system notification
         sendLocalNotification(title: title, subtitle: subtitle, delay: 1.5)

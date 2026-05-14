@@ -378,10 +378,25 @@ final class AuthService {
     var currentUID: String? { currentUser?.uid ?? auth.currentUser?.uid }
     var currentUserName: String? { auth.currentUser?.displayName }
 
-    // MARK: - Password Reset
-    /// Sends a password reset email to the user's registered email address.
     func sendPasswordResetEmail(email: String) async throws {
         try await auth.sendPasswordReset(withEmail: email)
+    }
+
+    // MARK: - Delete Account
+    /// Permanently removes the user's data from Firestore and deletes their Auth record.
+    func deleteAccount() async throws {
+        guard let user = auth.currentUser else { throw AuthError.notSignedIn }
+        let uid = user.uid
+        
+        // 1. Delete Firestore documents
+        try await db.collection(GlowzaUser.collection).document(uid).delete()
+        try await db.collection(GlowzaUserProfile.collection).document(uid).delete()
+        
+        // 2. Delete the Firebase Auth user
+        try await user.delete()
+        
+        // 3. Clear local session
+        try signOut()
     }
 
     deinit {

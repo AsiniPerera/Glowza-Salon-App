@@ -201,6 +201,16 @@ struct SignInView: View {
             }
         }
         .background(appSettings.themePage.ignoresSafeArea())
+        .fullScreenCover(isPresented: $viewModel.isAuthenticating) {
+            FaceIDScanningView(
+                isPresented: $viewModel.isAuthenticating,
+                onCancel: {
+                    viewModel.isAuthenticating = false
+                    viewModel.authenticationError = "Authentication was cancelled."
+                }
+            )
+            .environment(appSettings)
+        }
         // Listeners for success states.
         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
             if authenticated {

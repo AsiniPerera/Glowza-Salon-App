@@ -116,13 +116,17 @@ final class DataSyncManager {
         if let fbBookings = try? await BookingService.shared.fetchUserBookings(userId: userId) {
             let existing = Set((try? bookingRepository.fetchBookingsFromCore(userId: userId))?.map { $0.receiptNumber } ?? [])
             for fb in fbBookings where !existing.contains(fb.bookingSummary.receiptNumber) {
+                // Extract timeSlot from the combined schedule string (e.g. "Oct 24, 2026 - 10:30 AM")
+                let scheduleParts = fb.bookingSummary.schedule.components(separatedBy: " - ")
+                let extractedTimeSlot = scheduleParts.count > 1 ? scheduleParts.last! : ""
+
                 try? bookingRepository.saveBookingToCore(
                     userId: userId, userName: userName,
                     salonName: fb.bookingSummary.salon,
                     salonLocation: fb.bookingSummary.salonLocation,
                     serviceName: fb.bookingSummary.service,
                     servicePrice: fb.bookingSummary.servicePrice,
-                    date: fb.createdAt, timeSlot: "",
+                    date: fb.createdAt, timeSlot: extractedTimeSlot,
                     receiptNumber: fb.bookingSummary.receiptNumber,
                     paymentMethod: fb.paymentMethod,
                     amountPaid: fb.bookingSummary.amount,

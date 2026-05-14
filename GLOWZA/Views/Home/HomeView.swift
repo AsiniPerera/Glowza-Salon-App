@@ -383,7 +383,7 @@ struct HomeView: View {
                                 .foregroundColor(.white)
                                 .padding(4)
                                 .frame(minWidth: 16, minHeight: 16)
-                                .background(Color.red)
+                                .background(brand)
                                 .clipShape(Circle())
                                 .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
                                 .offset(x: 2, y: -2) // Overlap the bell icon perfectly!
