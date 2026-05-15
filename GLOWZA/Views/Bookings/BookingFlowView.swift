@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 
 // MARK: - Booking Flow Steps
 // An enum to represent the different steps in the booking process.
@@ -214,17 +215,18 @@ struct BookAppointmentView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            // Set defaults if not already set!
             if draft.service == nil {
                 draft.service = draft.salon.services.first
             }
             displayMonth = draft.date
             selectedTime = draft.timeSlot
-            
-            Task { await fetchBookedSlots() }
+            startListeningToBookedSlots()
+        }
+        .onDisappear {
+            stopListeningToBookedSlots()
         }
         .onChange(of: draft.date) { _, _ in
-            Task { await fetchBookedSlots() }
+            startListeningToBookedSlots()
         }
     }
 
@@ -464,18 +466,61 @@ struct BookAppointmentView: View {
     }
 
     // MARK: - Helper Logic
-    
+    @State private var bookedListener: ListenerRegistration? = nil
+
+    private func startListeningToBookedSlots() {
+        let salonName = draft.salon.name
+        isFetchingSlots = true
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let datePrefix = formatter.string(from: draft.date)
+        
+        bookedListener?.remove()
+        
+        // Listen to bookings for this salon (both upcoming and completed)
+        bookedListener = Firestore.firestore().collection("bookings")
+            .whereField("bookingSummary.salon", isEqualTo: salonName)
+            .addSnapshotListener { snapshot, error in
+                guard let docs = snapshot?.documents else {
+                    isFetchingSlots = false
+                    return
+                }
+                
+                let booked = docs.compactMap { doc -> String? in
+                    let data = doc.data()
+                    guard let status = data["status"] as? String,
+                          (status == "upcoming" || status == "completed") else { return nil }
+                    
+                    guard let summary = data["bookingSummary"] as? [String: Any],
+                          let schedule = summary["schedule"] as? String else { return nil }
+                    
+                    if schedule.contains(datePrefix) {
+                        return schedule.components(separatedBy: " - ").last
+                    }
+                    return nil
+                }
+                
+                DispatchQueue.main.async {
+                    self.bookedSlots = booked
+                    self.isFetchingSlots = false
+                }
+            }
+    }
+
+    private func stopListeningToBookedSlots() {
+        bookedListener?.remove()
+        bookedListener = nil
+    }
+
     /// Checks if a slot is actually available (not in the past AND not booked).
     private func isSlotActuallyAvailable(slot: String) -> Bool {
-        // 1. Check if the slot was already taken in the database!
         if bookedSlots.contains(slot) { return false }
         
-        // 2. Check if the slot is in the past (if booking for today).
         let calendar = Calendar.current
         if calendar.isDateInToday(draft.date) {
             let now = Date()
-            
-            // Parse the slot time (e.g., "10:30 AM")
             let formatter = DateFormatter()
             formatter.dateFormat = "h:mm a"
             
@@ -486,36 +531,10 @@ struct BookAppointmentView: View {
                 let slotTotalMinutes = (slotComponents.hour ?? 0) * 60 + (slotComponents.minute ?? 0)
                 let nowTotalMinutes = (nowComponents.hour ?? 0) * 60 + (nowComponents.minute ?? 0)
                 
-                return slotTotalMinutes > nowTotalMinutes + 15 // Allow booking if it's 15 mins away!
+                return slotTotalMinutes > nowTotalMinutes + 5 // Allow 5 mins buffer!
             }
         }
-        
-        return true // Default: available for future dates!
-    }
-
-    /// Fetches all booked time slots for this salon on this specific date!
-    private func fetchBookedSlots() async {
-        let salonName = draft.salon.name
-        isFetchingSlots = true
-        
-        // Format the date prefix using POSIX to match the DB exactly!
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        let datePrefix = formatter.string(from: draft.date)
-        
-        do {
-            let booked = try await BookingService.shared.fetchBookedSlots(salon: salonName, datePrefix: datePrefix)
-            await MainActor.run {
-                self.bookedSlots = booked
-                self.isFetchingSlots = false
-            }
-        } catch {
-            print("Error fetching booked slots: \(error)")
-            await MainActor.run {
-                self.isFetchingSlots = false
-            }
-        }
+        return true
     }
 }
 

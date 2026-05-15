@@ -279,6 +279,12 @@ final class SalonFirestoreService {
     // MARK: - Map salon display name → Firestore salonId
     // Helper to generate a consistent ID key for Firestore documents!
     func salonId(for salonName: String) -> String {
+        // Robust ID: lowercase, no spaces, no special chars!
+        let id = salonName.lowercased()
+            .replacingOccurrences(of: " ", with: "_")
+            .replacingOccurrences(of: "&", with: "and")
+            .filter { $0.isLetter || $0.isNumber || $0 == "_" }
+        
         let knownIds: [String: String] = [
             "Golden Avenue":       "haley_avenue",
             "Glow Studio":        "glow_studio",
@@ -296,11 +302,7 @@ final class SalonFirestoreService {
             "Harmony Wellness":   "harmony_wellness",
             "Petal Spa":          "petal_spa"
         ]
-        if let id = knownIds[salonName] { return id }
         
-        // Fallback: convert to lowercase and replace spaces with underscores!
-        return salonName.lowercased()
-            .replacingOccurrences(of: " ", with: "_")
-            .replacingOccurrences(of: "&", with: "and")
+        return knownIds[salonName] ?? id
     }
 }

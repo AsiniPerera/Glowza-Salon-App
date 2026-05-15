@@ -16,13 +16,14 @@ struct EditProfileView: View {
     @State private var name: String    = ""
     @State private var email: String   = ""
     @State private var phone: String   = ""
-    @State private var dob: String     = ""
-    @State private var skinType: String = ""
+    @State private var skinType: String = "Normal"
     @State private var showPhotoPicker  = false
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @State private var showSavedBanner  = false
-    @State private var isSavingAvatar   = false   // shows spinner while uploading avatar
+    @State private var isSavingAvatar   = false
     @State private var nameError: String? = nil
+    @State private var birthDate: Date = Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date()
+    @State private var isSaving: Bool = false
 
     private let skinTypes = ["Normal", "Oily", "Dry", "Combination", "Sensitive"]
     private var accent: Color { appSettings.themeBrand }
@@ -142,18 +143,35 @@ struct EditProfileView: View {
                                         .foregroundColor(dark)
                                 )
                             )
-                            formField(icon: "calendar", label: "Date of Birth", content:
-                                AnyView(
-                                    TextField("e.g. 1998-06-15", text: $dob)
-                                        .glowzaFont(size: 15)
-                                        .foregroundColor(dark)
-                                )
-                            )
+                            // MARK: Date of Birth Picker
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "calendar")
+                                        .glowzaFont(size: 17)
+                                        .foregroundColor(Color(hex: "6B6E77"))
+                                        .frame(width: 28)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Date of Birth")
+                                            .glowzaFont(size: 12)
+                                            .foregroundColor(Color(hex: "8A8D94"))
+                                        
+                                        DatePicker("", selection: $birthDate, displayedComponents: .date)
+                                            .labelsHidden()
+                                            .datePickerStyle(.compact)
+                                            .scaleEffect(0.9, anchor: .leading)
+                                            .offset(x: -8)
+                                    }
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                Rectangle().fill(Color(hex: "E8E8EC")).frame(height: 0.5).padding(.leading, 56)
+                            }
 
                             // MARK: Skin Type Picker
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 12) {
-                                    Image(systemName: "drop")
+                                    Image(systemName: "drop.fill")
                                         .glowzaFont(size: 17)
                                         .foregroundColor(Color(hex: "6B6E77"))
                                         .frame(width: 28)
@@ -181,9 +199,6 @@ struct EditProfileView: View {
                                     .padding(.horizontal, 16)
                                 }
                                 .padding(.bottom, 14)
-
-                                Rectangle().fill(Color(hex: "E8E8EC")).frame(height: 0.5)
-                                    .padding(.leading, 16)
                             }
                         }
                         .background(surfaceBackground)
@@ -195,6 +210,7 @@ struct EditProfileView: View {
                                     lineWidth: appSettings.isHighContrast ? 3 : 0
                                 )
                         )
+                        
                         // Error message for name field!
                         if let err = nameError {
                             Text(err)
@@ -206,14 +222,22 @@ struct EditProfileView: View {
 
                         // MARK: Save Button
                         Button(action: saveProfile) {
-                            Text("Save Changes")
-                                .glowzaFont(size: 15, weight: .semibold)
-                                .foregroundColor(.white)
-                                .frame(width: 330, height: 55)
-                                .background(accent)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            ZStack {
+                                if isSaving {
+                                    ProgressView().tint(.white)
+                                } else {
+                                    Text("Save Changes")
+                                        .glowzaFont(size: 15, weight: .semibold)
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 55)
+                            .background(accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                        .frame(maxWidth: .infinity)
+                        .disabled(isSaving)
+                        .padding(.top, 10)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -281,22 +305,30 @@ struct EditProfileView: View {
 
     // Loads saved profile data from AuthService or UserDefaults.
     private func loadSaved() {
-        // Priority 1: live data from AuthService (populated from Firestore after login)
+        // Priority 1: live data from AuthService
         let auth = AuthService.shared
         if let profile = auth.currentUserProfile {
             name     = profile.fullName
             email    = profile.email
             phone    = profile.phone
             skinType = profile.skinType.isEmpty ? "Normal" : profile.skinType
-            dob      = UserDefaults.standard.string(forKey: "profile_dob") ?? ""
+            
+            if let dobString = profile.dateOfBirth, let date = ISO8601DateFormatter().date(from: dobString) {
+                birthDate = date
+            } else if let localDob = UserDefaults.standard.string(forKey: "profile_dob"), let date = ISO8601DateFormatter().date(from: localDob) {
+                birthDate = date
+            }
             return
         }
-        // Priority 2: locally cached UserDefaults (fast offline fallback)
+        // Priority 2: locally cached UserDefaults
         name     = UserDefaults.standard.string(forKey: "profile_fullName") ?? ""
         email    = UserDefaults.standard.string(forKey: "profile_email")    ?? ""
         phone    = UserDefaults.standard.string(forKey: "profile_phone")    ?? ""
-        dob      = UserDefaults.standard.string(forKey: "profile_dob")      ?? ""
         skinType = UserDefaults.standard.string(forKey: "profile_skinType") ?? "Normal"
+        
+        if let localDob = UserDefaults.standard.string(forKey: "profile_dob"), let date = ISO8601DateFormatter().date(from: localDob) {
+            birthDate = date
+        }
     }
 
     // Saves the profile data to UserDefaults and Firestore.
@@ -304,18 +336,21 @@ struct EditProfileView: View {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { nameError = "Name cannot be empty"; return }
         nameError = nil
+        isSaving = true
 
-        // 1. Save to UserDefaults immediately (offline-safe)
+        let dobString = ISO8601DateFormatter().string(from: birthDate)
+
+        // 1. Save to UserDefaults immediately
         UserDefaults.standard.set(trimmed,   forKey: "profile_fullName")
         UserDefaults.standard.set(email,     forKey: "profile_email")
         UserDefaults.standard.set(phone,     forKey: "profile_phone")
-        UserDefaults.standard.set(dob,       forKey: "profile_dob")
+        UserDefaults.standard.set(dobString, forKey: "profile_dob")
         UserDefaults.standard.set(skinType,  forKey: "profile_skinType")
 
-        // 2. Update parent binding immediately so ProfileView name updates
+        // 2. Update parent binding
         displayName = trimmed
 
-        // 3. Save to Firestore `users` + `userProfiles` collections
+        // 3. Save to Firestore
         Task {
             do {
                 try await AuthService.shared.updateUserProfile(
@@ -323,21 +358,25 @@ struct EditProfileView: View {
                     email: email,
                     phone: phone,
                     skinType: skinType,
-                    dateOfBirth: dob.isEmpty ? nil : dob
+                    dateOfBirth: dobString
                 )
-                print("Profile saved to Firestore")
+                
+                await MainActor.run {
+                    isSaving = false
+                    NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
+                    withAnimation { showSavedBanner = true }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation { showSavedBanner = false }
+                        dismiss()
+                    }
+                }
             } catch {
-                print("Profile save failed: \(error)")
+                await MainActor.run {
+                    isSaving = false
+                    print("Profile save failed: \(error)")
+                }
             }
-        }
-
-        NotificationCenter.default.post(name: .glowzaProfileUpdated, object: nil)
-        
-        // Show the saved banner and dismiss after 2 seconds!
-        withAnimation { showSavedBanner = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation { showSavedBanner = false }
-            dismiss()
         }
     }
 }

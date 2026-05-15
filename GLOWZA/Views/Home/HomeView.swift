@@ -369,63 +369,57 @@ struct HomeView: View {
 
             Spacer()
 
-            // Only show action buttons if the user is logged in (not "User").
-            if profileName != "User" {
-                    // Favourites Button
-                    ZStack(alignment: .topTrailing) {
-                        Button(action: { showFavourites = true }) {
+            // Favourites Button
+            ZStack(alignment: .topTrailing) {
+                Button(action: { showFavourites = true }) {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 44, height: 44)
+                        .overlay(
                             Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
-                                .overlay {
-                                    Image(systemName: "heart.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(brand)
-                                }
+                                .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+                        .overlay {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(brand)
                         }
-                        .buttonStyle(.plain)
-                        
-                        // Transparent spacer to match the Notifications button size if needed
-                        Color.clear.frame(width: 44, height: 44)
-                    }
-                    
-                    // Notifications Button
-                    ZStack(alignment: .topTrailing) {
-                        Button(action: { showNotificationsView = true }) {
+                }
+                .buttonStyle(.plain)
+            }
+            
+            // Notifications Button
+            ZStack(alignment: .topTrailing) {
+                Button(action: { showNotificationsView = true }) {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 44, height: 44)
+                        .overlay(
                             Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
-                                .overlay {
-                                    Image(systemName: "bell.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(brand)
-                                }
+                                .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+                        .overlay {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(brand)
                         }
-                        .buttonStyle(.plain)
-                        
-                        let count = notificationManager.unreadCount
-                        if count > 0 {
-                            Text("\(count)")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(4)
-                                .frame(minWidth: 16, minHeight: 16)
-                                .background(brand)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
-                                .offset(x: 2, y: -2) // Overlap the bell icon perfectly!
-                        }
-                    }
+                }
+                .buttonStyle(.plain)
+                
+                let count = notificationManager.unreadCount
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(4)
+                        .frame(minWidth: 16, minHeight: 16)
+                        .background(brand)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                        .offset(x: 2, y: -2)
+                }
             }
         }
     }
