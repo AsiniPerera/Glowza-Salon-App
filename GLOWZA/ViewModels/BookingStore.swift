@@ -19,10 +19,25 @@ final class BookingStore {
     var isLoading = false
     var error: String?
     
+    // NEW: Real-time occupied slots to prevent double bookings!
+    var occupiedSlots: [String] = []
+    
     func clearMemory() {
         bookings = []
         firestoreBookings = []
         receiptToFirestoreId = [:]
+        occupiedSlots = []
+    }
+    
+    /// Fetches occupied slots for a specific salon and date!
+    func fetchOccupiedSlots(salonName: String, date: Date) async {
+        do {
+            self.occupiedSlots = try await SalonFirestoreService.shared.fetchOccupiedSlots(salonName: salonName, date: date)
+            print("📅 Occupied slots for \(salonName) on \(date): \(occupiedSlots)")
+        } catch {
+            print("Failed to fetch occupied slots: \(error)")
+            self.occupiedSlots = []
+        }
     }
     
     /// Maps local receipt number to Firestore document ID for cross-referencing!

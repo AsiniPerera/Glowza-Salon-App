@@ -414,6 +414,24 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
     
+    // MARK: - Welcome Notification
+    func notifyWelcome(userName: String) {
+        let title = "Welcome to GLOWZA!"
+        let subtitle = "Hi \(userName), we're so glad you're here! Start your beauty journey today."
+        
+        // Send native iOS local push notification!
+        sendLocalNotification(title: title, subtitle: subtitle, delay: 0.5)
+        
+        // Save to history!
+        let notification = NotificationItem(
+            title: title,
+            subtitle: subtitle,
+            icon: "sparkles",
+            type: .info
+        )
+        showNotification(notification)
+    }
+    
     // MARK: - Dismiss All
     func dismissAll() {
         // Do nothing as in-app banners are removed!
@@ -451,7 +469,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let notification = NotificationItem(
             title: title,
             subtitle: subtitle,
-            icon: "calendar.badge.clock", // Our unique icon!
+            icon: "bell.badge.fill", // More 'Push' like icon!
             type: .info
         )
         showNotification(notification)

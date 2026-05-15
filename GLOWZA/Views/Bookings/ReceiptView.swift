@@ -449,7 +449,7 @@ struct MapDetailView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(brand)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                         .shadow(color: brand.opacity(0.3), radius: 8, y: 4)
                     }
                 }

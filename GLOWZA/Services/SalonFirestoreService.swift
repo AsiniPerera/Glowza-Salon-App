@@ -158,6 +158,22 @@ final class SalonFirestoreService {
         let reviews = try snapshot.documents.compactMap { try $0.data(as: FirestoreSalonReview.self) }
         return reviews.sorted(by: { $0.createdAt > $1.createdAt }) // Newest first!
     }
+    
+    // MARK: - Real-time Review Sync
+    func listenToReviews(forSalonId salonId: String, completion: @escaping ([FirestoreSalonReview]) -> Void) -> ListenerRegistration {
+        return db.collection("salonReviews")
+            .whereField("salonId", isEqualTo: salonId)
+            .addSnapshotListener { snapshot, error in
+                guard let documents = snapshot?.documents else {
+                    print("Error listening to reviews: \(error?.localizedDescription ?? "Unknown error")")
+                    return
+                }
+                
+                let reviews = documents.compactMap { try? $0.data(as: FirestoreSalonReview.self) }
+                // Sort by date descending (Newest first!) before returning!
+                completion(reviews.sorted(by: { $0.createdAt > $1.createdAt }))
+            }
+    }
 
     // MARK: - Add Salon Review
     func addSalonReview(
@@ -189,6 +205,29 @@ final class SalonFirestoreService {
             "comment": comment,
             "updatedAt": Timestamp()
         ])
+    }
+    
+    // MARK: - Delete Salon Review
+    func deleteReview(reviewId: String) async throws {
+        try await db.collection("salonReviews").document(reviewId).delete()
+    }
+
+    // MARK: - Check Slot Availability
+    /// Fetches all time slots that are already booked for a specific salon on a specific date.
+    func fetchOccupiedSlots(salonName: String, date: Date) async throws -> [String] {
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        
+        let snapshot = try await db.collection("bookings")
+            .whereField("salonName", isEqualTo: salonName)
+            .whereField("date", isGreaterThanOrEqualTo: Timestamp(date: startOfDay))
+            .whereField("date", isLessThan: Timestamp(date: endOfDay))
+            .getDocuments()
+        
+        // Return just the array of time strings (e.g., ["09:00 AM", "02:30 PM"])
+        return snapshot.documents.compactMap { doc in
+            doc.data()["timeSlot"] as? String
+        }
     }
 
     // MARK: - Seed Mock Reviews

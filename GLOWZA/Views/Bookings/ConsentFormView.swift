@@ -94,10 +94,11 @@ struct ConsentFormView: View {
                     .foregroundColor(appSettings.isDarkMode ? Color.white.opacity(0.55) : Color(hex: "666A72"))
                 
                 // We use our custom JustifiedText view here!
-                JustifiedText(
+                GlowzaJustifiedText(
                     text: "I acknowledge that cosmetic treatments may involve risks such as redness, swelling, irritation, allergic reactions, or temporary discomfort. Results may vary and are not guaranteed. I confirm that I have disclosed relevant medical information and understand post-treatment care instructions. I accept these risks and consent to proceed voluntarily.",
                     font: UIFont(name: "Urbanist-Regular", size: 15) ?? UIFont.systemFont(ofSize: 15),
-                    color: appSettings.isDarkMode ? Color.white.opacity(0.75) : Color(hex: "4A4C52")
+                    color: appSettings.isDarkMode ? .lightGray : .darkGray,
+                    lineSpacing: 4
                 )
             }
             .padding(.bottom, 4)
@@ -211,30 +212,3 @@ struct ConsentFormView: View {
     }
 }
 
-// MARK: - JustifiedText
-// This is a UIViewRepresentable that wraps a UIKit UILabel to support justified text alignment!
-// SwiftUI's Text view doesn't support full justification in older iOS versions!
-struct JustifiedText: UIViewRepresentable {
-    let text: String
-    let font: UIFont
-    let color: Color
-
-    func makeUIView(context: Context) -> UILabel {
-        let label = UILabel()
-        label.numberOfLines = 0
-        label.textAlignment = .justified // Here is the magic!
-        label.font = font
-        label.textColor = UIColor(color)
-        label.lineBreakMode = .byWordWrapping
-        return label
-    }
-
-    func updateUIView(_ uiView: UILabel, context: Context) {
-        uiView.text = text
-    }
-
-    // Helps SwiftUI calculate the height of the view!
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UILabel, context: Context) -> CGSize? {
-        uiView.sizeThatFits(CGSize(width: proposal.width ?? 300, height: .greatestFiniteMagnitude))
-    }
-}

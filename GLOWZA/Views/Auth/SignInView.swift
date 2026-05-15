@@ -214,18 +214,12 @@ struct SignInView: View {
         // Listeners for success states.
         .onChange(of: viewModel.isAuthenticated) { _, authenticated in
             if authenticated {
-                // Call simulated Face ID sign in matching the entered email!
+                // Navigate INSTANTLY! No waiting for network lookups.
+                onSignIn?()
+                
                 Task {
-                    do {
-                        try await AuthService.shared.signInWithFaceID(email: viewModel.email)
-                        await MainActor.run {
-                            onSignIn?()
-                        }
-                    } catch {
-                        await MainActor.run {
-                            emailAuthError = error.localizedDescription
-                        }
-                    }
+                    // Perform background lookup in parallel!
+                    try? await AuthService.shared.signInWithFaceID(email: viewModel.email)
                 }
             }
         }

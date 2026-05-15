@@ -249,3 +249,36 @@ struct GlowzaCircleBackButton: View {
         }
     }
 }
+// MARK: - Justified Text Support
+// Standard SwiftUI Text doesn't support full justification.
+// This wrapper uses UIKit's UILabel to achieve a clean, book-like justified look.
+struct GlowzaJustifiedText: UIViewRepresentable {
+    let text: String
+    let font: UIFont
+    let color: UIColor
+    let lineSpacing: CGFloat
+
+    func makeUIView(context: Context) -> UILabel {
+        let label = UILabel()
+        label.numberOfLines = 0
+        label.textAlignment = .justified
+        label.lineBreakMode = .byWordWrapping
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        return label
+    }
+
+    func updateUIView(_ uiView: UILabel, context: Context) {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.alignment = .justified
+        paragraphStyle.lineSpacing = lineSpacing
+        paragraphStyle.hyphenationFactor = 1.0 // Helps with cleaner justification edges!
+
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: color,
+            .paragraphStyle: paragraphStyle
+        ]
+        
+        uiView.attributedText = NSAttributedString(string: text, attributes: attributes)
+    }
+}

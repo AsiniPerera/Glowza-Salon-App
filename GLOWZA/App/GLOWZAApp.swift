@@ -108,7 +108,8 @@ struct RootView: View {
             }
         }
         .glowzaHighContrastStyle(enabled: settings.isHighContrast)
-        .animation(.easeInOut(duration: 0.4), value: screen)
+        // Snappier transition between screens!
+        .animation(.snappy(duration: 0.25), value: screen)
         .onChange(of: systemContrast) { _, val in
             // Automatically enable high contrast if system setting is on!
             if val == .increased && !settings.isHighContrast {
