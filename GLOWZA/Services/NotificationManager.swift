@@ -390,6 +390,24 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         showNotification(notification, duration: bookingSuccessBannerDuration)
     }
 
+    // MARK: - Payment Success Notification
+    func notifyPaymentSuccess(amount: Double, method: String, receipt: String) {
+        let title = "Payment Successful"
+        let subtitle = "LKR \(Int(amount)) paid via \(method). Receipt: \(receipt)"
+        
+        // Send native iOS local push notification!
+        sendLocalNotification(title: title, subtitle: subtitle, delay: 0.3)
+        
+        // Save to history!
+        let notification = NotificationItem(
+            title: title,
+            subtitle: subtitle,
+            icon: "creditcard.fill",
+            type: .success
+        )
+        showNotification(notification, duration: 2.0)
+    }
+
     // MARK: - Booking Failure Notification
     func notifyBookingFailure(message: String = "Could not complete your booking. Please try again.") {
         let notification = NotificationItem(

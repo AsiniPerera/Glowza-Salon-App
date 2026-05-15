@@ -42,7 +42,7 @@ struct SignInView: View {
 
                 // 2. Welcome Headers
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Welcome back")
+                    Text("Welcome Back")
                         .glowzaFont(size: 34, weight: .bold)
                         .foregroundColor(Color(hex: "1C1C1E"))
                     Text("Sign in to your account")

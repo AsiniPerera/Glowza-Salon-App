@@ -469,44 +469,24 @@ struct BookAppointmentView: View {
     @State private var bookedListener: ListenerRegistration? = nil
 
     private func startListeningToBookedSlots() {
-        let salonName = draft.salon.name
         isFetchingSlots = true
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d, yyyy"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        let datePrefix = formatter.string(from: draft.date)
-        
         bookedListener?.remove()
         
-        // Listen to bookings for this salon (both upcoming and completed)
-        bookedListener = Firestore.firestore().collection("bookings")
-            .whereField("bookingSummary.salon", isEqualTo: salonName)
-            .addSnapshotListener { snapshot, error in
-                guard let docs = snapshot?.documents else {
-                    isFetchingSlots = false
-                    return
-                }
+        bookedListener = SalonFirestoreService.shared.listenToOccupiedSlots(
+            salonName: draft.salon.name,
+            date: draft.date
+        ) { occupied in
+            DispatchQueue.main.async {
+                self.bookedSlots = occupied
+                self.isFetchingSlots = false
                 
-                let booked = docs.compactMap { doc -> String? in
-                    let data = doc.data()
-                    guard let status = data["status"] as? String,
-                          (status == "upcoming" || status == "completed") else { return nil }
-                    
-                    guard let summary = data["bookingSummary"] as? [String: Any],
-                          let schedule = summary["schedule"] as? String else { return nil }
-                    
-                    if schedule.contains(datePrefix) {
-                        return schedule.components(separatedBy: " - ").last
-                    }
-                    return nil
-                }
-                
-                DispatchQueue.main.async {
-                    self.bookedSlots = booked
-                    self.isFetchingSlots = false
+                // If the currently selected time just got booked by someone else, clear it!
+                if !selectedTime.isEmpty && occupied.contains(selectedTime) {
+                    selectedTime = ""
+                    draft.timeSlot = ""
                 }
             }
+        }
     }
 
     private func stopListeningToBookedSlots() {

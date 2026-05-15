@@ -353,6 +353,13 @@ struct PaymentView: View {
             review: nil
         )
 
+        // Trigger Payment Success Notification!
+        NotificationManager.shared.notifyPaymentSuccess(
+            amount: total,
+            method: draft.paymentMethod.rawValue,
+            receipt: booking.receiptNumber
+        )
+        
         onPay(booking)
     }
 }

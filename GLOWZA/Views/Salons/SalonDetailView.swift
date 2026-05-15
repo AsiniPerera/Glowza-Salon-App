@@ -27,6 +27,11 @@ struct SalonDetailView: View {
     @State private var selectedReviewer: FirestoreSalonReview? = nil
     @State private var userAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData")
     @State private var reviewListener: ListenerRegistration? = nil
+    
+    // LIVE SYNC & ANIMATION: Essential for global consistency and premium feel!
+    @Namespace private var tabNamespace
+    @State private var dynamicRating: Double = 0.0
+    @State private var dynamicReviewCount: Int = 0
 
     private var salon: Salon {
         SalonCatalog.shared.salon(named: salonName)
@@ -39,6 +44,9 @@ struct SalonDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     heroSection
+                    navigationBar
+                        .padding(.top, -260) // Overlay the hero section
+                    
                     infoSheet
                         .padding(.top, -15)
                 }
@@ -58,6 +66,9 @@ struct SalonDetailView: View {
             Task {
                 await FavouritesStore.shared.load()
                 isFavourited = FavouritesStore.shared.favouriteNames.contains(salonName)
+                // Initialize with catalog values, then let the listener take over!
+                dynamicRating = salon.rating
+                dynamicReviewCount = salon.reviewCount
                 startListeningToReviews()
             }
         }
@@ -98,6 +109,14 @@ struct SalonDetailView: View {
                 // MERGE: Show all real reviews + fill up with mock reviews if needed!
                 // This ensures that when a new user adds a review, everyone sees it immediately.
                 var allReviews = updatedReviews
+                
+                // Real-time analytics: Update average rating and total count!
+                let realRatings = updatedReviews.map { Double($0.rating) }
+                if !realRatings.isEmpty {
+                    self.dynamicRating = realRatings.reduce(0, +) / Double(realRatings.count)
+                    self.dynamicReviewCount = updatedReviews.count + 312 // Real + Mocks
+                }
+                
                 if allReviews.count < 8 {
                     let mocks = generateLocalMockReviews(for: sId)
                     // Only add mocks that don't conflict with real review IDs
@@ -191,11 +210,11 @@ struct SalonDetailView: View {
                 Image(mappedSalonImageName(salon.name))
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geo.size.width, height: 320 + (minY > 0 ? minY : 0))
+                    .frame(width: geo.size.width, height: 260 + (minY > 0 ? minY : 0))
                     .clipped()
                     .offset(y: minY > 0 ? -minY : 0)
             }
-            .frame(height: 320)
+            .frame(height: 260)
 
             // Multi-layered Gradient for Text Readability
             LinearGradient(
@@ -211,10 +230,10 @@ struct SalonDetailView: View {
                     Image(systemName: "star.fill")
                         .font(.system(size: 10))
                         .foregroundColor(Color(hex: "F59E0B"))
-                    Text(String(format: "%.1f", salon.rating))
+                    Text(String(format: "%.1f", dynamicRating))
                         .glowzaFont(size: 12, weight: .bold)
                         .foregroundColor(.white)
-                    Text("· \(salon.reviewCount) reviews")
+                    Text("· \(dynamicReviewCount) reviews")
                         .glowzaFont(size: 12)
                         .foregroundColor(.white.opacity(0.8))
                 }
@@ -239,15 +258,25 @@ struct SalonDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            .padding(.bottom, 54)
         }
-        .frame(height: 320)
-        .overlay(alignment: .topLeading) {
+        .frame(height: 260)
+    }
+
+    private var navigationBar: some View {
+        HStack {
             GlowzaCircleBackButton(action: { dismiss() })
-            .padding(.leading, 20)
-            .padding(.top, 54)
-        }
-        .overlay(alignment: .topTrailing) {
+            
+            Spacer()
+            
+            Text(salon.name)
+                .glowzaFont(size: 17, weight: .bold)
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .opacity(0) // Hidden by default, can be used for scroll animation later
+            
+            Spacer()
+            
             HStack(spacing: 12) {
                 Button(action: {
                     withAnimation(.spring()) {
@@ -280,9 +309,10 @@ struct SalonDetailView: View {
                         .shadow(color: .black.opacity(0.1), radius: 10)
                 }
             }
-            .padding(.trailing, 20)
-            .padding(.top, 54)
         }
+        .padding(.horizontal, 20)
+        .padding(.top, 54)
+        .frame(height: 100, alignment: .top)
     }
 
     private var infoSheet: some View {
@@ -295,22 +325,46 @@ struct SalonDetailView: View {
                     lineSpacing: 4
                 )
                 .frame(maxWidth: .infinity)
-                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 4)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 16)
+            .padding(.top, 21)
+            .padding(.bottom, 12)
 
-            Picker("Salon Section", selection: $selectedTab) {
-                Text("Services").tag(0)
-                Text("About").tag(1)
-                Text("Reviews").tag(2)
+            // CUSTOM TAB SWITCHER
+            HStack(spacing: 0) {
+                ForEach(["Services", "About", "Reviews"].indices, id: \.self) { index in
+                    let titles = ["Services", "About", "Reviews"]
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = index 
+                        }
+                    }) {
+                        VStack(spacing: 12) {
+                            Text(titles[index])
+                                .glowzaFont(size: 15, weight: selectedTab == index ? .bold : .medium)
+                                .foregroundColor(selectedTab == index ? brand : .gray)
+                            
+                            // Animated underline
+                            ZStack {
+                                Capsule()
+                                    .fill(Color.clear)
+                                    .frame(height: 3)
+                                if selectedTab == index {
+                                    Capsule()
+                                        .fill(brand)
+                                        .frame(height: 3)
+                                        .matchedGeometryEffect(id: "tab_underline", in: tabNamespace)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
             }
-            .pickerStyle(.segmented)
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 2)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
 
             Group {
                 switch selectedTab {
@@ -329,35 +383,7 @@ struct SalonDetailView: View {
 
     private var aboutContent: some View {
         VStack(alignment: .leading, spacing: 32) {
-            // 1. Description Section (Elegant Quote Style)
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Our Story")
-                    .glowzaFont(size: 18, weight: .bold)
-                    .foregroundColor(appSettings.themeText)
-                
-                VStack(alignment: .leading, spacing: 0) {
-                    Image(systemName: "quote.opening")
-                        .font(.system(size: 24))
-                        .foregroundColor(brand.opacity(0.3))
-                        .padding(.bottom, 8)
-                    
-                    GlowzaJustifiedText(
-                        text: "\(salon.name) is a sanctuary of beauty and wellness in the heart of Colombo. Our expert stylists and therapists are dedicated to providing personalized treatments using only the finest organic products. We believe that every client deserves a moment of absolute luxury and relaxation in their busy lives.",
-                        font: .systemFont(ofSize: 15, weight: .regular),
-                        color: appSettings.isDarkMode ? .lightGray : .darkGray,
-                        lineSpacing: 6
-                    )
-                    .frame(height: 140)
-                }
-                .padding(24)
-                .background(appSettings.themeRaised)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .shadow(color: Color.black.opacity(0.03), radius: 10, x: 0, y: 5)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            
-            // 2. Info Cards Row
+            // 1. Info Cards Row
             HStack(spacing: 12) {
                 // Availability Card
                 VStack(alignment: .leading, spacing: 12) {
@@ -619,7 +645,23 @@ struct SalonDetailView: View {
                     }
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(review.userName).glowzaFont(size: 15, weight: .semibold).foregroundColor(appSettings.themeText)
+                    HStack(spacing: 6) {
+                        Text(review.userName)
+                            .glowzaFont(size: 15, weight: .semibold)
+                            .foregroundColor(appSettings.themeText)
+                        
+                        if let skin = review.skinType, !skin.isEmpty {
+                            Text("•")
+                                .foregroundColor(.gray.opacity(0.5))
+                            Text(skin)
+                                .glowzaFont(size: 11, weight: .medium)
+                                .foregroundColor(brand)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(brand.opacity(0.08))
+                                .clipShape(Capsule())
+                        }
+                    }
                     HStack(spacing: 3) {
                         ForEach(1...5, id: \.self) { i in
                             Image(systemName: i <= review.rating ? "star.fill" : "star").font(.system(size: 11)).foregroundColor(i <= review.rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
@@ -711,21 +753,21 @@ struct SalonDetailView: View {
             }
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 16)
+        .padding(.vertical, 10)
         .background(
             ZStack {
                 LinearGradient(colors: [brand, Color(hex: "B83255")], startPoint: .leading, endPoint: .trailing)
                 
                 Circle()
                     .fill(Color.white.opacity(0.1))
-                    .frame(width: 150)
-                    .offset(x: 100, y: 40)
+                    .frame(width: 120)
+                    .offset(x: 100, y: 30)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         )
         .padding(.horizontal, 16)
-        .padding(.bottom, 12)
-        .shadow(color: brand.opacity(0.3), radius: 15, y: 8)
+        .padding(.bottom, 8)
+        .shadow(color: brand.opacity(0.3), radius: 12, y: 6)
     }
 
     private func openDirections() {
