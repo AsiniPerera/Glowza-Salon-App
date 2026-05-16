@@ -179,8 +179,9 @@ final class AuthViewModel: ObservableObject {
                     localizedReason: "Use Face ID to securely access your GLOWZA account."
                 )
 
-                isAuthenticating = false
+                // Set success first to trigger navigation immediately!
                 isAuthenticated = success
+                isAuthenticating = false
 
                 if !success {
                     authenticationError = "Authentication was cancelled."

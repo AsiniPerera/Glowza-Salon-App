@@ -51,6 +51,7 @@ struct NotificationItem: Identifiable, Codable {
 // 1. System notifications (that appear in the iOS notification center).
 // 2. In-app banners (that slide down from the top).
 // 3. Notification history (saved to Core Data and Firestore).
+@MainActor
 @Observable
 class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager() // Singleton instance!
@@ -293,47 +294,42 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     
     // MARK: - Dismiss Notification from History
     func dismissFromHistory(_ item: NotificationItem) {
-        DispatchQueue.main.async {
-            if let index = self.notificationHistory.firstIndex(where: { $0.id == item.id }) {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    self.notificationHistory.remove(at: index)
-                }
-                self.saveNotificationHistory()
-                self.updateAppIconBadge()
+        if let index = self.notificationHistory.firstIndex(where: { $0.id == item.id }) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                self.notificationHistory.remove(at: index)
+            }
+            self.saveNotificationHistory()
+            self.updateAppIconBadge()
+            
+            let id = item.id
+            Task {
+                // 1. Delete from Core Data
+                try? NotificationRepository.shared.deleteNotification(id)
                 
-                let id = item.id
-                Task {
-                    // 1. Delete from Core Data
-                    // Note: Need to add delete method to repo!
-                    try? NotificationRepository.shared.deleteNotification(id)
-                    
-                    // 2. Delete from Firestore
-                    try? await self.db.collection("notifications").document(id.uuidString).delete()
-                }
+                // 2. Delete from Firestore
+                try? await self.db.collection("notifications").document(id.uuidString).delete()
             }
         }
     }
     
     // MARK: - Clear All History
     func clearAllHistory() {
-        DispatchQueue.main.async {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                self.notificationHistory.removeAll()
-            }
-            self.saveNotificationHistory()
-            self.updateAppIconBadge()
+        withAnimation(.easeInOut(duration: 0.3)) {
+            self.notificationHistory.removeAll()
+        }
+        self.saveNotificationHistory()
+        self.updateAppIconBadge()
+        
+        Task {
+            guard let uid = AuthService.shared.currentUID else { return }
             
-            Task {
-                guard let uid = AuthService.shared.currentUID else { return }
-                
-                // 1. Clear Core Data
-                try? self.notificationRepo.clearAllNotifications()
-                
-                // 2. Clear Firestore (Delete all documents for this user)
-                let snapshot = try? await self.db.collection("notifications").whereField("userId", isEqualTo: uid).getDocuments()
-                for doc in snapshot?.documents ?? [] {
-                    try? await doc.reference.delete()
-                }
+            // 1. Clear Core Data
+            try? self.notificationRepo.clearAllNotifications()
+            
+            // 2. Clear Firestore (Delete all documents for this user)
+            let snapshot = try? await self.db.collection("notifications").whereField("userId", isEqualTo: uid).getDocuments()
+            for doc in snapshot?.documents ?? [] {
+                try? await doc.reference.delete()
             }
         }
     }
@@ -363,13 +359,11 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     // MARK: - Save Notification to History
     // Saves a notification to history and persists it.
     func showNotification(_ item: NotificationItem, duration: TimeInterval = 3.0) {
-        DispatchQueue.main.async {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                self.notificationHistory.insert(item, at: 0)  // Add to history at top!
-            }
-            self.saveNotificationHistory()
-            self.persistNotification(item)  // Save to Core Data & Firestore!
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+            self.notificationHistory.insert(item, at: 0)  // Add to history at top!
         }
+        self.saveNotificationHistory()
+        self.persistNotification(item)  // Save to Core Data & Firestore!
     }
     
     // MARK: - Booking Success Notification
@@ -388,6 +382,24 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             type: .success
         )
         showNotification(notification, duration: bookingSuccessBannerDuration)
+    }
+
+    // MARK: - Payment Success Notification
+    func notifyPaymentSuccess(amount: Double, method: String, receipt: String) {
+        let title = "Payment Successful"
+        let subtitle = "LKR \(Int(amount)) paid via \(method). Receipt: \(receipt)"
+        
+        // Send native iOS local push notification!
+        sendLocalNotification(title: title, subtitle: subtitle, delay: 0.3)
+        
+        // Save to history!
+        let notification = NotificationItem(
+            title: title,
+            subtitle: subtitle,
+            icon: "creditcard.fill",
+            type: .success
+        )
+        showNotification(notification, duration: 2.0)
     }
 
     // MARK: - Booking Failure Notification
@@ -412,6 +424,24 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                 }
             }
         }
+    }
+    
+    // MARK: - Welcome Notification
+    func notifyWelcome(userName: String) {
+        let title = "Welcome to GLOWZA!"
+        let subtitle = "Hi \(userName), we're so glad you're here! Start your beauty journey today."
+        
+        // Send native iOS local push notification!
+        sendLocalNotification(title: title, subtitle: subtitle, delay: 0.5)
+        
+        // Save to history!
+        let notification = NotificationItem(
+            title: title,
+            subtitle: subtitle,
+            icon: "sparkles",
+            type: .info
+        )
+        showNotification(notification)
     }
     
     // MARK: - Dismiss All
@@ -451,7 +481,7 @@ class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let notification = NotificationItem(
             title: title,
             subtitle: subtitle,
-            icon: "calendar.badge.clock", // Our unique icon!
+            icon: "bell.badge.fill", // More 'Push' like icon!
             type: .info
         )
         showNotification(notification)

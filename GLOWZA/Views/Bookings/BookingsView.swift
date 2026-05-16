@@ -624,6 +624,8 @@ struct BookingsView: View {
     @State private var reviewBooking: Booking? = nil // Holds the booking to show review for.
     @State private var rebookDraft: BookingDraft? = nil // Holds the draft when rebooking.
     @Environment(AppSettings.self) private var appSettings
+    
+    @Namespace private var tabNamespace
 
     private let tabs = ["Upcoming", "Completed", "Cancelled"]
 
@@ -638,14 +640,36 @@ struct BookingsView: View {
                     .padding(.top, 16)
                     .padding(.bottom, 8)
 
-                // Segmented Picker for switching tabs!
-                Picker("Booking Status", selection: $selectedTab) {
-                    ForEach(tabs.indices, id: \.self) { i in
-                        Text(tabs[i]).tag(i)
+                // Custom Tab Switcher - Unified design with Salon Profile
+                HStack(spacing: 0) {
+                    ForEach(tabs.indices, id: \.self) { index in
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedTab = index
+                            }
+                        }) {
+                            VStack(spacing: 12) {
+                                Text(tabs[index])
+                                    .glowzaFont(size: 15, weight: selectedTab == index ? .bold : .medium)
+                                    .foregroundColor(selectedTab == index ? brand : .gray)
+                                    .frame(maxWidth: .infinity)
+                                
+                                // Animated underline
+                                ZStack {
+                                    Capsule()
+                                        .fill(Color.clear)
+                                        .frame(height: 3)
+                                    if selectedTab == index {
+                                        Capsule()
+                                            .fill(brand)
+                                            .frame(height: 3)
+                                            .matchedGeometryEffect(id: "tab_underline", in: tabNamespace)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 10)
 

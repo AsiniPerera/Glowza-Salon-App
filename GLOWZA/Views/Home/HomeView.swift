@@ -55,6 +55,7 @@ struct HomeView: View {
     // Loading profile data from UserDefaults (local storage).
     @State private var profileAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData")
     @State private var profileName: String = UserDefaults.standard.string(forKey: "profile_fullName") ?? "User"
+    @State private var hasShownSessionReminder = false // NEW: Only show reminder once per app session!
     @State private var isSalonsLoading = false
 
     // Mock data for service categories.
@@ -193,21 +194,31 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $showFavourites) {
                 FavouriteSalonsView().environment(appSettings)
             }
-            // .task runs when the view appears. Good for async work!
+            // .task runs when the view appears.
             .task {
-                await syncSalonsToFirestore() // Syncs local mock data to online Firebase.
-                await loadSalonsFromFirestore() // Loads data from Firebase.
-                await SalonFirestoreService.shared.seedMockReviews() // Seeds mock reviews.
-                refreshProfileHeader() // Updates user name and avatar.
+                refreshProfileHeader() // Updates user name and avatar immediately!
+
+                // Run heavy data tasks in the background to avoid blocking the UI!
+                Task(priority: .background) {
+                    await syncSalonsToFirestore() // Syncs local mock data to online Firebase.
+                    await loadSalonsFromFirestore() // Loads data from Firebase.
+                    await SalonFirestoreService.shared.seedMockReviews() // Seeds mock reviews.
+                    await BookingStore.shared.fetchUserBookings() // Fetch fresh bookings.
+                }
                 
-                // NEW: Load bookings and show the latest appointment reminder!
-                await BookingStore.shared.fetchUserBookings()
-                
-                // Only show the reminder after login, with a 10s delay as requested!
-                if AppSettings.shared.shouldShowLoginReminder {
-                    AppSettings.shared.shouldShowLoginReminder = false // Reset so it only happens once!
+                // NEW: Show 'Login Successful' and then the 'Booking Reminder'!
+                if !hasShownSessionReminder {
+                    hasShownSessionReminder = true
+                    
+                    // 1. Welcome Notification
+                    NotificationManager.shared.notifyWelcome(userName: profileName)
+
+                    // 2. Booking Reminder after data is loaded!
                     Task {
-                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        // Wait for the background fetch to potentially complete first!
+                        try? await Task.sleep(nanoseconds: 2_500_000_000) 
+                        await BookingStore.shared.fetchUserBookings() // Ensure we have latest for the reminder!
+                        
                         await MainActor.run {
                             BookingStore.shared.triggerNearestBookingReminder()
                         }
@@ -358,63 +369,57 @@ struct HomeView: View {
 
             Spacer()
 
-            // Only show action buttons if the user is logged in (not "User").
-            if profileName != "User" {
-                    // Favourites Button
-                    ZStack(alignment: .topTrailing) {
-                        Button(action: { showFavourites = true }) {
+            // Favourites Button
+            ZStack(alignment: .topTrailing) {
+                Button(action: { showFavourites = true }) {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 44, height: 44)
+                        .overlay(
                             Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
-                                .overlay {
-                                    Image(systemName: "heart.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(brand)
-                                }
+                                .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+                        .overlay {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(brand)
                         }
-                        .buttonStyle(.plain)
-                        
-                        // Transparent spacer to match the Notifications button size if needed
-                        Color.clear.frame(width: 44, height: 44)
-                    }
-                    
-                    // Notifications Button
-                    ZStack(alignment: .topTrailing) {
-                        Button(action: { showNotificationsView = true }) {
+                }
+                .buttonStyle(.plain)
+            }
+            
+            // Notifications Button
+            ZStack(alignment: .topTrailing) {
+                Button(action: { showNotificationsView = true }) {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 44, height: 44)
+                        .overlay(
                             Circle()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
-                                .overlay {
-                                    Image(systemName: "bell.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(brand)
-                                }
+                                .stroke(Color.white.opacity(0.4), lineWidth: 1)
+                        )
+                        .shadow(color: Color.black.opacity(0.06), radius: 8, y: 3)
+                        .overlay {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(brand)
                         }
-                        .buttonStyle(.plain)
-                        
-                        let count = notificationManager.unreadCount
-                        if count > 0 {
-                            Text("\(count)")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(4)
-                                .frame(minWidth: 16, minHeight: 16)
-                                .background(brand)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
-                                .offset(x: 2, y: -2) // Overlap the bell icon perfectly!
-                        }
-                    }
+                }
+                .buttonStyle(.plain)
+                
+                let count = notificationManager.unreadCount
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(4)
+                        .frame(minWidth: 16, minHeight: 16)
+                        .background(brand)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                        .offset(x: 2, y: -2)
+                }
             }
         }
     }
@@ -555,16 +560,15 @@ struct HomeView: View {
                 .tabViewStyle(.page(indexDisplayMode: .never))
 
                 // Custom Dot indicators for the promotion carousel.
-                HStack(spacing: 8) {
-                    Spacer()
+                HStack(spacing: 6) {
                     ForEach(0..<3, id: \.self) { index in
-                        Circle()
-                            .fill(currentPromotionPage == index ? Color(hex: "962043") : Color(hex: "962043").opacity(0.25))
-                            .frame(width: currentPromotionPage == index ? 10 : 8, height: 8)
-                            .animation(.easeInOut(duration: 0.3), value: currentPromotionPage)
+                        Capsule()
+                            .fill(currentPromotionPage == index ? Color(hex: "962043") : Color(hex: "962043").opacity(0.2))
+                            .frame(width: currentPromotionPage == index ? 18 : 6, height: 6)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: currentPromotionPage)
                     }
-                    Spacer()
                 }
+                .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 10)
         }
@@ -1019,12 +1023,14 @@ struct SalonMapView: View {
                 .navigationTitle("Salons Near You")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
+                    ToolbarItem(placement: .navigationBarLeading) {
                         Button(action: { dismiss() }) {
-                            Text("Close")
-                                .glowzaFont(size: 16, weight: .semibold)
-                                .fixedSize()
+                            Image(systemName: "xmark")
+                                .glowzaFont(size: 14, weight: .bold)
                                 .foregroundColor(brand)
+                                .frame(width: 32, height: 32)
+                                .background(brand.opacity(0.1))
+                                .clipShape(Circle())
                         }
                     }
                 }

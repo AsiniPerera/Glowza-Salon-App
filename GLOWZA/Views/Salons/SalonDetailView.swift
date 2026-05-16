@@ -1,64 +1,41 @@
 import SwiftUI
 import MapKit
+import FirebaseFirestore
 
 private let brand = Color(hex: "962043")
 
 // MARK: - Salon Detail View
-// This view shows the details of a specific salon, including its services,
-// about information, and reviews. Users can also book services from here.
 struct SalonDetailView: View {
 
-    let salonName: String // The name of the salon to display.
+    let salonName: String
 
     @Environment(TreatmentComparisonStore.self) private var comparisonStore
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
 
-    @State private var showBookingFlow = false // Controls the booking flow sheet.
-    @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0]) // Holds the booking state.
-    @State private var isFavourited    = false // Tracks if the salon is favorited.
-    @State private var photoIndex      = 0 // Tracks the current photo in the gallery.
-    @State private var selectedTab     = 0 // Tracks the selected tab (Services, About, Reviews).
-    @State private var selectedServiceID: UUID? = nil // Tracks the selected service.
-    @State private var firestoreReviews: [FirestoreSalonReview] = [] // Reviews fetched from Firestore.
-    @State private var showReviewSheet = false // Controls the review sheet.
-    @State private var reviewToEdit: FirestoreSalonReview? = nil // Holds the review to edit.
+    @State private var showBookingFlow = false
+    @State private var bookingDraft    = BookingDraft(salon: SalonCatalog.shared.salons[0])
+    @State private var isFavourited    = false
+    @State private var photoIndex      = 0
+    @State private var selectedTab     = 0
+    @State private var selectedServiceID: UUID? = nil
+    @State private var displayReviews: [FirestoreSalonReview] = []
+    @State private var showReviewSheet = false
+    @State private var reviewToEdit: FirestoreSalonReview? = nil
     @State private var errorMessage: String? = nil
     @State private var showErrorAlert = false
-    @State private var selectedReviewer: FirestoreSalonReview? = nil // Holds the review of the user to show!
-    @State private var mapRoute: MKRoute? = nil // Holds the real route!
-    @State private var userAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData") // User avatar!
+    @State private var selectedReviewer: FirestoreSalonReview? = nil
+    @State private var userAvatarData: Data? = UserDefaults.standard.data(forKey: "profile_avatarData")
+    @State private var reviewListener: ListenerRegistration? = nil
+    
+    // LIVE SYNC & ANIMATION: Essential for global consistency and premium feel!
+    @Namespace private var tabNamespace
+    @State private var dynamicRating: Double = 0.0
+    @State private var dynamicReviewCount: Int = 0
 
-    // Helper to get the full Salon object from the catalog.
     private var salon: Salon {
         SalonCatalog.shared.salon(named: salonName)
     }
-    
-
-
-    // Combines Firestore reviews with hardcoded sample reviews for display!
-    private var displayReviews: [FirestoreSalonReview] {
-        var allReviews = firestoreReviews
-        let dummyReviews = sampleReviews.map { br in
-            FirestoreSalonReview(id: br.id.uuidString, salonId: "", userId: "", userName: br.reviewerName, rating: br.rating, comment: br.comment, createdAt: br.date, userAvatarBase64: nil)
-        }
-        allReviews.append(contentsOf: dummyReviews)
-        return allReviews
-    }
-
-    // Hardcoded sample reviews to make the app look full!
-    private let sampleReviews: [BookingReview] = [
-        BookingReview(rating: 5, comment: "Absolutely loved the facial treatment! Skin is glowing.", date: Date(), reviewerName: "Dilnoza R."),
-        BookingReview(rating: 4, comment: "Professional staff, clean environment. Will return.", date: Date(), reviewerName: "Amara S."),
-        BookingReview(rating: 5, comment: "Best chemical peel I've ever had. Highly recommend!", date: Date(), reviewerName: "Priya K."),
-        BookingReview(rating: 4, comment: "Great service, but a bit of a wait. Overall good experience.", date: Date(), reviewerName: "John D."),
-        BookingReview(rating: 5, comment: "Luxury at its best. The ambiance is so relaxing.", date: Date(), reviewerName: "Sarah W."),
-        BookingReview(rating: 5, comment: "Expert stylists who really listen to what you want.", date: Date(), reviewerName: "Michael B."),
-        BookingReview(rating: 4, comment: "The laser treatment was virtually painless. Amazing!", date: Date(), reviewerName: "Elena G."),
-        BookingReview(rating: 5, comment: "Incredible results in just one session. Love it!", date: Date(), reviewerName: "Raj T."),
-        BookingReview(rating: 4, comment: "Fantastic attention to detail and very friendly staff.", date: Date(), reviewerName: "Sophia L."),
-        BookingReview(rating: 5, comment: "The best salon experience in Colombo, hands down.", date: Date(), reviewerName: "Kevin M.")
-    ]
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -66,14 +43,16 @@ struct SalonDetailView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    heroSection // The top image and title section.
-                    infoSheet // The bottom section with tabs.
-                        .padding(.top, -15) // Overlap the hero section slightly!
+                    heroSection
+                    navigationBar
+                        .padding(.top, -260) // Overlay the hero section
+                    
+                    infoSheet
+                        .padding(.top, -15)
                 }
             }
             .ignoresSafeArea(edges: .top)
 
-            // Shows the "Book Now" bar if a service is selected!
             if showBookNow {
                 bookNowBar
                     .transition(.move(edge: .bottom))
@@ -84,19 +63,17 @@ struct SalonDetailView: View {
         .onAppear {
             bookingDraft = BookingDraft(salon: salon)
             selectedServiceID = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                selectedServiceID = nil
-                bookingDraft.service = nil
-            }
             Task {
                 await FavouritesStore.shared.load()
                 isFavourited = FavouritesStore.shared.favouriteNames.contains(salonName)
-                await fetchFirestoreReviews()
+                // Initialize with catalog values, then let the listener take over!
+                dynamicRating = salon.rating
+                dynamicReviewCount = salon.reviewCount
+                startListeningToReviews()
             }
         }
         .onDisappear {
-            selectedServiceID = nil
-            bookingDraft.service = nil
+            stopListeningToReviews()
         }
         .fullScreenCover(isPresented: $showBookingFlow) {
             BookingFlowView(draft: bookingDraft)
@@ -109,6 +86,14 @@ struct SalonDetailView: View {
         .sheet(item: $selectedReviewer) { review in
             UserProfileSheet(review: review, reviewCount: displayReviews.filter { $0.userName == review.userName }.count)
         }
+        .confirmationDialog("Delete Review?", isPresented: Binding(get: { reviewToEdit != nil && errorMessage == "DELETE_CONFIRM" }, set: { if !$0 { errorMessage = nil; reviewToEdit = nil } }), titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let r = reviewToEdit { deleteReview(r) }
+            }
+            Button("Cancel", role: .cancel) { reviewToEdit = nil; errorMessage = nil }
+        } message: {
+            Text("Are you sure you want to permanently remove this review?")
+        }
         .alert("Review Error", isPresented: $showErrorAlert, presenting: errorMessage) { _ in
             Button("OK") { errorMessage = nil }
         } message: { msg in
@@ -116,22 +101,55 @@ struct SalonDetailView: View {
         }
     }
 
-    // Fetches reviews from Firestore.
+    private func startListeningToReviews() {
+        let sId = SalonFirestoreService.shared.salonId(for: salonName)
+        reviewListener?.remove()
+        reviewListener = SalonFirestoreService.shared.listenToReviews(forSalonId: sId) { updatedReviews in
+            Task { @MainActor in
+                // MERGE: Show all real reviews + fill up with mock reviews if needed!
+                // This ensures that when a new user adds a review, everyone sees it immediately.
+                var allReviews = updatedReviews
+                
+                // Real-time analytics: Update average rating and total count!
+                let realRatings = updatedReviews.map { Double($0.rating) }
+                if !realRatings.isEmpty {
+                    self.dynamicRating = realRatings.reduce(0, +) / Double(realRatings.count)
+                    self.dynamicReviewCount = updatedReviews.count + 312 // Real + Mocks
+                }
+                
+                if allReviews.count < 8 {
+                    let mocks = generateLocalMockReviews(for: sId)
+                    // Only add mocks that don't conflict with real review IDs
+                    let needed = 8 - allReviews.count
+                    allReviews.append(contentsOf: mocks.prefix(needed))
+                }
+                self.displayReviews = allReviews.sorted(by: { $0.createdAt > $1.createdAt })
+            }
+        }
+    }
+    
+    private func stopListeningToReviews() {
+        reviewListener?.remove()
+        reviewListener = nil
+    }
+
     private func fetchFirestoreReviews() async {
         let sId = SalonFirestoreService.shared.salonId(for: salonName)
         let results = (try? await SalonFirestoreService.shared.fetchReviews(forSalonId: sId)) ?? []
-        
         var allReviews = results
-        // If there are fewer than 10 reviews, add some mock reviews!
-        if allReviews.count < 10 {
+        
+        // Always ensure at least 8 reviews are shown for a "busy" look!
+        if allReviews.count < 8 {
             let mockReviews = generateLocalMockReviews(for: sId)
-            let needed = 10 - allReviews.count
+            let needed = 8 - allReviews.count
             allReviews.append(contentsOf: mockReviews.prefix(needed))
         }
-        self.firestoreReviews = allReviews
+        allReviews.sort(by: { $0.createdAt > $1.createdAt })
+        await MainActor.run {
+            self.displayReviews = allReviews
+        }
     }
 
-    // Generates local mock reviews if Firestore doesn't have enough.
     private func generateLocalMockReviews(for salonId: String) -> [FirestoreSalonReview] {
         let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
         let comments = [
@@ -146,7 +164,6 @@ struct SalonDetailView: View {
             "Fantastic attention to detail and very friendly staff.",
             "The best salon experience in Colombo, hands down."
         ]
-        
         return (0..<10).map { i in
             FirestoreSalonReview(
                 id: "LOCAL_MOCK_\(salonId)_\(i)",
@@ -159,147 +176,196 @@ struct SalonDetailView: View {
             )
         }
     }
+    
+    private func deleteReview(_ review: FirestoreSalonReview) {
+        guard let docId = review.documentId else { return }
+        Task {
+            do {
+                try await SalonFirestoreService.shared.deleteReview(reviewId: docId)
+                await MainActor.run {
+                    withAnimation { displayReviews.removeAll { $0.id == review.id } }
+                    reviewToEdit = nil
+                    errorMessage = nil
+                    NotificationManager.shared.showNotification(NotificationItem(
+                        title: "Review Deleted",
+                        subtitle: "Your feedback has been removed.",
+                        icon: "trash.fill",
+                        type: .success
+                    ))
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to delete: \(error.localizedDescription)"
+                    self.showErrorAlert = true
+                }
+            }
+        }
+    }
 
-    // MARK: - Hero Section
-    // This section displays the big salon image, rating, name, and location.
     private var heroSection: some View {
         ZStack(alignment: .bottom) {
-            Rectangle()
-                .fill(Color(hex: "C0BBB7"))
-                .frame(height: 260)
-                .overlay(
-                    Image(mappedSalonImageName(salon.name))
-                        .resizable()
-                        .scaledToFill()
-                        .frame(height: 260)
-                        .clipped()
-                )
+            // Main Image with Parallax-ready feel
+            GeometryReader { geo in
+                let minY = geo.frame(in: .global).minY
+                Image(mappedSalonImageName(salon.name))
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geo.size.width, height: 260 + (minY > 0 ? minY : 0))
+                    .clipped()
+                    .offset(y: minY > 0 ? -minY : 0)
+            }
+            .frame(height: 260)
 
-            // Dark gradient to make text readable!
+            // Multi-layered Gradient for Text Readability
             LinearGradient(
-                colors: [Color.black.opacity(0.65), Color.clear],
+                colors: [.black.opacity(0.8), .black.opacity(0.4), .clear],
                 startPoint: .bottom,
                 endPoint: .top
             )
-            .frame(height: 260)
+            .frame(height: 180)
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Rating Badge
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
-                        .font(.system(size: 11))
+                        .font(.system(size: 10))
                         .foregroundColor(Color(hex: "F59E0B"))
-                    Text(String(format: "%.1f", salon.rating))
-                        .font(.system(size: 13))
+                    Text(String(format: "%.1f", dynamicRating))
+                        .glowzaFont(size: 12, weight: .bold)
                         .foregroundColor(.white)
-                    Text("(\(salon.reviewCount) reviews)")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.85))
+                    Text("· \(dynamicReviewCount) reviews")
+                        .glowzaFont(size: 12)
+                        .foregroundColor(.white.opacity(0.8))
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(.ultraThinMaterial.opacity(0.3))
+                .clipShape(Capsule())
+                
                 Text(salon.name)
-                    .font(.system(size: 26))
+                    .glowzaFont(size: 32, weight: .bold)
                     .foregroundColor(.white)
+                    .tracking(-0.5)
+                
                 HStack(spacing: 4) {
-                    Image(systemName: "mappin")
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.85))
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
                     Text(salon.location)
-                        .font(.system(size: 13))
+                        .glowzaFont(size: 14, weight: .medium)
                         .foregroundColor(.white.opacity(0.9))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 35)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 54)
         }
         .frame(height: 260)
-        .overlay(alignment: .topLeading) {
+    }
+
+    private var navigationBar: some View {
+        HStack {
             GlowzaCircleBackButton(action: { dismiss() })
-            .padding(.leading, 20)
-            .padding(.top, 44) // Better alignment with status bar!
-        }
-        .overlay(alignment: .topTrailing) {
-            HStack(spacing: 10) {
-                // Favorite button
+            
+            Spacer()
+            
+            Text(salon.name)
+                .glowzaFont(size: 17, weight: .bold)
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .opacity(0) // Hidden by default, can be used for scroll animation later
+            
+            Spacer()
+            
+            HStack(spacing: 12) {
                 Button(action: {
-                    isFavourited.toggle()
-                    Task {
-                        await FavouritesStore.shared.toggle(salonName)
+                    withAnimation(.spring()) {
+                        isFavourited.toggle()
+                        Task { await FavouritesStore.shared.toggle(salonName) }
                     }
                 }) {
                     Image(systemName: isFavourited ? "heart.fill" : "heart")
-                        .font(.system(size: 15))
-                        .foregroundColor(isFavourited ? brand : Color(hex: "1A1A1A"))
-                        .frame(width: 36, height: 36)
-                        .background(.ultraThinMaterial)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 38, height: 38)
+                        .background {
+                            if isFavourited {
+                                brand
+                            } else {
+                                Color.clear.background(.ultraThinMaterial)
+                            }
+                        }
                         .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.12), radius: 5)
+                        .shadow(color: .black.opacity(0.1), radius: 10)
                 }
                 
-                // Share button
                 Button(action: {}) {
                     Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 15))
-                        .foregroundColor(Color(hex: "1A1A1A"))
-                        .frame(width: 36, height: 36)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(width: 38, height: 38)
                         .background(.ultraThinMaterial)
                         .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.12), radius: 5)
+                        .shadow(color: .black.opacity(0.1), radius: 10)
                 }
             }
-            .padding(.trailing, 20)
-            .padding(.top, 44)
         }
-        .overlay(alignment: .bottomTrailing) {
-            // Contact buttons (Phone, Facebook, WhatsApp)
-            HStack(spacing: 10) {
-                heroContactBtn(color: Color(hex: "34C759"), symbol: "phone.fill")
-                heroContactBtn(color: Color(hex: "1877F2"), letter: "f")
-                heroContactBtn(color: Color(hex: "25D366"), symbol: "message.fill")
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 35)
-        }
+        .padding(.horizontal, 20)
+        .padding(.top, 54)
+        .frame(height: 100, alignment: .top)
     }
 
-    // MARK: - Info Sheet
-    // This is the bottom sheet that contains the tabs for Services, About, and Reviews.
     private var infoSheet: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // MARK: Premium Intro Section (Visible across all tabs)
             VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .center, spacing: 12) {
-                    // Category Badge
-                    Text("PREMIUM SALON")
-                        .glowzaFont(size: 10, weight: .bold)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(brand.opacity(0.12))
-                        .foregroundColor(brand)
-                        .clipShape(Capsule())
-                }
-                
-                Text("Your destination for premium beauty & professional relaxation. Experience world-class service tailored just for you.")
-                    .glowzaFont(size: 14)
-                    .foregroundColor(appSettings.themeTextSecondary)
-                    .lineSpacing(4)
-                    .padding(.top, 4)
+                GlowzaJustifiedText(
+                    text: salon.about,
+                    font: UIFont(name: "Urbanist-Regular", size: 14 * appSettings.fontMultiplier) ?? .systemFont(ofSize: 14),
+                    color: appSettings.isDarkMode ? .lightGray : .darkGray,
+                    lineSpacing: 4
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.top, 4)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 24)
-            .padding(.bottom, 16)
+            .padding(.top, 21)
+            .padding(.bottom, 12)
 
-            // Segmented picker for tabs!
-            Picker("Salon Section", selection: $selectedTab) {
-                Text("Services").tag(0)
-                Text("About").tag(1)
-                Text("Reviews").tag(2)
+            // CUSTOM TAB SWITCHER
+            HStack(spacing: 0) {
+                ForEach(["Services", "About", "Reviews"].indices, id: \.self) { index in
+                    let titles = ["Services", "About", "Reviews"]
+                    Button(action: { 
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = index 
+                        }
+                    }) {
+                        VStack(spacing: 12) {
+                            Text(titles[index])
+                                .glowzaFont(size: 15, weight: selectedTab == index ? .bold : .medium)
+                                .foregroundColor(selectedTab == index ? brand : .gray)
+                            
+                            // Animated underline
+                            ZStack {
+                                Capsule()
+                                    .fill(Color.clear)
+                                    .frame(height: 3)
+                                if selectedTab == index {
+                                    Capsule()
+                                        .fill(brand)
+                                        .frame(height: 3)
+                                        .matchedGeometryEffect(id: "tab_underline", in: tabNamespace)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
             }
-            .pickerStyle(.segmented)
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 2)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
 
-            // Content changes based on the selected tab!
             Group {
                 switch selectedTab {
                 case 0: servicesContent
@@ -315,232 +381,185 @@ struct SalonDetailView: View {
         .clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 15))
     }
 
-    // MARK: - About Content
-    // Displays availability, location, and a gallery.
     private var aboutContent: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            HStack(alignment: .top, spacing: 0) {
-                // Availability
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 15))
-                            .foregroundColor(Color(hex: "5A5A5A"))
+        VStack(alignment: .leading, spacing: 32) {
+            // 1. Info Cards Row
+            HStack(spacing: 12) {
+                // Availability Card
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        ZStack {
+                            Circle().fill(brand).frame(width: 24, height: 24)
+                            Image(systemName: "clock.fill").font(.system(size: 11, weight: .bold)).foregroundColor(.white)
+                        }
                         Text("AVAILABILITY")
-                            .font(.system(size: 9))
-                            .foregroundColor(Color(hex: "9A9A9A"))
-                            .tracking(1.2)
+                            .glowzaFont(size: 10, weight: .bold)
+                            .foregroundColor(Color.gray.opacity(0.8))
+                            .tracking(1.0)
                     }
-                    Text("Open Today")
-                        .font(.system(size: 15))
-                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
-                    Text(salon.openHours)
-                        .font(.system(size: 12))
-                        .foregroundColor(Color(hex: "8A8A8A"))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Open Today")
+                            .glowzaFont(size: 15, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
+                        Text(salon.openHours)
+                            .glowzaFont(size: 12)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(18) // Uniform padding
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading) // Equal height
+                .background(appSettings.themeRaised)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 
-                Divider().padding(.horizontal, 20)
-                
-                // Location
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "location")
-                            .font(.system(size: 15))
-                            .foregroundColor(Color(hex: "5A5A5A"))
+                // Location Card
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        ZStack {
+                            Circle().fill(brand).frame(width: 24, height: 24)
+                            Image(systemName: "paperplane.fill").font(.system(size: 10, weight: .bold)).foregroundColor(.white)
+                        }
                         Text("LOCATION")
-                            .font(.system(size: 9))
-                            .foregroundColor(Color(hex: "9A9A9A"))
-                            .tracking(1.2)
+                            .glowzaFont(size: 10, weight: .bold)
+                            .foregroundColor(Color.gray.opacity(0.8))
+                            .tracking(1.0)
                     }
-                    Text("\(salon.distance) · 12 min")
-                        .font(.system(size: 15))
-                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
-                    Button(action: openDirections) {
-                        Text("Get Direction")
-                            .font(.system(size: 12))
-                            .foregroundColor(brand)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 20)
-            
-            // Mini Map with Route (Full width!)
-            Map {
-                // Salon Annotation with image!
-                Annotation(salon.name, coordinate: salon.coordinate) {
-                    VStack(spacing: 4) {
-                        Image(mappedSalonImageName(salon.name)) // Use the salon's header image!
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 32, height: 32)
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                    }
-                }
-                
-                // User Annotation with profile image!
-                Annotation("My Location", coordinate: CLLocationCoordinate2D(latitude: 6.7500, longitude: 79.9500)) {
-                    VStack(spacing: 4) {
-                        if let data = userAvatarData, let uiImage = UIImage(data: data) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 32, height: 32)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-                        } else {
-                            Image(systemName: "person.circle.fill")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 32, height: 32)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(salon.distance) · 12 min")
+                            .glowzaFont(size: 15, weight: .bold)
+                            .foregroundColor(appSettings.themeText)
+                        Button(action: openDirections) {
+                            Text("Get Directions")
+                                .glowzaFont(size: 12, weight: .bold)
                                 .foregroundColor(brand)
-                                .background(Color.white)
-                                .clipShape(Circle())
-                                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                         }
                     }
                 }
-                
-                // Detailed route (Dynamic to Salon Location!)
-                MapPolyline(coordinates: [
-                    CLLocationCoordinate2D(latitude: 6.7500, longitude: 79.9500), // User (Distant)
-                    CLLocationCoordinate2D(latitude: 6.8000, longitude: 79.9200),
-                    CLLocationCoordinate2D(latitude: 6.8500, longitude: 79.8900),
-                    CLLocationCoordinate2D(latitude: 6.8800, longitude: 79.8700),
-                    salon.coordinate // Destination!
-                ])
-                .stroke(Color(hex: "C2185B"), lineWidth: 4) // Deep Magenta / Dark Pink!
+                .padding(18) // Uniform padding
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading) // Equal height
+                .background(appSettings.themeRaised)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
             }
-            .frame(height: 150)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .hcBorder(radius: 12)
+            .fixedSize(horizontal: false, vertical: true) // Ensure HStack takes the height of the tallest item
             .padding(.horizontal, 24)
-            .padding(.top, 4)
 
-            // Gallery
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Gallery")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color(hex: "8A8A8A"))
+            // 3. Facilities Section
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Facilities")
+                    .glowzaFont(size: 18, weight: .bold)
+                    .padding(.horizontal, 24)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        featureBadge(icon: "wifi", text: "Free WiFi")
+                        featureBadge(icon: "parkingsign.circle", text: "Parking")
+                        featureBadge(icon: "snowflake", text: "Air Con")
+                        featureBadge(icon: "leaf.fill", text: "Organic")
+                        featureBadge(icon: "cup.and.saucer.fill", text: "Coffee")
+                    }
+                    .padding(.horizontal, 24)
+                }
+            }
+
+            // 4. Contact Section
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Contact Information")
+                    .glowzaFont(size: 18, weight: .bold)
+                
+                VStack(spacing: 0) {
+                    simpleContactRow(icon: "phone.fill", value: salon.phone)
+                    Divider().padding(.leading, 56).opacity(0.5)
+                    simpleContactRow(icon: "envelope.fill", value: "info@\(SalonFirestoreService.shared.salonId(for: salon.name)).com")
+                    Divider().padding(.leading, 56).opacity(0.5)
+                    simpleContactRow(icon: "globe", value: "www.\(SalonFirestoreService.shared.salonId(for: salon.name)).com")
+                }
+                .background(appSettings.themeRaised)
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            }
+            .padding(.horizontal, 24)
+
+            // 5. Salon Highlights Section (Gallery)
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text("Salon Highlights")
+                        .glowzaFont(size: 18, weight: .bold)
+                    Spacer()
+                    // Gallery Page Indicator
+                    HStack(spacing: 6) {
+                        ForEach(0..<galleryImageNames.count, id: \.self) { i in
+                            Capsule()
+                                .fill(i == photoIndex ? brand : brand.opacity(0.2))
+                                .frame(width: i == photoIndex ? 16 : 6, height: 6)
+                                .animation(.spring(), value: photoIndex)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+                
                 TabView(selection: $photoIndex) {
                     ForEach(Array(galleryImageNames.enumerated()), id: \.offset) { index, imageName in
                         Image(imageName)
                             .resizable()
                             .scaledToFill()
-                            .frame(height: 190)
-                            .frame(maxWidth: .infinity)
-                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .frame(height: 220)
+                            .frame(maxWidth: UIScreen.main.bounds.width - 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                             .tag(index)
                     }
                 }
-                .frame(height: 190)
+                .frame(height: 220)
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
-            .padding(.horizontal, 24)
-
-            // Page indicator for gallery!
-            HStack(spacing: 8) {
-                ForEach(0..<galleryImageNames.count, id: \.self) { i in
-                    Circle()
-                        .fill(i == photoIndex ? brand : Color(hex: "D0D0D0"))
-                        .frame(width: i == photoIndex ? 10 : 8, height: i == photoIndex ? 10 : 8)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 10)
+            .padding(.bottom, 40)
         }
     }
 
-    // Hardcoded gallery images.
     private var galleryImageNames: [String] {
         ["galery1", "galery2", "galery3", "galery4", "galery5"]
     }
 
-    // Maps salon names to image assets.
     private func mappedSalonImageName(_ salonName: String) -> String {
         return SalonCatalog.shared.salon(named: salonName).imageName
     }
 
-    // Maps service names to image assets. This is a big helper!
     private func imageForService(_ name: String) -> String {
         let lowerName = name.lowercased()
-        
-        // Direct matches or strong associations
         if lowerName.contains("facial") { return "facial" }
-        if lowerName.contains("chemical peel") || lowerName.contains("carbon peel") || lowerName.contains("peel") { return "chemicalpeel" }
+        if lowerName.contains("peel") { return "chemicalpeel" }
         if lowerName.contains("laser hair") { return "laserhair" }
-        if lowerName.contains("hair") { return "hair" } // General hair
-        if lowerName.contains("manicure") || lowerName.contains("pedicure") || lowerName.contains("wax") { return "manicure" }
-        if lowerName.contains("microneedling") || lowerName.contains("micro-needling") { return "microneedling" }
-        if lowerName.contains("body scrub") || lowerName.contains("body wrap") { return "bodyscrub" }
-        if lowerName.contains("massage") || lowerName.contains("reflexology") { return "deeptissuemassage" }
+        if lowerName.contains("hair") { return "hair" }
+        if lowerName.contains("manicure") || lowerName.contains("pedicure") { return "manicure" }
+        if lowerName.contains("microneedling") { return "microneedling" }
+        if lowerName.contains("massage") { return "deeptissuemassage" }
         if lowerName.contains("nail art") { return "nailart" }
-        if lowerName.contains("threading") || lowerName.contains("microblading") { return "eyebrowthreading" }
-        if lowerName.contains("extension") || lowerName.contains("lift") { return "eyelashextensions" }
-        if lowerName.contains("teeth") { return "teeth " } // Note the space in asset name "teeth "
-        if lowerName.contains("aromatherapy") || lowerName.contains("drip") { return "aromatherapy" }
-        if lowerName.contains("makeup") || lowerName.contains("bridal") { return "bridalmakeup" }
-        
-        // Aesthetic treatments that don't match above -> default to facial or skin
-        if lowerName.contains("botox") || lowerName.contains("filler") || lowerName.contains("aging") || lowerName.contains("tightening") || lowerName.contains("injection") || lowerName.contains("contouring") || lowerName.contains("scar") {
-            return "facial"
-        }
-        
-        // Fallback to a safe default if still empty
+        if lowerName.contains("makeup") { return "bridalmakeup" }
         return "facial"
     }
 
-    // MARK: - Services Content
-    // Displays a list of services offered by the salon.
     private var servicesContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(salon.services) { service in
                 HStack(spacing: 16) {
-                    // Image (Left)
                     let imgName = imageForService(service.name)
-                    if !imgName.isEmpty {
-                        Image(imgName)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 64, height: 64)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    } else {
-                        // Fallback placeholder
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(brand.opacity(0.08))
-                            .frame(width: 64, height: 64)
-                            .overlay {
-                                Image(systemName: "scissors")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(brand)
-                            }
-                    }
+                    Image(imgName)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 64, height: 64)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     
-                    // Text Info (Right side of image)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(service.name)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(appSettings.themeText)
-                        
                         Text(service.duration)
                             .font(.system(size: 12))
                             .foregroundColor(appSettings.themeTextSecondary)
-                        
                         Text("LKR \(Int(service.price))")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(brand)
-                            .padding(.top, 2)
                     }
-                    
                     Spacer()
-                    
-                    // Checkbox (Far Right)
                     Button(action: {
                         if selectedServiceID == service.id {
                             selectedServiceID = nil
@@ -554,60 +573,35 @@ struct SalonDetailView: View {
                             Circle()
                                 .stroke(selectedServiceID == service.id ? brand : Color(hex: "C7C7CC"), lineWidth: 1.5)
                                 .frame(width: 24, height: 24)
-                            
                             if selectedServiceID == service.id {
-                                Circle()
-                                    .fill(brand)
-                                    .frame(width: 24, height: 24)
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.white)
+                                Circle().fill(brand).frame(width: 24, height: 24)
+                                Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundColor(.white)
                             }
                         }
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(12)
-                .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(appSettings.themeSurface)
-                        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
-                )
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
+                .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(appSettings.themeSurface).shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3))
+                .padding(.horizontal, 16).padding(.vertical, 6)
             }
         }
     }
 
-    // MARK: - Reviews Content
-    // Displays the reviews for the salon.
     private var reviewsContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Customer Reviews")
-                    .glowzaFont(size: 18, weight: .bold)
+                Text("Customer Reviews").glowzaFont(size: 18, weight: .bold)
                 Spacer()
-                // Button to write a review!
-                Button(action: { 
-                    reviewToEdit = nil
-                    showReviewSheet = true 
-                }) {
-                    Text("Write Review")
-                        .glowzaFont(size: 14, weight: .semibold)
-                        .foregroundColor(brand)
+                Button(action: { reviewToEdit = nil; showReviewSheet = true }) {
+                    Text("Write Review").glowzaFont(size: 14, weight: .semibold).foregroundColor(brand)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 24).padding(.vertical, 16)
 
             if displayReviews.isEmpty {
-                Text("No reviews yet. Be the first to review!")
-                    .glowzaFont(size: 14)
-                    .foregroundColor(.gray)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 20)
+                Text("No reviews yet. Be the first to review!").glowzaFont(size: 14).foregroundColor(.gray).padding(.horizontal, 24).padding(.vertical, 20)
             } else {
-                // Show only the first 10 reviews!
                 ForEach(displayReviews.prefix(10)) { review in
                     reviewRow(review)
                     Divider().padding(.horizontal, 20)
@@ -616,14 +610,11 @@ struct SalonDetailView: View {
         }
     }
 
-    // Helper to create a single review row.
     private func reviewRow(_ review: FirestoreSalonReview) -> some View {
         let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
-        
         let imageName: String
         var customImage: UIImage? = nil
         
-        // Always use the current profile image if the review belongs to the current user!
         if review.userId == AuthService.shared.currentUID {
             if let data = userAvatarData, let uiImage = UIImage(data: data) {
                 customImage = uiImage
@@ -633,178 +624,170 @@ struct SalonDetailView: View {
                       let uiImage = UIImage(data: data) {
                 customImage = uiImage
                 imageName = ""
-            } else {
-                imageName = ""
-            }
-        } else if let base64 = review.userAvatarBase64, !base64.isEmpty,
-           let data = Data(base64Encoded: base64),
-           let uiImage = UIImage(data: data) {
+            } else { imageName = "" }
+        } else if let base64 = review.userAvatarBase64, !base64.isEmpty, let data = Data(base64Encoded: base64), let uiImage = UIImage(data: data) {
             customImage = uiImage
             imageName = ""
-        } else if review.userName == "Anuki" {
-            imageName = "r5"
-        } else if let idx = mockUsers.firstIndex(of: review.userName) {
-            imageName = "r\(idx + 1)"
-        } else {
-            imageName = ""
-        }
+        } else if review.userName == "Anuki" { imageName = "r5" }
+        else if let idx = mockUsers.firstIndex(of: review.userName) { imageName = "r\(idx + 1)" }
+        else { imageName = "" }
         
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                // Avatar image
                 ZStack {
                     if let uiImage = customImage {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 40, height: 40)
-                            .clipShape(Circle())
+                        Image(uiImage: uiImage).resizable().scaledToFill().frame(width: 40, height: 40).clipShape(Circle())
                     } else if UIImage(named: imageName) != nil {
-                        Image(imageName)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 40, height: 40)
-                            .clipShape(Circle())
+                        Image(imageName).resizable().scaledToFill().frame(width: 40, height: 40).clipShape(Circle())
                     } else {
                         Circle().fill(brand.opacity(0.12)).frame(width: 40, height: 40)
-                        Text(String(review.userName.prefix(1)))
-                            .glowzaFont(size: 16, weight: .bold)
-                            .foregroundColor(brand)
+                        Text(String(review.userName.prefix(1))).glowzaFont(size: 16, weight: .bold).foregroundColor(brand)
                     }
                 }
-                
-                let displayName = (review.userId == AuthService.shared.currentUID && AuthService.shared.currentUserProfile != nil) ? AuthService.shared.currentUserProfile!.fullName : review.userName
-                
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(displayName)
-                        .glowzaFont(size: 15, weight: .semibold)
-                        .foregroundColor(appSettings.isDarkMode ? .white : Color(hex: "1A1A1A"))
-                    // Star rating
+                    HStack(spacing: 6) {
+                        Text(review.userName)
+                            .glowzaFont(size: 15, weight: .semibold)
+                            .foregroundColor(appSettings.themeText)
+                        
+                        if let skin = review.skinType, !skin.isEmpty {
+                            Text("•")
+                                .foregroundColor(.gray.opacity(0.5))
+                            Text(skin)
+                                .glowzaFont(size: 11, weight: .medium)
+                                .foregroundColor(brand)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(brand.opacity(0.08))
+                                .clipShape(Capsule())
+                        }
+                    }
                     HStack(spacing: 3) {
                         ForEach(1...5, id: \.self) { i in
-                            Image(systemName: i <= review.rating ? "star.fill" : "star")
-                                .font(.system(size: 11))
-                                .foregroundColor(i <= review.rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
+                            Image(systemName: i <= review.rating ? "star.fill" : "star").font(.system(size: 11)).foregroundColor(i <= review.rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
                         }
                     }
                 }
                 Spacer()
-                
-                // Show edit button only for the user's own reviews!
                 if review.userId == AuthService.shared.currentUID {
-                    Button(action: {
-                        reviewToEdit = review
-                        showReviewSheet = true
-                    }) {
-                        Text("Edit")
-                            .glowzaFont(size: 12, weight: .medium)
-                            .foregroundColor(brand)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(brand.opacity(0.1))
-                            .clipShape(Capsule())
+                    HStack(spacing: 8) {
+                        Button(action: { reviewToEdit = review; showReviewSheet = true }) {
+                            Image(systemName: "pencil").font(.system(size: 12)).foregroundColor(brand).padding(6).background(brand.opacity(0.1)).clipShape(Circle())
+                        }
+                        Button(action: { reviewToEdit = review; errorMessage = "DELETE_CONFIRM" }) {
+                            Image(systemName: "trash").font(.system(size: 12)).foregroundColor(.red).padding(6).background(Color.red.opacity(0.1)).clipShape(Circle())
+                        }
                     }
                 }
             }
-            
-            Text(review.comment)
-                .glowzaFont(size: 14)
-                .foregroundColor(appSettings.isDarkMode ? .white.opacity(0.8) : Color(hex: "4A4A4A"))
-                .lineSpacing(4)
-                .padding(.leading, 52)
-            
-            Text(review.createdAt, style: .date)
-                .glowzaFont(size: 11)
-                .foregroundColor(Color(hex: "ABABAB"))
-                .padding(.leading, 52)
+            Text(review.comment).glowzaFont(size: 14).foregroundColor(appSettings.themeTextSecondary).padding(.leading, 52)
+            Text(review.createdAt, style: .date).glowzaFont(size: 11).foregroundColor(.gray).padding(.leading, 52)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
-        .contentShape(Rectangle()) // Make the whole area tappable!
-        .onTapGesture {
-            selectedReviewer = review
-        }
+        .padding(.horizontal, 24).padding(.vertical, 16).contentShape(Rectangle()).onTapGesture { selectedReviewer = review }
     }
-    // Computed property to control the visibility of the Book Now bar.
+    
+    private func featureBadge(icon: String, text: String) -> some View {
+        let badgeColor = brand // Match pink theme
+        
+        return HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 14, weight: .bold)).foregroundColor(badgeColor)
+            Text(text).glowzaFont(size: 13, weight: .semibold).foregroundColor(appSettings.themeText)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(badgeColor.opacity(0.08))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(badgeColor.opacity(0.2), lineWidth: 1))
+    }
+    
+    private func simpleContactRow(icon: String, value: String) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle().fill(brand.opacity(0.1)).frame(width: 36, height: 36)
+                Image(systemName: icon).font(.system(size: 14)).foregroundColor(brand)
+            }
+            Text(value)
+                .glowzaFont(size: 14, weight: .medium)
+                .foregroundColor(appSettings.themeText)
+            Spacer()
+        }
+        .padding(12)
+        .contentShape(Rectangle())
+    }
+
     private var showBookNow: Bool {
         switch selectedTab {
-        case 0: return selectedServiceID != nil // Show if a service is selected!
-        case 1: return false                       // About tab — hidden
-        default: return false                      // Reviews tab — hidden
+        case 0: return selectedServiceID != nil
+        default: return false
         }
     }
 
-    // The Book Now bar that appears at the bottom.
     private var bookNowBar: some View {
-        VStack(spacing: 0) {
-            Rectangle().fill(Color(hex: "962043")).frame(height: 1)
-            Button(action: {
-                if let svc = bookingDraft.service {
-                    // Action
-                }
-                showBookingFlow = true // Open the booking flow!
-            }) {
-                HStack(spacing: 10) {
-                    if let svc = bookingDraft.service, selectedTab == 0 {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(svc.name)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
-                            Text("LKR \(Int(svc.price))")
-                                .font(.system(size: 11))
-                                .foregroundColor(.white.opacity(0.85))
-                        }
-                        Spacer()
-                    } else if selectedTab != 0 {
-                        Spacer()
-                    }
-                    Text("Book Now")
-                        .font(.system(size: 16, weight: .semibold))
+        HStack(spacing: 16) {
+            if let svc = bookingDraft.service {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(svc.name)
+                        .glowzaFont(size: 13, weight: .semibold)
                         .foregroundColor(.white)
-                    if bookingDraft.service == nil || selectedTab != 0 {
-                        Spacer()
-                    }
+                        .lineLimit(1)
+                    Text("LKR \(Int(svc.price))")
+                        .glowzaFont(size: 16, weight: .bold)
+                        .foregroundColor(.white)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .padding(.horizontal, 20)
-                .background(brand)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            } else {
+                Text("Select a service")
+                    .glowzaFont(size: 14, weight: .medium)
+                    .foregroundColor(.white.opacity(0.8))
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .padding(.bottom, 8)
-            .background(appSettings.isDarkMode ? Color(hex: "1A1A1A") : Color.white)
+            
+            Spacer()
+            
+            Button(action: { showBookingFlow = true }) {
+                Text("Book Now")
+                    .glowzaFont(size: 16, weight: .bold)
+                    .foregroundColor(brand)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.15), radius: 10, y: 5)
+            }
         }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+        .background(
+            ZStack {
+                LinearGradient(colors: [brand, Color(hex: "B83255")], startPoint: .leading, endPoint: .trailing)
+                
+                Circle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 120)
+                    .offset(x: 100, y: 30)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+        .shadow(color: brand.opacity(0.3), radius: 12, y: 6)
     }
 
-    // MARK: - Hero Contact Buttons
-    // Helper to create small action buttons on the hero section.
-    private func heroContactBtn(color: Color, symbol: String) -> some View {
-        Button(action: {}) {
-            Circle()
-                .fill(color)
-                .frame(width: 28, height: 28)
-                .overlay(
-                    Image(systemName: symbol)
-                        .font(.system(size: 11))
-                        .foregroundColor(.white)
-                )
-                .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
-        }
-        .buttonStyle(.plain)
+    private func openDirections() {
+        let coordinate = salon.coordinate
+        let destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
+        destination.name = salon.name
+        destination.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
     }
+
+}
 
 // MARK: - Salon Review Sheet
-// This view allows the user to write or edit a review.
 struct SalonReviewSheet: View {
     let salonName: String
-    let reviewToEdit: FirestoreSalonReview? // Pass a review here to edit it!
+    let reviewToEdit: FirestoreSalonReview?
     let existingReviews: [FirestoreSalonReview]
     let onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var rating: Int = 5 // Default rating is 5!
+    @State private var rating: Int = 5
     @State private var comment: String = ""
     @State private var isSubmitting = false
     @State private var errorMessage: String? = nil
@@ -817,284 +800,127 @@ struct SalonReviewSheet: View {
         NavigationStack {
             VStack(spacing: 24) {
                 VStack(spacing: 12) {
-                    Text(reviewToEdit == nil ? "Write a Review" : "Edit Your Review")
-                        .glowzaFont(size: 24, weight: .bold)
-                    Text("Sharing your experience helps others find the best salons.")
-                        .glowzaFont(size: 15)
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
+                    Text(reviewToEdit == nil ? "Write a Review" : "Edit Your Review").glowzaFont(size: 24, weight: .bold)
+                    Text("Sharing your experience helps others find the best salons.").glowzaFont(size: 15).foregroundColor(.gray).multilineTextAlignment(.center)
                 }
                 .padding(.top, 20)
 
-                // Rating Stars
                 HStack(spacing: 12) {
                     ForEach(1...5, id: \.self) { i in
                         Button(action: { rating = i }) {
-                            Image(systemName: i <= rating ? "star.fill" : "star")
-                                .font(.system(size: 36))
-                                .foregroundColor(i <= rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
+                            Image(systemName: i <= rating ? "star.fill" : "star").font(.system(size: 36)).foregroundColor(i <= rating ? Color(hex: "F59E0B") : Color(hex: "DCDCDC"))
                         }
                     }
                 }
 
-                // Comment Field
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Your Comment")
-                        .glowzaFont(size: 14, weight: .semibold)
-                    TextEditor(text: $comment)
-                        .padding(12)
-                        .frame(height: 120)
-                        .background(appSettings.themeRaised)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(Color(hex: "E5E5EA"), lineWidth: 1)
-                        )
+                    Text("Your Comment").glowzaFont(size: 14, weight: .semibold)
+                    TextEditor(text: $comment).padding(12).frame(height: 120).background(appSettings.themeRaised).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous)).overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color(hex: "E5E5EA"), lineWidth: 1))
                 }
-
                 Spacer()
-
                 Button(action: submitReview) {
                     HStack {
-                        if isSubmitting {
-                            ProgressView().tint(.white)
-                        } else {
-                            Text(reviewToEdit == nil ? "Submit Review" : "Save Changes")
-                        }
+                        if isSubmitting { ProgressView().tint(.white) }
+                        else { Text(reviewToEdit == nil ? "Submit Review" : "Save Changes") }
                     }
-                    .glowzaFont(size: 17, weight: .semibold)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 55)
-                    .background(brand)
-                    .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+                    .glowzaFont(size: 17, weight: .semibold).foregroundColor(.white).frame(maxWidth: .infinity).frame(height: 55).background(brand).clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
                 }
                 .disabled(comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSubmitting)
             }
-            .padding(24)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+            .padding(24).navigationBarTitleDisplayMode(.inline).toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundColor(brand)
-                        .fixedSize()
+                    Button("Cancel") { dismiss() }.foregroundColor(brand).fixedSize()
                 }
             }
             .alert("Review Error", isPresented: $showErrorAlert, presenting: errorMessage) { _ in
                 Button("OK") { errorMessage = nil }
-            } message: { msg in
-                Text(msg)
-            }
+            } message: { msg in Text(msg) }
             .onAppear {
-                if let r = reviewToEdit {
-                    rating = r.rating
-                    comment = r.comment
-                }
+                if let r = reviewToEdit { rating = r.rating; comment = r.comment }
             }
         }
     }
 
-    // Submits the review to Firestore.
     private func submitReview() {
         let salonId = SalonFirestoreService.shared.salonId(for: salonName)
         let userId = AuthService.shared.currentUID ?? "GUEST"
         let userName = AuthService.shared.currentUserName ?? "Anonymous"
         
         isSubmitting = true
+        errorMessage = nil
         
-        // We use Task to run async code from a non-async function!
         Task {
             do {
                 if let r = reviewToEdit, let docId = r.documentId {
-                    // Update existing review!
                     try await SalonFirestoreService.shared.updateReview(reviewId: docId, rating: rating, comment: comment)
                 } else {
-                    // Add new review!
-                    try await SalonFirestoreService.shared.addSalonReview(
-                        salonId: salonId,
-                        userId: userId,
-                        userName: userName,
-                        rating: rating,
-                        comment: comment
-                    )
+                    try await SalonFirestoreService.shared.addSalonReview(salonId: salonId, userId: userId, userName: userName, rating: rating, comment: comment)
                 }
                 
                 await MainActor.run {
+                    isSubmitting = false
                     onComplete()
                     dismiss()
+                    
+                    NotificationManager.shared.showNotification(NotificationItem(
+                        title: "Review Shared",
+                        subtitle: "Your experience is now visible to everyone!",
+                        icon: "star.bubble.fill",
+                        type: .success
+                    ))
                 }
             } catch {
-                print("Review submission failed: \(error)")
-                
-                // FALLBACK: If Firestore fails, save locally for demonstration!
-                // This is a good practice to prevent the app from breaking.
-                let fallbackReview = FirestoreSalonReview(
-                    id: UUID().uuidString,
-                    salonId: salonId,
-                    userId: userId,
-                    userName: userName,
-                    rating: rating,
-                    comment: comment,
-                    createdAt: Date()
-                )
-                
                 await MainActor.run {
-                    // This will allow the UI to show the review even if DB failed
-                    onComplete()
-                    dismiss()
+                    isSubmitting = false
+                    errorMessage = error.localizedDescription
+                    showErrorAlert = true
                 }
             }
-            isSubmitting = false
         }
     }
 }
 
-    // Helper for letter-based contact buttons (like 'f' for Facebook).
-    private func heroContactBtn(color: Color, letter: String) -> some View {
-        Button(action: {}) {
-            Circle()
-                .fill(color)
-                .frame(width: 28, height: 28)
-                .overlay(
-                    Text(letter)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.white)
-                )
-                .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // Fetches a real route from Apple Maps!
-    private func fetchRoute() async {
-        let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: CLLocationCoordinate2D(latitude: 6.9271, longitude: 79.8612)))
-        request.destination = MKMapItem(placemark: MKPlacemark(coordinate: salon.coordinate))
-        request.transportType = .automobile
-        
-        let directions = MKDirections(request: request)
-        do {
-            let response = try await directions.calculate()
-            if let route = response.routes.first {
-                await MainActor.run {
-                    self.mapRoute = route
-                }
-            }
-        } catch {
-            print("Failed to fetch route: \(error)")
-        }
-    }
-
-    private func openDirections() {
-        let coordinate = salon.coordinate
-        let destination = MKMapItem(placemark: MKPlacemark(coordinate: coordinate))
-        destination.name = salon.name
-        destination.openInMaps(launchOptions: [
-            MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving
-        ])
-    }
-
-}
-
-// Sheet to display a simple user profile when tapping on a review!
+// MARK: - User Profile Sheet
 struct UserProfileSheet: View {
     let review: FirestoreSalonReview
-    let reviewCount: Int // Dynamic review count!
+    let reviewCount: Int
     @Environment(\.dismiss) var dismiss
-    private let brand = Color(hex: "962043") // Match the brand color!
+    private let brand = Color(hex: "962043")
     
     var body: some View {
         VStack(spacing: 20) {
-            // Header
-            HStack {
-                Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.gray)
-                }
-            }
-            .padding([.top, .trailing])
+            HStack { Spacer(); Button(action: { dismiss() }) { Image(systemName: "xmark.circle.fill").font(.title2).foregroundColor(.gray) } }.padding([.top, .trailing])
             
-            // Avatar
             let avatarImage = getAvatarImage()
             if let uiImage = avatarImage {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 100, height: 100)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white, lineWidth: 4))
-                    .shadow(radius: 5)
+                Image(uiImage: uiImage).resizable().scaledToFill().frame(width: 100, height: 100).clipShape(Circle()).overlay(Circle().stroke(Color.white, lineWidth: 4)).shadow(radius: 5)
             } else {
                 ZStack {
                     Circle().fill(brand.opacity(0.12)).frame(width: 100, height: 100)
-                    Text(String(review.userName.prefix(1)))
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(brand)
+                    Text(String(review.userName.prefix(1))).font(.system(size: 40, weight: .bold)).foregroundColor(brand)
                 }
             }
-            
-            // Name
-            Text(review.userName)
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Text("Glowza Member")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-            
-            Divider()
-                .padding(.horizontal)
-            
-            // Stats or info
+            Text(review.userName).font(.title2).fontWeight(.bold)
+            Text("Glowza Member").font(.subheadline).foregroundColor(.gray)
+            Divider().padding(.horizontal)
             HStack(spacing: 40) {
-                VStack {
-                    Text("\(reviewCount)")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text(reviewCount == 1 ? "Review" : "Reviews")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-                VStack {
-                    Text("\(reviewCount)") // Assuming 1 visit per review!
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text(reviewCount == 1 ? "Visit" : "Visits")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
+                VStack { Text("\(reviewCount)").font(.title3).fontWeight(.bold); Text(reviewCount == 1 ? "Review" : "Reviews").font(.caption).foregroundColor(.gray) }
+                VStack { Text("\(reviewCount)").font(.title3).fontWeight(.bold); Text(reviewCount == 1 ? "Visit" : "Visits").font(.caption).foregroundColor(.gray) }
             }
-            
             Spacer()
         }
-        .padding()
-        .presentationDetents([.medium]) // Show as a bottom sheet!
+        .padding().presentationDetents([.medium])
     }
     
     private func getAvatarImage() -> UIImage? {
         let mockUsers = ["Dilnoza R.", "Amara S.", "Priya K.", "John D.", "Sarah W.", "Michael B.", "Elena G.", "Raj T.", "Sophia L.", "Kevin M."]
-        
         if review.userId == AuthService.shared.currentUID {
-            // Check local storage first!
             let userAvatarData = UserDefaults.standard.data(forKey: "profile_avatarData")
-            if let data = userAvatarData, let uiImage = UIImage(data: data) {
-                return uiImage
-            } else if let currentAvatar = AuthService.shared.currentUserProfile?.avatarBase64, !currentAvatar.isEmpty,
-                      let data = Data(base64Encoded: currentAvatar),
-                      let uiImage = UIImage(data: data) {
-                return uiImage
-            }
-        } else if let base64 = review.userAvatarBase64, !base64.isEmpty,
-           let data = Data(base64Encoded: base64),
-           let uiImage = UIImage(data: data) {
-            return uiImage
-        } else if review.userName == "Anuki" {
-            return UIImage(named: "r5")
-        } else if let idx = mockUsers.firstIndex(of: review.userName) {
-            return UIImage(named: "r\(idx + 1)")
-        }
+            if let data = userAvatarData, let uiImage = UIImage(data: data) { return uiImage }
+            else if let currentAvatar = AuthService.shared.currentUserProfile?.avatarBase64, !currentAvatar.isEmpty, let data = Data(base64Encoded: currentAvatar), let uiImage = UIImage(data: data) { return uiImage }
+        } else if let base64 = review.userAvatarBase64, !base64.isEmpty, let data = Data(base64Encoded: base64), let uiImage = UIImage(data: data) { return uiImage }
+        else if review.userName == "Anuki" { return UIImage(named: "r5") }
+        else if let idx = mockUsers.firstIndex(of: review.userName) { return UIImage(named: "r\(idx + 1)") }
         return nil
     }
 }

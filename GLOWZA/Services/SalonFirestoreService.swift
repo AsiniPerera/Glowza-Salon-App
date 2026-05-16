@@ -11,6 +11,7 @@ struct FirestoreSalonReview: Codable, Identifiable {
     var userName: String
     var rating: Int
     var comment: String
+    var skinType: String? // NEW: Track the user's skin type for beauty context!
     var createdAt: Date
     var userAvatarBase64: String? // Optional avatar stored as base64 string!
 }
@@ -158,6 +159,22 @@ final class SalonFirestoreService {
         let reviews = try snapshot.documents.compactMap { try $0.data(as: FirestoreSalonReview.self) }
         return reviews.sorted(by: { $0.createdAt > $1.createdAt }) // Newest first!
     }
+    
+    // MARK: - Real-time Review Sync
+    func listenToReviews(forSalonId salonId: String, completion: @escaping ([FirestoreSalonReview]) -> Void) -> ListenerRegistration {
+        return db.collection("salonReviews")
+            .whereField("salonId", isEqualTo: salonId)
+            .addSnapshotListener { snapshot, error in
+                guard let documents = snapshot?.documents else {
+                    print("Error listening to reviews: \(error?.localizedDescription ?? "Unknown error")")
+                    return
+                }
+                
+                let reviews = documents.compactMap { try? $0.data(as: FirestoreSalonReview.self) }
+                // Sort by date descending (Newest first!) before returning!
+                completion(reviews.sorted(by: { $0.createdAt > $1.createdAt }))
+            }
+    }
 
     // MARK: - Add Salon Review
     func addSalonReview(
@@ -168,6 +185,8 @@ final class SalonFirestoreService {
         comment: String
     ) async throws {
         let reviewId = UUID().uuidString
+        let profile = AuthService.shared.currentUserProfile
+        
         let data: [String: Any] = [
             "id": reviewId,
             "salonId": salonId,
@@ -175,9 +194,10 @@ final class SalonFirestoreService {
             "userName": userName,
             "rating": rating,
             "comment": comment,
+            "skinType": profile?.skinType ?? "Normal",
             "createdAt": Timestamp(),
             // Grab the current user's avatar if available!
-            "userAvatarBase64": AuthService.shared.currentUserProfile?.avatarBase64 ?? ""
+            "userAvatarBase64": profile?.avatarBase64 ?? ""
         ]
         try await db.collection("salonReviews").document(reviewId).setData(data)
     }
@@ -189,6 +209,71 @@ final class SalonFirestoreService {
             "comment": comment,
             "updatedAt": Timestamp()
         ])
+    }
+    
+    // MARK: - Delete Salon Review
+    func deleteReview(reviewId: String) async throws {
+        try await db.collection("salonReviews").document(reviewId).delete()
+    }
+
+    // MARK: - Real-time Occupied Slots
+    /// Listens to all 'upcoming' or 'completed' bookings for a salon and returns the occupied times for a specific date.
+    func listenToOccupiedSlots(salonName: String, date: Date, completion: @escaping ([String]) -> Void) -> ListenerRegistration {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let datePrefix = formatter.string(from: date)
+        
+        return db.collection("bookings")
+            .whereField("bookingSummary.salon", isEqualTo: salonName)
+            .addSnapshotListener { snapshot, error in
+                guard let documents = snapshot?.documents else {
+                    print("Error listening to occupied slots: \(error?.localizedDescription ?? "Unknown error")")
+                    completion([])
+                    return
+                }
+                
+                let occupied = documents.compactMap { doc -> String? in
+                    let data = doc.data()
+                    guard let status = data["status"] as? String,
+                          (status == "upcoming" || status == "completed") else { return nil }
+                    
+                    guard let summary = data["bookingSummary"] as? [String: Any],
+                          let schedule = summary["schedule"] as? String else { return nil }
+                    
+                    if schedule.contains(datePrefix) {
+                        return schedule.components(separatedBy: " - ").last
+                    }
+                    return nil
+                }
+                completion(occupied)
+            }
+    }
+
+    /// Fetches all time slots that are already booked for a specific salon on a specific date (one-off check).
+    func fetchOccupiedSlots(salonName: String, date: Date) async throws -> [String] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let datePrefix = formatter.string(from: date)
+        
+        let snapshot = try await db.collection("bookings")
+            .whereField("bookingSummary.salon", isEqualTo: salonName)
+            .getDocuments()
+            
+        return snapshot.documents.compactMap { doc -> String? in
+            let data = doc.data()
+            guard let status = data["status"] as? String,
+                  (status == "upcoming" || status == "completed") else { return nil }
+            
+            guard let summary = data["bookingSummary"] as? [String: Any],
+                  let schedule = summary["schedule"] as? String else { return nil }
+            
+            if schedule.contains(datePrefix) {
+                return schedule.components(separatedBy: " - ").last
+            }
+            return nil
+        }
     }
 
     // MARK: - Seed Mock Reviews
@@ -240,28 +325,20 @@ final class SalonFirestoreService {
     // MARK: - Map salon display name → Firestore salonId
     // Helper to generate a consistent ID key for Firestore documents!
     func salonId(for salonName: String) -> String {
-        let knownIds: [String: String] = [
-            "Golden Avenue":       "haley_avenue",
-            "Glow Studio":        "glow_studio",
-            "Luxe Aesthetics":    "luxe_aesthetics",
-            "Velvet Touch":       "velvet_touch",
-            "Aura Beauty Bar":    "aura_beauty_bar",
-            "Silk & Shine":       "silk_and_shine",
-            "The Beauty Lounge":  "the_beauty_lounge",
-            "Radiance Spa":       "radiance_spa",
-            "Blossom Beauty":     "blossom_beauty",
-            "Crystal Glow":       "crystal_glow",
-            "Serenity Spa":       "serenity_spa",
-            "Divine Beauty":      "divine_beauty",
-            "Golden Touch":       "golden_touch",
-            "Harmony Wellness":   "harmony_wellness",
-            "Petal Spa":          "petal_spa"
-        ]
-        if let id = knownIds[salonName] { return id }
-        
-        // Fallback: convert to lowercase and replace spaces with underscores!
-        return salonName.lowercased()
+        // We use a robust algorithmic approach to ensure the same ID is generated for every user!
+        // This is essential for syncing reviews globally.
+        let slug = salonName.lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
             .replacingOccurrences(of: " ", with: "_")
             .replacingOccurrences(of: "&", with: "and")
+            .filter { $0.isLetter || $0.isNumber || $0 == "_" }
+        
+        // We keep a few legacy mappings if needed, but standardize on the new slugs!
+        let legacyMappings: [String: String] = [
+            "Golden Avenue": "golden_avenue",
+            "Glow Studio": "glow_studio"
+        ]
+        
+        return legacyMappings[salonName] ?? slug
     }
 }

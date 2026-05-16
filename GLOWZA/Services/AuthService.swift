@@ -24,6 +24,7 @@ struct GlowzaUserProfile: Codable {
     var avatarUrl: String? // URL to image (if uploaded to storage).
     var avatarBase64: String? // Alternative: store image directly as base64 string!
     var skinType: String
+    var dateOfBirth: String? // Store as ISO8601 string!
     var loyaltyPoints: Int
     var favoriteSalonIds: [String]
     let createdAt: Date
@@ -324,6 +325,11 @@ final class AuthService {
             try await doc.reference.updateData(["userName": fullName])
         }
 
+        // Update Firebase Auth Display Name (for global consistency)
+        let changeRequest = auth.currentUser?.createProfileChangeRequest()
+        changeRequest?.displayName = fullName
+        try? await changeRequest?.commitChanges()
+
         // Update local memory state
         currentUserProfile?.fullName = fullName
         currentUserProfile?.email = email
@@ -368,6 +374,14 @@ final class AuthService {
 
         currentUserProfile?.avatarBase64 = base64
         UserDefaults.standard.set(imageData, forKey: "profile_avatarData")
+
+        // Update reviews with new avatar! (Denormalized sync)
+        let reviewsSnapshot = try await db.collection("salonReviews")
+            .whereField("userId", isEqualTo: uid)
+            .getDocuments()
+        for doc in reviewsSnapshot.documents {
+            try await doc.reference.updateData(["userAvatarBase64": base64])
+        }
 
         try? UserProfileRepository.shared.saveOrUpdateProfile(
             userId: uid,

@@ -84,7 +84,7 @@ final class DataSyncManager {
             let pending = all.filter { $0.firestoreID == nil || $0.firestoreID == "" }
             guard !pending.isEmpty else { return }
             
-            print("🔄 Syncing \(pending.count) offline booking(s) to Firestore…")
+            print("🔄 Moving \(pending.count) offline booking(s) to Firestore…")
             for cd in pending {
                 // Create the booking in Firestore!
                 let fid = try await BookingService.shared.createBooking(
